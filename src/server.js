@@ -10,10 +10,11 @@ const { DeviceRegistry } = require("./services/deviceRegistry");
 const { RealtimeHub } = require("./services/realtimeHub");
 
 const PORT = Number(process.env.PORT || 8080);
-const DATA_DIR = process.env.DATA_DIR || ".cp-device-data";
-const FILE_DIR = path.join(process.cwd(), DATA_DIR, "files");
+const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? "/tmp/cp-device-data" : ".cp-device-data");
+const DATA_ROOT = path.isAbsolute(DATA_DIR) ? DATA_DIR : path.join(process.cwd(), DATA_DIR);
+const FILE_DIR = path.join(DATA_ROOT, "files");
 fs.mkdirSync(FILE_DIR, { recursive: true });
-const store = new JsonStore(path.join(process.cwd(), DATA_DIR, "state.json"));
+const store = new JsonStore(path.join(DATA_ROOT, "state.json"));
 store.load();
 
 const githubStore = new GitHubStore(process.env);
@@ -422,9 +423,13 @@ server.on("upgrade", (req, socket) => {
   socket.end();
 });
 
-server.listen(PORT, () => {
-  console.log(`CP DEVICE MDM listening on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`CP DEVICE MDM listening on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = server;
 
 
 
