@@ -229,7 +229,7 @@ public class AgentService extends Service {
         return out.toString();
     }
 
-    private String serverUrl() { return prefs.getString("serverUrl", "http://localhost:8080").replaceAll("/$", ""); }
+    private String serverUrl() { return prefs.getString("serverUrl", "https://admin-device-management.vercel.app").replaceAll("/$", ""); }
     private String deviceId() { return prefs.getString("deviceId", ""); }
     private String token() { return prefs.getString("deviceToken", ""); }
     private String safe(String value) { return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " "); }

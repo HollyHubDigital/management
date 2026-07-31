@@ -37,7 +37,7 @@ public class MainActivity extends Activity {
         status = new TextView(this);
         status.setText("Install, enroll, then approve Device Admin, Accessibility, Camera, and Screen Capture.");
         layout.addView(status);
-        serverUrl = input("Control Server URL", "http://localhost:8080");
+        serverUrl = input("Control Server URL", "https://admin-device-management.vercel.app");
         deviceId = input("Device ID", "");
         deviceToken = input("Device Token", "");
         layout.addView(serverUrl); layout.addView(deviceId); layout.addView(deviceToken);

@@ -100,8 +100,8 @@ const commandPolicy = {
 
 function allowedOrigin(origin) {
   const allowed = new Set([
-    process.env.USER_INTERFACE_ORIGIN || "https://android-mobiles-management.vercel.app",
-    process.env.ADMIN_ORIGIN || ""
+    process.env.USER_INTERFACE_ORIGIN || "https://android-device-management.vercel.app",
+    process.env.ADMIN_ORIGIN || "https://admin-device-management.vercel.app"
   ].filter(Boolean));
   return allowed.has(origin) ? origin : "";
 }
@@ -425,7 +425,7 @@ server.on("upgrade", (req, socket) => {
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`CP DEVICE MDM listening on http://localhost:${PORT}`);
+    console.log(`CP DEVICE MDM listening on port ${PORT}`);
   });
 }
 

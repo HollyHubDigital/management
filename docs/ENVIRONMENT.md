@@ -11,8 +11,8 @@ CP_DEVICE_ADMIN_USERNAME=admin
 CP_DEVICE_ADMIN_PASSWORD=replace-with-strong-admin-password
 CP_DEVICE_ADMIN_TOKEN=replace-with-long-random-legacy-token
 CP_DEVICE_ENROLLMENT_SECRET=replace-with-long-random-enrollment-secret
-USER_INTERFACE_ORIGIN=https://android-mobiles-management.vercel.app
-ADMIN_ORIGIN=https://your-admin-backend-domain.vercel.app
+USER_INTERFACE_ORIGIN=https://android-device-management.vercel.app
+ADMIN_ORIGIN=https://admin-device-management.vercel.app
 DATA_DIR=.cp-device-data
 ```
 
@@ -64,14 +64,14 @@ Runtime public config in `config.js`:
 
 ```js
 window.CP_DEVICE_CONFIG = {
-  API_BASE_URL: "https://your-admin-backend-domain.vercel.app"
+  API_BASE_URL: "https://admin-device-management.vercel.app"
 };
 ```
 
 If you later add a build system, expose only a public backend URL such as:
 
 ```env
-NEXT_PUBLIC_CP_DEVICE_API_BASE=https://your-admin-backend-domain.vercel.app
+NEXT_PUBLIC_CP_DEVICE_API_BASE=https://admin-device-management.vercel.app
 ```
 
 Do not add `GITHUB_TOKEN`, payment secret keys, or admin credentials to the User-Interface project.

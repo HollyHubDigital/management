@@ -23,7 +23,7 @@ CP DEVICE is a consent-based MDM control plane for enrolled Android and iOS devi
 1. Copy `.env.example` to `.env` and replace both secrets.
 2. Load environment variables into the shell.
 3. Run `npm start`.
-4. Open `http://localhost:8080` on a desktop browser.
+4. Open `https://admin-device-management.vercel.app` on a desktop browser.
 
 ## Enroll a device
 

