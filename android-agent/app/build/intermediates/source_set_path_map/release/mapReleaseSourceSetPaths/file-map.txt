@@ -1,0 +1,13 @@
+com.cpdevice.agent.app-profileinstaller-1.3.0-0 C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\res
+com.cpdevice.agent.app-startup-runtime-1.1.1-1 C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\res
+com.cpdevice.agent.app-annotation-experimental-1.4.0-2 C:\Users\holly\.gradle\caches\8.10.2\transforms\78d88454d98e0893920678cf3f7e5ff9\transformed\annotation-experimental-1.4.0\res
+com.cpdevice.agent.app-core-runtime-2.2.0-3 C:\Users\holly\.gradle\caches\8.10.2\transforms\b58956d8d673c37133b2224f43b6b63f\transformed\core-runtime-2.2.0\res
+com.cpdevice.agent.app-core-1.13.1-4 C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\res
+com.cpdevice.agent.app-lifecycle-runtime-2.6.2-5 C:\Users\holly\.gradle\caches\8.10.2\transforms\d1d6428ed2724f8e911fe7b6bd5cab02\transformed\lifecycle-runtime-2.6.2\res
+com.cpdevice.agent.app-pngs-6 C:\Users\holly\Remote-Control\android-agent\app\build\generated\res\pngs\release
+com.cpdevice.agent.app-resValues-7 C:\Users\holly\Remote-Control\android-agent\app\build\generated\res\resValues\release
+com.cpdevice.agent.app-packageReleaseResources-8 C:\Users\holly\Remote-Control\android-agent\app\build\intermediates\incremental\release\packageReleaseResources\merged.dir
+com.cpdevice.agent.app-packageReleaseResources-9 C:\Users\holly\Remote-Control\android-agent\app\build\intermediates\incremental\release\packageReleaseResources\stripped.dir
+com.cpdevice.agent.app-release-10 C:\Users\holly\Remote-Control\android-agent\app\build\intermediates\merged_res\release\mergeReleaseResources
+com.cpdevice.agent.app-main-11 C:\Users\holly\Remote-Control\android-agent\app\src\main\res
+com.cpdevice.agent.app-release-12 C:\Users\holly\Remote-Control\android-agent\app\src\release\res

@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.cpdevice.agent.app-release-10:/xml_device_admin.xml.flat",
+        "source": "com.cpdevice.agent.app-main-11:/xml/device_admin.xml"
+    },
+    {
+        "merged": "com.cpdevice.agent.app-release-10:/xml_accessibility_service.xml.flat",
+        "source": "com.cpdevice.agent.app-main-11:/xml/accessibility_service.xml"
+    },
+    {
+        "merged": "com.cpdevice.agent.app-release-10:/xml_file_paths.xml.flat",
+        "source": "com.cpdevice.agent.app-main-11:/xml/file_paths.xml"
+    }
+]

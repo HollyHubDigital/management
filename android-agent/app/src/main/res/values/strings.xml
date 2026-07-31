@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">CP DEVICE Agent</string>
+    <string name="device_admin_label">CP DEVICE Admin</string>
+    <string name="device_admin_description">Allows approved CP DEVICE management actions for this enrolled device.</string>
+    <string name="accessibility_description">Allows user-approved CP DEVICE remote touch actions during active support sessions.</string>
+</resources>
+
