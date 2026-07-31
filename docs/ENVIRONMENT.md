@@ -81,3 +81,16 @@ Do not add `GITHUB_TOKEN`, payment secret keys, or admin credentials to the User
 - Keep `src/`, `public/index.html`, `public/app.js`, `android-agent/`, `artifacts/`, and backend logic in the admin/backend repo.
 - Push `User-Interface/` to the separate user frontend repo.
 - User devices enrolled through `User-Interface` are saved in the same backend store and appear in admin `/api/state`.
+
+## Apple iPhone MDM production requirements
+
+Add these to the admin/backend Vercel project only when enabling real iPhone MDM command processing:
+
+```env
+APPLE_MDM_APNS_TOPIC=com.apple.mgmt.External.your-topic
+APPLE_MDM_PUSH_CERTIFICATE=base64_encoded_mdm_push_certificate
+APPLE_MDM_PUSH_PRIVATE_KEY=base64_encoded_private_key
+APPLE_MDM_IDENTITY_CERTIFICATE_UUID=production-identity-certificate-uuid
+```
+
+The User-Interface project must not store these Apple MDM secrets. The user frontend only downloads the profile from the admin/backend API and uses the same subscription checks before queuing supported iPhone MDM commands.

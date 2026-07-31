@@ -95,7 +95,7 @@ function handleWebSocket(req, socket) {
 }
 const commandPolicy = {
   android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "screen.control.request", "screen.tap", "locate.device", "lock.device", "mobile.data.on"]),
-  ios: new Set(["heartbeat", "mdm.device.info", "app.install", "app.remove", "firmware.update", "camera.stream.request", "screen.share.request"])
+  ios: new Set(["heartbeat", "mdm.device.info", "app.install", "app.remove", "firmware.update", "screen.share.request", "locate.device", "lock.device"])
 };
 
 function allowedOrigin(origin) {
@@ -110,7 +110,7 @@ function corsHeaders(req) {
   const origin = allowedOrigin(req.headers.origin || "");
   return origin ? {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,Authorization,X-File-Name,X-Command-Id",
     "Vary": "Origin"
   } : {};
@@ -234,6 +234,13 @@ async function handleApi(req, res) {
     res.writeHead(204, cors);
     return res.end();
   }
+    if (["POST", "PUT"].includes(req.method) && (url.pathname === "/api/mdm/checkin" || url.pathname === "/api/mdm/connect")) {
+      return send(res, 501, {
+        error: "Apple MDM is not configured",
+        requiredEnvironment: ["APPLE_MDM_APNS_TOPIC", "APPLE_MDM_PUSH_CERTIFICATE", "APPLE_MDM_PUSH_PRIVATE_KEY"],
+        nextStep: "Configure Apple Business/School Manager, APNs MDM certificate, signed enrollment profile, and MDM command processing before production iPhone remote management."
+      });
+    }
     if (req.method === "POST" && url.pathname === "/api/auth/signup") {
       const body = await parseJsonBody(req);
       for (const field of ["email", "username", "password", "phone"]) if (!body[field]) return send(res, 400, { error: `${field} is required` });
@@ -293,6 +300,11 @@ async function handleApi(req, res) {
       if (!hasPaidAccess(user.id) && !freeAllowed.has(featureType)) return send(res, 402, { error: "Subscription required", subscriptionRequired: true });
       const deviceIds = Array.isArray(body.deviceIds) ? body.deviceIds : [];
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
+      const requestedDevices = deviceIds.map((deviceId) => store.state.devices[deviceId]);
+      for (const device of requestedDevices) {
+        const platformPolicy = commandPolicy[device.platform] || new Set();
+        if (!platformPolicy.has(featureType)) return send(res, 400, { error: `${featureType} is not supported on ${device.platform}` });
+      }
       return send(res, 201, registry.createCommand(deviceIds, featureType, body.payload || {}));
     }
 

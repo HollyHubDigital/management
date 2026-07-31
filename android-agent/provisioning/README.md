@@ -29,3 +29,9 @@ OEM/system privileges cannot be added from Java/Kotlin application code. They re
 ## Mobile data toggle
 
 Modern Android does not allow normal apps or Device Admin apps to turn mobile data on/off. This requires OEM/system-level privileges. CP DEVICE reports this limitation instead of pretending it succeeded.
+
+## What can be automated in this repo
+
+This repository can provide the signed APK, the Android Enterprise QR payload, ADB test command, and runtime detection of Device Owner/OEM capability.
+
+This repository cannot grant Device Owner after a normal APK install, vendor-sign the app, install it as `/system/priv-app`, or unlock mobile-data toggles from public Android APIs. Those require Android Enterprise provisioning, OEM/vendor cooperation, or system image integration.
