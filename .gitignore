@@ -7,3 +7,6 @@ User-Interface/
 .cp-device-smoke/
 .cp-device-data-8082/
 .cp-device-ui-test/
+
+android-agent/local.properties
+.vscode/
