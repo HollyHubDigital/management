@@ -19,6 +19,31 @@ store.load();
 
 const githubStore = new GitHubStore(process.env);
 const registry = new DeviceRegistry(store, githubStore, requireEnv("CP_DEVICE_ENROLLMENT_SECRET", "change-this-long-random-enrollment-secret"));
+let hydratePromise = null;
+
+async function hydrateStore() {
+  if (!githubStore.enabled()) return;
+  hydratePromise ||= githubStore.pullState()
+    .then((state) => {
+      if (state && !state.skipped) store.replaceState(state);
+    })
+    .catch((error) => {
+      store.state.audit.push({ at: new Date().toISOString(), type: "github.hydrate.failed", error: error.message });
+    });
+  await hydratePromise;
+}
+
+async function persistState(message) {
+  store.save();
+  try {
+    return await githubStore.pushState(store.state, message);
+  } catch (error) {
+    store.state.audit.push({ at: new Date().toISOString(), type: "github.persist.failed", error: error.message, message });
+    store.save();
+    throw error;
+  }
+}
+
 new RealtimeHub(registry).startOfflineSweep();
 
 
@@ -145,6 +170,10 @@ function publicUser(user) {
   return { id: user.id, email: user.email, username: user.username, phone: user.phone, role: user.role || "user", subscription };
 }
 
+function validPhone(phone) {
+  return /^\+[1-9]\d{7,14}$/.test(String(phone || "").replace(/\s+/g, ""));
+}
+
 function findUser(login) {
   const key = String(login || "").toLowerCase();
   return Object.values(store.state.users).find((user) => user.email.toLowerCase() === key || user.username.toLowerCase() === key);
@@ -263,6 +292,7 @@ async function handleApi(req, res) {
     res.writeHead(204, cors);
     return res.end();
   }
+  await hydrateStore();
     if (["POST", "PUT"].includes(req.method) && (url.pathname === "/api/mdm/checkin" || url.pathname === "/api/mdm/connect")) {
       return send(res, 501, {
         error: "Apple MDM is not configured",
@@ -273,10 +303,12 @@ async function handleApi(req, res) {
     if (req.method === "POST" && url.pathname === "/api/auth/signup") {
       const body = await parseJsonBody(req);
       for (const field of ["email", "username", "password", "phone"]) if (!body[field]) return send(res, 400, { error: `${field} is required` });
+      if (!validPhone(body.phone)) return send(res, 400, { error: "Phone must include country code, e.g. +12345678900" });
       if (findUser(body.email) || findUser(body.username)) return send(res, 409, { error: "Email or username already exists" });
       const userId = randomId("usr");
-      const user = { id: userId, email: body.email, username: body.username, phone: body.phone, passwordHash: hashPassword(body.password), role: "user", createdAt: new Date().toISOString() };
+      const user = { id: userId, email: body.email, username: body.username, phone: String(body.phone).replace(/\s+/g, ""), passwordHash: hashPassword(body.password), role: "user", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.users[userId] = user; state.subscriptions[userId] = { plan: "free", expiresAt: null, updatedAt: new Date().toISOString() }; });
+      await persistState("Create CP DEVICE user");
       submitWeb3Forms(user).catch(() => {});
       return send(res, 201, { ok: true, user: publicUser(user) });
     }
@@ -284,11 +316,15 @@ async function handleApi(req, res) {
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseJsonBody(req);
       if (body.login === (process.env.CP_DEVICE_ADMIN_USERNAME || "admin") && body.password === process.env.CP_DEVICE_ADMIN_PASSWORD) {
-        return send(res, 200, { token: createSession("admin", "admin"), user: { id: "admin", role: "admin", username: "admin", email: "admin" } });
+        const token = createSession("admin", "admin");
+        await persistState("Create admin session");
+        return send(res, 200, { token, user: { id: "admin", role: "admin", username: "admin", email: "admin" } });
       }
       const user = findUser(body.login);
       if (!user || !verifyPassword(body.password, user.passwordHash)) return send(res, 401, { error: "Invalid credentials" });
-      return send(res, 200, { token: createSession(user.id), user: publicUser(user) });
+      const token = createSession(user.id);
+      await persistState("Create user session");
+      return send(res, 200, { token, user: publicUser(user) });
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/reset-password") {
@@ -297,6 +333,7 @@ async function handleApi(req, res) {
       if (!user || !verifyPassword(body.currentPassword, user.passwordHash)) return send(res, 401, { error: "Current password is incorrect" });
       if (!body.newPassword || body.newPassword !== body.confirmNewPassword) return send(res, 400, { error: "New passwords do not match" });
       store.transaction((state) => { state.users[user.id].passwordHash = hashPassword(body.newPassword); });
+      await persistState("Reset CP DEVICE user password");
       return send(res, 200, { ok: true });
     }
 
@@ -311,6 +348,7 @@ async function handleApi(req, res) {
       const body = await parseJsonBody(req);
       const enrollment = registry.enroll({ platform: body.platform, name: body.name, serial: body.serial, ownerConsent: true, capabilities: body.capabilities || {}, info: body.info || {} });
       store.transaction((state) => { state.devices[enrollment.deviceId].ownerUserId = user.id; });
+      await persistState("Assign device owner");
       return send(res, 201, enrollment);
     }
 
@@ -357,6 +395,7 @@ async function handleApi(req, res) {
       if (existing && existing.status === "successful") return send(res, 409, { error: "Payment id already successful", payment: existing });
       const payment = { id: paymentId, userId: user.id, plan: body.plan, amount: plans[body.plan].amount, provider: body.provider, status: "pending", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.payments[paymentId] = payment; });
+      await persistState("Initialize CP DEVICE payment");
       return send(res, 200, { payment, checkout: { configured: false, reason: "Provider secret keys/webhook verification must be configured in Vercel env before real charges are accepted." } });
     }
   try {
@@ -370,7 +409,9 @@ async function handleApi(req, res) {
     if (req.method === "POST" && url.pathname === "/api/enroll") {
       const body = await parseJsonBody(req);
       if (body.enrollmentSecret !== process.env.CP_DEVICE_ENROLLMENT_SECRET) return send(res, 401, { error: "Invalid enrollment secret" });
-      return send(res, 201, registry.enroll(body));
+      const enrollment = registry.enroll(body);
+      await persistState("Enroll device");
+      return send(res, 201, enrollment);
     }
 
     if (url.pathname.startsWith("/api/device/")) {
@@ -389,6 +430,7 @@ async function handleApi(req, res) {
         store.transaction((state) => {
           state.files[fileId] = { id: fileId, name: fileName, size: data.length, contentType, sourceDeviceId: deviceId, commandId, createdAt: new Date().toISOString() };
         });
+        await persistState("Store exported device file metadata");
         return send(res, 201, store.state.files[fileId]);
       }
       if (req.method === "POST" && action === "commands") {
@@ -410,6 +452,7 @@ async function handleApi(req, res) {
       store.transaction((state) => {
         state.files[fileId] = { id: fileId, name: fileName, size: data.length, contentType, sourceDeviceId: null, createdAt: new Date().toISOString() };
       });
+      await persistState("Store admin uploaded file metadata");
       return send(res, 201, store.state.files[fileId]);
     }
 
@@ -418,7 +461,7 @@ async function handleApi(req, res) {
     }
     if (req.method === "POST" && url.pathname === "/api/admin/enroll-browser") {
       const body = await parseJsonBody(req);
-      return send(res, 201, registry.enroll({
+      const enrollment = registry.enroll({
         platform: body.platform,
         name: body.name,
         serial: body.serial,
@@ -429,7 +472,9 @@ async function handleApi(req, res) {
           enrollmentMode: "browser-assisted",
           enrollmentLimit: "Browser enrollment captures web-visible device details only. Native MDM profile or agent is required for serial, admin shell, remote screen, camera, app, and firmware control."
         }
-      }));
+      });
+      await persistState("Admin browser enroll device");
+      return send(res, 201, enrollment);
     }
 
     if (req.method === "POST" && url.pathname === "/api/commands") {

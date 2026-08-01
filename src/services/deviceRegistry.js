@@ -7,6 +7,10 @@ class DeviceRegistry {
     this.enrollmentSecret = enrollmentSecret;
   }
 
+  persist(message) {
+    this.githubStore.pushState(this.store.state, message).catch(() => {});
+  }
+
   enroll(input) {
     const required = ["platform", "name", "serial", "ownerConsent"];
     for (const key of required) if (!input[key]) throw new Error(`Missing ${key}`);
@@ -32,7 +36,6 @@ class DeviceRegistry {
       state.devices[deviceId] = device;
       state.audit.push({ at: now, type: "device.enrolled", deviceId, platform: input.platform });
     });
-    this.sync("Enroll device").catch(() => {});
     return { deviceId, token, signature: signPayload({ deviceId, serial: input.serial }, this.enrollmentSecret) };
   }
 
@@ -43,28 +46,32 @@ class DeviceRegistry {
 
   heartbeat(deviceId, telemetry) {
     const now = new Date().toISOString();
-    return this.store.transaction((state) => {
-      const device = state.devices[deviceId];
-      if (!device) throw new Error("Unknown device");
-      device.lastSeenAt = now;
-      device.status = "online";
-      device.info = { ...device.info, ...(telemetry.info || {}) };
-      device.capabilities = { ...(device.capabilities || {}), ...(telemetry.capabilities || {}) };
-      device.operation = telemetry.operation || device.operation || {};
-      device.alerts = telemetry.alerts || [];
-      return device;
+    const device = this.store.transaction((state) => {
+      const current = state.devices[deviceId];
+      if (!current) throw new Error("Unknown device");
+      current.lastSeenAt = now;
+      current.status = "online";
+      current.info = { ...current.info, ...(telemetry.info || {}) };
+      current.capabilities = { ...(current.capabilities || {}), ...(telemetry.capabilities || {}) };
+      current.operation = telemetry.operation || current.operation || {};
+      current.alerts = telemetry.alerts || [];
+      return current;
     });
+    this.persist("Update device heartbeat");
+    return device;
   }
 
   createCommand(deviceIds, type, payload) {
     const commandId = randomId("cmd");
     const now = new Date().toISOString();
-    return this.store.transaction((state) => {
+    const command = this.store.transaction((state) => {
       for (const deviceId of deviceIds) if (!state.devices[deviceId]) throw new Error(`Unknown device ${deviceId}`);
       state.commands[commandId] = { id: commandId, deviceIds, type, payload, status: "queued", results: {}, createdAt: now };
       state.audit.push({ at: now, type: "command.queued", commandId, commandType: type, deviceIds });
       return state.commands[commandId];
     });
+    this.persist("Queue device command");
+    return command;
   }
 
   pullCommands(deviceId) {
@@ -74,13 +81,15 @@ class DeviceRegistry {
   }
 
   completeCommand(deviceId, commandId, result) {
-    return this.store.transaction((state) => {
-      const command = state.commands[commandId];
-      if (!command || !command.deviceIds.includes(deviceId)) throw new Error("Unknown command");
-      command.results[deviceId] = { ...result, completedAt: new Date().toISOString() };
-      command.status = command.deviceIds.every((id) => command.results[id]) ? "completed" : "running";
-      return command;
+    const command = this.store.transaction((state) => {
+      const current = state.commands[commandId];
+      if (!current || !current.deviceIds.includes(deviceId)) throw new Error("Unknown command");
+      current.results[deviceId] = { ...result, completedAt: new Date().toISOString() };
+      current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
+      return current;
     });
+    this.persist("Complete device command");
+    return command;
   }
 
   async sync(message) {

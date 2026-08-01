@@ -6,7 +6,8 @@ function requestJson(options, body) {
       let data = "";
       res.on("data", (chunk) => (data += chunk));
       res.on("end", () => {
-        const json = data ? JSON.parse(data) : {};
+        let json = {};
+        try { json = data ? JSON.parse(data) : {}; } catch { json = { message: data || `GitHub HTTP ${res.statusCode}` }; }
         if (res.statusCode >= 400) return reject(new Error(json.message || `GitHub HTTP ${res.statusCode}`));
         resolve(json);
       });
@@ -30,25 +31,39 @@ class GitHubStore {
     return Boolean(this.token && this.owner && this.repo);
   }
 
-  async pushState(state, message = "Update CP DEVICE state") {
-    if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
-    const basePath = `/repos/${this.owner}/${this.repo}/contents/${this.path}`;
-    const headers = {
+  headers() {
+    return {
       Authorization: `Bearer ${this.token}`,
       Accept: "application/vnd.github+json",
       "User-Agent": "cp-device-mdm",
       "X-GitHub-Api-Version": "2022-11-28"
     };
+  }
+
+  contentPath() {
+    return `/repos/${this.owner}/${this.repo}/contents/${this.path}`;
+  }
+
+  async pullState() {
+    if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
+    const existing = await requestJson({ hostname: "api.github.com", path: `${this.contentPath()}?ref=${this.branch}`, method: "GET", headers: this.headers() });
+    const raw = Buffer.from(existing.content || "", "base64").toString("utf8");
+    return raw ? JSON.parse(raw) : {};
+  }
+
+  async pushState(state, message = "Update CP DEVICE state") {
+    if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
+    const headers = this.headers();
     let sha;
     try {
-      const existing = await requestJson({ hostname: "api.github.com", path: `${basePath}?ref=${this.branch}`, method: "GET", headers });
+      const existing = await requestJson({ hostname: "api.github.com", path: `${this.contentPath()}?ref=${this.branch}`, method: "GET", headers });
       sha = existing.sha;
     } catch (error) {
       if (!String(error.message).includes("Not Found")) throw error;
     }
     const content = Buffer.from(JSON.stringify(state, null, 2)).toString("base64");
     return requestJson(
-      { hostname: "api.github.com", path: basePath, method: "PUT", headers: { ...headers, "Content-Type": "application/json" } },
+      { hostname: "api.github.com", path: this.contentPath(), method: "PUT", headers: { ...headers, "Content-Type": "application/json" } },
       { message, content, branch: this.branch, sha }
     );
   }

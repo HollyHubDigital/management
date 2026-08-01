@@ -53,9 +53,10 @@ public class MainActivity extends Activity {
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS}, 41); });
         Button files = button("Allow File Access", view -> startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)));
+        Button battery = button("Allow Background Running", view -> requestBatteryOptimizationExemption());
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
-        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(files); layout.addView(screen); layout.addView(start);
+        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
         setContentView(layout);
         applyEnrollmentIntent(getIntent());
     }
@@ -71,7 +72,7 @@ public class MainActivity extends Activity {
         serverUrl.setText(value(data, "serverUrl", serverUrl.getText().toString()));
         deviceId.setText(value(data, "deviceId", ""));
         deviceToken.setText(value(data, "token", ""));
-        status.setText("Enrollment received. Approve Device Admin, then enable Accessibility and Start Live Screen.");
+        status.setText("Enrollment received and fields auto-filled. Approve Device Admin, then enable Accessibility and Start Live Screen.");
         startAgent();
         requestDeviceAdmin();
     }
@@ -85,6 +86,14 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, receiver);
         intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable CP DEVICE management for this authorized device. This app can lock the device when requested by your authorized CP DEVICE account.");
+        startActivity(intent);
+    }
+
+
+    private void requestBatteryOptimizationExemption() {
+        if (Build.VERSION.SDK_INT < 23) return;
+        Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+        intent.setData(Uri.parse("package:" + getPackageName()));
         startActivity(intent);
     }
 
@@ -106,10 +115,16 @@ public class MainActivity extends Activity {
     }
 
     private void startAgent() {
+        String id = deviceId.getText().toString().trim();
+        String token = deviceToken.getText().toString().trim();
+        if (id.isEmpty() || token.isEmpty()) {
+            status.setText("Device ID and Token are empty. Return to the User Portal and tap Open Installed Agent after downloading/installing the APK.");
+            return;
+        }
         getSharedPreferences("cp-device", Context.MODE_PRIVATE).edit()
                 .putString("serverUrl", serverUrl.getText().toString().trim())
-                .putString("deviceId", deviceId.getText().toString().trim())
-                .putString("deviceToken", deviceToken.getText().toString().trim())
+                .putString("deviceId", id)
+                .putString("deviceToken", token)
                 .putString("androidId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
                 .apply();
         startForegroundService(new Intent(this, AgentService.class));
