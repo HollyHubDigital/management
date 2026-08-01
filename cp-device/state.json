@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T20:29:28.583Z",
+      "lastSeenAt": "2026-08-01T20:29:31.851Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -319,8 +319,14 @@
         "requestedAt": "2026-08-01T20:29:25.280Z",
         "mode": "admin-control-session"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Camera stream requested. Android camera permission must be approved on the device.",
+          "completedAt": "2026-08-01T20:29:29.494Z"
+        }
+      },
       "createdAt": "2026-08-01T20:29:26.617Z"
     }
   },
