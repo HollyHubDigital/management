@@ -450,10 +450,16 @@ async function handleApi(req, res) {
   }
 }
 
-const server = http.createServer((req, res) => {
-  if (req.url.startsWith("/api/")) return handleApi(req, res);
-  if (!serveStatic(req, res)) send(res, 404, { error: "Not found" });
-});
+function requestHandler(req, res) {
+  try {
+    if (req.url.startsWith("/api/")) return handleApi(req, res);
+    if (!serveStatic(req, res)) send(res, 404, { error: "Not found" });
+  } catch (error) {
+    send(res, 500, { error: error.message || "Server error" });
+  }
+}
+
+const server = http.createServer(requestHandler);
 
 server.on("upgrade", (req, socket) => {
   if (req.url.startsWith("/ws/")) return handleWebSocket(req, socket);
@@ -466,7 +472,7 @@ if (require.main === module) {
   });
 }
 
-module.exports = server;
+module.exports = requestHandler;
 
 
 
