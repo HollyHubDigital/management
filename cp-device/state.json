@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T20:36:59.197Z",
+      "lastSeenAt": "2026-08-01T20:37:04.784Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -425,26 +425,6 @@
         }
       },
       "createdAt": "2026-08-01T20:30:23.061Z"
-    },
-    "cmd_96f7667b642c2933be3a5854c210f98a": {
-      "id": "cmd_96f7667b642c2933be3a5854c210f98a",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ],
-      "type": "screen.control.request",
-      "payload": {
-        "requestedAt": "2026-08-01T20:31:47.262Z",
-        "mode": "admin-control-session"
-      },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Accessibility control is active. Live screen must be started from the device permission screen.",
-          "completedAt": "2026-08-01T20:31:56.623Z"
-        }
-      },
-      "createdAt": "2026-08-01T20:31:48.635Z"
     }
   },
   "audit": [
@@ -615,15 +595,6 @@
       "type": "command.queued",
       "commandId": "cmd_b09c994722d2f113042932a7a87c162f",
       "commandType": "lock.device",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ]
-    },
-    {
-      "at": "2026-08-01T20:31:48.635Z",
-      "type": "command.queued",
-      "commandId": "cmd_96f7667b642c2933be3a5854c210f98a",
-      "commandType": "screen.control.request",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
