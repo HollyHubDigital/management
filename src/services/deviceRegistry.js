@@ -52,12 +52,15 @@ class DeviceRegistry {
       current.lastSeenAt = now;
       current.status = "online";
       current.info = { ...current.info, ...(telemetry.info || {}) };
+      const manufacturer = current.info.manufacturer || "";
+      const model = current.info.model || "";
+      if (manufacturer || model) current.name = `${manufacturer} ${model}`.trim();
+      if (current.info.androidVersion) current.version = `Android ${current.info.androidVersion}`;
       current.capabilities = { ...(current.capabilities || {}), ...(telemetry.capabilities || {}) };
       current.operation = telemetry.operation || current.operation || {};
       current.alerts = telemetry.alerts || [];
       return current;
     });
-    this.persist("Update device heartbeat");
     return device;
   }
 
@@ -70,7 +73,6 @@ class DeviceRegistry {
       state.audit.push({ at: now, type: "command.queued", commandId, commandType: type, deviceIds });
       return state.commands[commandId];
     });
-    this.persist("Queue device command");
     return command;
   }
 
@@ -88,7 +90,6 @@ class DeviceRegistry {
       current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
       return current;
     });
-    this.persist("Complete device command");
     return command;
   }
 
