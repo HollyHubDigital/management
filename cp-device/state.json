@@ -6,8 +6,8 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T18:47:18.831Z",
-      "status": "offline",
+      "lastSeenAt": "2026-08-01T18:48:57.092Z",
+      "status": "online",
       "capabilities": {
         "browserEnrollment": true,
         "mdmProfile": false,
@@ -109,8 +109,14 @@
         "path": "/sdcard",
         "requestedAt": "2026-08-01T18:48:53.632Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_818d04034b4efe45d0c034ba0b85074d": {
+          "ok": true,
+          "output": "Accessibility control is active. Live screen must be started from the device permission screen.",
+          "completedAt": "2026-08-01T18:48:57.769Z"
+        }
+      },
       "createdAt": "2026-08-01T18:48:56.389Z"
     }
   },
