@@ -473,8 +473,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:36.608Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:53:42.109Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:38.105Z"
     },
     "cmd_45ca4554fe67be767e6cf8730a0cb80e": {
@@ -486,8 +492,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:40.484Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:53:42.471Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:41.994Z"
     },
     "cmd_cb61d662e5926953263b7acfb0c59714": {
@@ -499,8 +511,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:53:39.193Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:53:42.828Z"
+        }
+      },
       "createdAt": "2026-08-01T21:53:40.698Z"
     }
   },
