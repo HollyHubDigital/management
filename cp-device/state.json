@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T20:30:03.903Z",
+      "lastSeenAt": "2026-08-01T20:30:06.955Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -397,8 +397,14 @@
       "payload": {
         "requestedAt": "2026-08-01T20:30:00.822Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T20:30:04.594Z"
+        }
+      },
       "createdAt": "2026-08-01T20:30:02.154Z"
     }
   },
