@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T22:00:01.904Z",
+      "lastSeenAt": "2026-08-01T22:00:04.980Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -440,7 +440,7 @@
         "dev_d8dc1729d619e2906231e8ea5e0998af": {
           "ok": true,
           "output": "Location unavailable. Approve location permission and enable location services.",
-          "completedAt": "2026-08-01T21:50:38.484Z"
+          "completedAt": "2026-08-01T21:53:41.354Z"
         }
       },
       "createdAt": "2026-08-01T21:45:29.614Z"
@@ -459,7 +459,7 @@
         "dev_d8dc1729d619e2906231e8ea5e0998af": {
           "ok": true,
           "output": "Location unavailable. Approve location permission and enable location services.",
-          "completedAt": "2026-08-01T21:50:38.884Z"
+          "completedAt": "2026-08-01T21:53:41.741Z"
         }
       },
       "createdAt": "2026-08-01T21:45:33.859Z"
@@ -478,7 +478,7 @@
         "dev_d8dc1729d619e2906231e8ea5e0998af": {
           "ok": true,
           "output": "Device locked.",
-          "completedAt": "2026-08-01T21:50:39.289Z"
+          "completedAt": "2026-08-01T21:53:42.109Z"
         }
       },
       "createdAt": "2026-08-01T21:45:38.105Z"
@@ -497,48 +497,67 @@
         "dev_d8dc1729d619e2906231e8ea5e0998af": {
           "ok": true,
           "output": "Device locked.",
-          "completedAt": "2026-08-01T21:50:39.668Z"
+          "completedAt": "2026-08-01T21:53:42.471Z"
         }
       },
       "createdAt": "2026-08-01T21:45:41.994Z"
     },
-    "cmd_4d245a36f2ac3fbdead93cac977cc8e8": {
-      "id": "cmd_4d245a36f2ac3fbdead93cac977cc8e8",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ],
-      "type": "locate.device",
-      "payload": {
-        "requestedAt": "2026-08-01T21:53:29.754Z"
-      },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Location unavailable. Approve location permission and enable location services.",
-          "completedAt": "2026-08-01T21:53:37.854Z"
-        }
-      },
-      "createdAt": "2026-08-01T21:53:31.286Z"
-    },
-    "cmd_26c483b80915ae9da519f417de2870b7": {
-      "id": "cmd_26c483b80915ae9da519f417de2870b7",
+    "cmd_cb61d662e5926953263b7acfb0c59714": {
+      "id": "cmd_cb61d662e5926953263b7acfb0c59714",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ],
       "type": "lock.device",
       "payload": {
-        "requestedAt": "2026-08-01T21:53:35.912Z"
+        "requestedAt": "2026-08-01T21:53:39.193Z"
       },
       "status": "completed",
       "results": {
         "dev_d8dc1729d619e2906231e8ea5e0998af": {
           "ok": true,
           "output": "Device locked.",
-          "completedAt": "2026-08-01T21:55:34.755Z"
+          "completedAt": "2026-08-01T21:53:42.828Z"
         }
       },
-      "createdAt": "2026-08-01T21:53:37.422Z"
+      "createdAt": "2026-08-01T21:53:40.698Z"
+    },
+    "cmd_70d93572b57e74addb6e5ace7a3ff236": {
+      "id": "cmd_70d93572b57e74addb6e5ace7a3ff236",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "lock.device",
+      "payload": {
+        "requestedAt": "2026-08-01T21:53:42.588Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:53:45.950Z"
+        }
+      },
+      "createdAt": "2026-08-01T21:53:44.109Z"
+    },
+    "cmd_ccfeafaddc467435ba30d26e0c48ae51": {
+      "id": "cmd_ccfeafaddc467435ba30d26e0c48ae51",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "lock.device",
+      "payload": {
+        "requestedAt": "2026-08-01T21:54:11.662Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:54:13.836Z"
+        }
+      },
+      "createdAt": "2026-08-01T21:54:13.172Z"
     }
   },
   "audit": [
@@ -750,18 +769,27 @@
       ]
     },
     {
-      "at": "2026-08-01T21:53:31.286Z",
+      "at": "2026-08-01T21:53:40.698Z",
       "type": "command.queued",
-      "commandId": "cmd_4d245a36f2ac3fbdead93cac977cc8e8",
-      "commandType": "locate.device",
+      "commandId": "cmd_cb61d662e5926953263b7acfb0c59714",
+      "commandType": "lock.device",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
     },
     {
-      "at": "2026-08-01T21:53:37.422Z",
+      "at": "2026-08-01T21:53:44.109Z",
       "type": "command.queued",
-      "commandId": "cmd_26c483b80915ae9da519f417de2870b7",
+      "commandId": "cmd_70d93572b57e74addb6e5ace7a3ff236",
+      "commandType": "lock.device",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-01T21:54:13.172Z",
+      "type": "command.queued",
+      "commandId": "cmd_ccfeafaddc467435ba30d26e0c48ae51",
       "commandType": "lock.device",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
