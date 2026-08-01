@@ -6,7 +6,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T18:46:31.765Z",
+      "lastSeenAt": "2026-08-01T18:46:34.503Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -78,6 +78,20 @@
         }
       },
       "createdAt": "2026-08-01T18:40:53.471Z"
+    },
+    "cmd_1cafc837e5b14b82df9bcf7a4aa6d80a": {
+      "id": "cmd_1cafc837e5b14b82df9bcf7a4aa6d80a",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ],
+      "type": "file.list",
+      "payload": {
+        "path": "/sdcard",
+        "requestedAt": "2026-08-01T18:46:31.144Z"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T18:46:32.297Z"
     }
   },
   "audit": [
@@ -101,6 +115,15 @@
       "type": "command.queued",
       "commandId": "cmd_ef5655af65aa713b4a2d305aba631ec2",
       "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ]
+    },
+    {
+      "at": "2026-08-01T18:46:32.297Z",
+      "type": "command.queued",
+      "commandId": "cmd_1cafc837e5b14b82df9bcf7a4aa6d80a",
+      "commandType": "file.list",
       "deviceIds": [
         "dev_818d04034b4efe45d0c034ba0b85074d"
       ]
