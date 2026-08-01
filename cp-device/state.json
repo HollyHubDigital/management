@@ -6,7 +6,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T18:39:41.056Z",
+      "lastSeenAt": "2026-08-01T18:39:44.340Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -38,13 +38,37 @@
       }
     }
   },
-  "commands": {},
+  "commands": {
+    "cmd_61fcb84d1d1434eff906fea5aa0b6bf7": {
+      "id": "cmd_61fcb84d1d1434eff906fea5aa0b6bf7",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ],
+      "type": "screen.control.request",
+      "payload": {
+        "path": "/sdcard",
+        "requestedAt": "2026-08-01T18:39:41.094Z"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T18:39:43.263Z"
+    }
+  },
   "audit": [
     {
       "at": "2026-08-01T18:31:15.767Z",
       "type": "device.enrolled",
       "deviceId": "dev_818d04034b4efe45d0c034ba0b85074d",
       "platform": "android"
+    },
+    {
+      "at": "2026-08-01T18:39:43.263Z",
+      "type": "command.queued",
+      "commandId": "cmd_61fcb84d1d1434eff906fea5aa0b6bf7",
+      "commandType": "screen.control.request",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ]
     }
   ],
   "files": {},
