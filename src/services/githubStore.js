@@ -23,6 +23,11 @@ class GitHubStore {
     this.token = env.GITHUB_TOKEN;
     this.owner = env.GITHUB_OWNER;
     this.repo = env.GITHUB_REPO;
+    if (this.repo && this.repo.includes("/")) {
+      const [repoOwner, repoName] = this.repo.split("/");
+      this.owner ||= repoOwner;
+      this.repo = repoName;
+    }
     this.branch = env.GITHUB_BRANCH || "main";
     this.path = env.GITHUB_DATA_PATH || "cp-device/state.json";
   }
