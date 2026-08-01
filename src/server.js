@@ -98,6 +98,30 @@ const commandPolicy = {
   ios: new Set(["heartbeat", "mdm.device.info", "app.install", "app.remove", "firmware.update", "screen.share.request", "locate.device", "lock.device"])
 };
 
+function commandCapabilityError(device, type) {
+  const capabilities = device.capabilities || {};
+  if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment before using this command.";
+  if (device.platform === "android") {
+    if (["shell"].includes(type) && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Android shell/admin commands require Device Owner or OEM/system privileges.";
+    if (["screen.control.request", "screen.tap"].includes(type) && !capabilities.accessibility) return "Android remote touch control requires the CP DEVICE Accessibility service.";
+    if (type === "camera.stream.request" && !capabilities.camera) return "Android camera streaming requires camera permission in the agent.";
+    if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Android lock requires Device Admin or Device Owner.";
+    if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Mobile data toggle requires OEM/system privileges.";
+    if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Firmware update requires Device Owner system-update policy or OEM/system updater integration.";
+  }
+  if (device.platform === "ios") {
+    if (!capabilities.appleMdm) return "iPhone commands require completed Apple MDM/APNs enrollment.";
+    if (type === "locate.device" && !capabilities.supervised) return "iPhone location requires supervised device Lost Mode MDM support.";
+    if (["firmware.update", "app.install", "app.remove"].includes(type) && !capabilities.supervised) return "This iPhone command requires a supervised Apple MDM device.";
+  }
+  return "";
+}
+
+function assertCommandAllowed(device, type) {
+  const platformPolicy = commandPolicy[device.platform] || new Set();
+  if (!platformPolicy.has(type)) return `${type} is not supported on ${device.platform}`;
+  return commandCapabilityError(device, type);
+}
 function allowedOrigin(origin) {
   const allowed = new Set([
     process.env.USER_INTERFACE_ORIGIN || "https://android-device-management.vercel.app",
@@ -302,8 +326,8 @@ async function handleApi(req, res) {
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
       const requestedDevices = deviceIds.map((deviceId) => store.state.devices[deviceId]);
       for (const device of requestedDevices) {
-        const platformPolicy = commandPolicy[device.platform] || new Set();
-        if (!platformPolicy.has(featureType)) return send(res, 400, { error: `${featureType} is not supported on ${device.platform}` });
+        const capabilityError = assertCommandAllowed(device, featureType);
+        if (capabilityError) return send(res, 400, { error: capabilityError });
       }
       return send(res, 201, registry.createCommand(deviceIds, featureType, body.payload || {}));
     }
@@ -409,7 +433,8 @@ async function handleApi(req, res) {
       const devices = deviceIds.map((id) => store.state.devices[id]);
       if (!devices.length || devices.some((device) => !device)) return send(res, 400, { error: "Valid deviceIds are required" });
       for (const device of devices) {
-        if (!commandPolicy[device.platform].has(body.type)) return send(res, 400, { error: `${body.type} is not allowed on ${device.platform}` });
+        const capabilityError = assertCommandAllowed(device, body.type);
+        if (capabilityError) return send(res, 400, { error: capabilityError });
       }
       const command = registry.createCommand(deviceIds, body.type, body.payload || {});
       return send(res, 201, command);

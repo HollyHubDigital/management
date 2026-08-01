@@ -49,6 +49,7 @@ class DeviceRegistry {
       device.lastSeenAt = now;
       device.status = "online";
       device.info = { ...device.info, ...(telemetry.info || {}) };
+      device.capabilities = { ...(device.capabilities || {}), ...(telemetry.capabilities || {}) };
       device.operation = telemetry.operation || device.operation || {};
       device.alerts = telemetry.alerts || [];
       return device;

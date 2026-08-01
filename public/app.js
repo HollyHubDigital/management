@@ -161,6 +161,43 @@ function targetDevice() {
   return selected.length === 1 ? selected[0] : null;
 }
 
+function commandGateMessage(device, type) {
+  if (!device) return "Select a device first.";
+  const capabilities = device.capabilities || {};
+  if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment first.";
+  if (device.platform === "android") {
+    if (type === "shell" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Android Device Owner or OEM/system privileges.";
+    if (["screen.control.request", "screen.tap"].includes(type) && !capabilities.accessibility) return "Requires CP DEVICE Accessibility service.";
+    if (type === "camera.stream.request" && !capabilities.camera) return "Requires camera permission in the Android agent.";
+    if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Android Device Admin or Device Owner.";
+    if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
+    if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Device Owner system-update policy or OEM/system updater integration.";
+  }
+  if (device.platform === "ios") {
+    if (!capabilities.appleMdm) return "Requires completed Apple MDM/APNs enrollment.";
+    if (type === "locate.device" && !capabilities.supervised) return "Requires supervised iPhone Lost Mode support.";
+    if (["firmware.update", "app.install", "app.remove"].includes(type) && !capabilities.supervised) return "Requires a supervised Apple MDM device.";
+    if (["shell", "screen.control.request", "camera.stream.request", "file.list", "file.pull", "mobile.data.on"].includes(type)) return "Not supported by public Apple MDM APIs.";
+  }
+  return "";
+}
+
+function setButtonGate(button, message) {
+  button.disabled = Boolean(message);
+  button.title = message || "Available for selected device";
+}
+
+function refreshCapabilityGates() {
+  const target = targetDevice();
+  document.querySelectorAll("[data-live-command]").forEach((button) => {
+    const type = target && target.platform === "ios" && button.dataset.liveCommand === "screen.control.request" ? "screen.share.request" : button.dataset.liveCommand;
+    setButtonGate(button, commandGateMessage(target, type));
+  });
+  setButtonGate(focusTerminal, commandGateMessage(target, "shell"));
+  setButtonGate(browseFiles, commandGateMessage(target, "file.list"));
+  setButtonGate(installApp, commandGateMessage(target, "app.install"));
+  setButtonGate(firmwareUpgrade, commandGateMessage(target, "firmware.update"));
+}
 function appendTerminal(message) {
   const current = terminalOutput.textContent.includes("Terminal output will appear") ? "" : terminalOutput.textContent;
   terminalOutput.textContent = `${current}${current ? "\n" : ""}${message}`;
@@ -204,6 +241,7 @@ function render() {
   log.textContent = JSON.stringify({ devices: list, commands: state.commands }, null, 2);
   renderTerminalResults();
   renderDeviceFileBrowser();
+  refreshCapabilityGates();
 }
 
 async function refresh() {

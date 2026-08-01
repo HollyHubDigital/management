@@ -75,3 +75,10 @@ pre { white-space: pre-wrap; color: var(--muted); min-height: 88px; max-height: 
 .admin-gate { width: min(460px, 94vw); margin: 12vh auto 0; display: grid; gap: 12px; text-align: center; }
 .admin-gate .gate-copy { color: var(--muted); margin: 0; }
 .admin-gate input { width: 100%; }
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.35);
+  box-shadow: none;
+}

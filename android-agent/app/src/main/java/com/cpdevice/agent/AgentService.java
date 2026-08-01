@@ -70,7 +70,12 @@ public class AgentService extends Service {
     }
 
     private void heartbeat() throws Exception {
-        String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"operation\":{\"agent\":\"running\"},\"alerts\":[]}";
+        DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
+        boolean admin = dpm != null && dpm.isAdminActive(receiver);
+        boolean owner = dpm != null && dpm.isDeviceOwnerApp(getPackageName());
+        boolean accessibility = CpAccessibilityService.isReady();
+        String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"capabilities\":{\"nativeAgent\":true,\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"camera\":true,\"files\":true,\"location\":true,\"oemPrivileged\":false},\"operation\":{\"agent\":\"running\",\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + "},\"alerts\":[]}";
         request("POST", "/api/device/" + deviceId() + "/heartbeat", body);
     }
 
