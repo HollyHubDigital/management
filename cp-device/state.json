@@ -43,8 +43,8 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T21:36:44.119Z",
-      "status": "online",
+      "lastSeenAt": "2026-08-01T21:36:20.096Z",
+      "status": "offline",
       "capabilities": {
         "browserEnrollment": true,
         "mdmProfile": false,
@@ -425,6 +425,19 @@
         }
       },
       "createdAt": "2026-08-01T20:30:23.061Z"
+    },
+    "cmd_49de3f405be10c978f5824a5d475a0ee": {
+      "id": "cmd_49de3f405be10c978f5824a5d475a0ee",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "locate.device",
+      "payload": {
+        "requestedAt": "2026-08-01T21:45:28.125Z"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T21:45:29.614Z"
     }
   },
   "audit": [
@@ -595,6 +608,15 @@
       "type": "command.queued",
       "commandId": "cmd_b09c994722d2f113042932a7a87c162f",
       "commandType": "lock.device",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-01T21:45:29.614Z",
+      "type": "command.queued",
+      "commandId": "cmd_49de3f405be10c978f5824a5d475a0ee",
+      "commandType": "locate.device",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
