@@ -34,8 +34,16 @@ public class MainActivity extends Activity {
         title.setText("CP DEVICE Agent Enrollment");
         title.setTextSize(22);
         layout.addView(title);
+        TextView disclosureTitle = new TextView(this);
+        disclosureTitle.setText(getString(com.cpdevice.agent.R.string.enterprise_disclosure_title));
+        disclosureTitle.setTextSize(18);
+        layout.addView(disclosureTitle);
+        TextView disclosure = new TextView(this);
+        disclosure.setText(getString(com.cpdevice.agent.R.string.enterprise_disclosure_body));
+        disclosure.setPadding(0, 12, 0, 20);
+        layout.addView(disclosure);
         status = new TextView(this);
-        status.setText("Install, enroll, then approve Device Admin, Accessibility, Camera, and Screen Capture.");
+        status.setText("Install, enroll, then approve only the permissions needed for your authorized management features.");
         layout.addView(status);
         serverUrl = input("Control Server URL", "https://admin-device-management.vercel.app");
         deviceId = input("Device ID", "");
@@ -76,7 +84,7 @@ public class MainActivity extends Activity {
         if (dpm != null && dpm.isAdminActive(receiver)) { status.setText("Device Admin is active."); return; }
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, receiver);
-        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable CP DEVICE management for this authorized device.");
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable CP DEVICE management for this authorized device. This app can lock the device when requested by your authorized CP DEVICE account.");
         startActivity(intent);
     }
 
