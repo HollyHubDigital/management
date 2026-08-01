@@ -438,6 +438,19 @@
       "status": "queued",
       "results": {},
       "createdAt": "2026-08-01T21:45:29.614Z"
+    },
+    "cmd_8652463dd8209017228dfd0e158040aa": {
+      "id": "cmd_8652463dd8209017228dfd0e158040aa",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "locate.device",
+      "payload": {
+        "requestedAt": "2026-08-01T21:45:32.369Z"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T21:45:33.859Z"
     }
   },
   "audit": [
@@ -616,6 +629,15 @@
       "at": "2026-08-01T21:45:29.614Z",
       "type": "command.queued",
       "commandId": "cmd_49de3f405be10c978f5824a5d475a0ee",
+      "commandType": "locate.device",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-01T21:45:33.859Z",
+      "type": "command.queued",
+      "commandId": "cmd_8652463dd8209017228dfd0e158040aa",
       "commandType": "locate.device",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
