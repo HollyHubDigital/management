@@ -55,6 +55,25 @@
       },
       "alerts": [],
       "ownerUserId": "usr_9b0f966c8b1a37430eb6bd69a5acc625"
+    },
+    "dev_0fb2d720ecfb270f7dd4267aa6b035e6": {
+      "id": "dev_0fb2d720ecfb270f7dd4267aa6b035e6",
+      "platform": "ios",
+      "name": "User Android Device",
+      "serial": "WEB-1785615826255",
+      "enrolledAt": "2026-08-01T20:23:48.000Z",
+      "lastSeenAt": "2026-08-01T20:23:48.000Z",
+      "status": "online",
+      "capabilities": {
+        "browserEnrollment": true,
+        "mdmProfile": false
+      },
+      "tokenHash": "5e34b268db0b0fd13955db0b1fa7acb19466ec576a946a56891109e10c989919",
+      "info": {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0"
+      },
+      "alerts": [],
+      "ownerUserId": "usr_9b0f966c8b1a37430eb6bd69a5acc625"
     }
   },
   "commands": {
@@ -361,6 +380,12 @@
       "type": "device.enrolled",
       "deviceId": "dev_d8dc1729d619e2906231e8ea5e0998af",
       "platform": "android"
+    },
+    {
+      "at": "2026-08-01T20:23:48.000Z",
+      "type": "device.enrolled",
+      "deviceId": "dev_0fb2d720ecfb270f7dd4267aa6b035e6",
+      "platform": "ios"
     }
   ],
   "files": {},
