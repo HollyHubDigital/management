@@ -23,6 +23,13 @@
       "role": "user",
       "createdAt": "2026-08-01T12:49:51.542Z",
       "expiresAt": "2026-08-31T12:49:51.542Z"
+    },
+    "sess_26d2bb56a382f72305ee0991935f8191": {
+      "token": "sess_26d2bb56a382f72305ee0991935f8191",
+      "userId": "usr_f8856a85d4766a6016cbb561961a846b",
+      "role": "user",
+      "createdAt": "2026-08-01T12:49:55.985Z",
+      "expiresAt": "2026-08-31T12:49:55.985Z"
     }
   },
   "payments": {},
