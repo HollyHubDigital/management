@@ -63,7 +63,7 @@
       "serial": "WEB-1785615826255",
       "enrolledAt": "2026-08-01T20:23:48.000Z",
       "lastSeenAt": "2026-08-01T20:23:48.000Z",
-      "status": "online",
+      "status": "offline",
       "capabilities": {
         "browserEnrollment": true,
         "mdmProfile": false
@@ -276,6 +276,20 @@
         }
       },
       "createdAt": "2026-08-01T19:03:11.142Z"
+    },
+    "cmd_1cd76cec0bcecde5a031f560331526b7": {
+      "id": "cmd_1cd76cec0bcecde5a031f560331526b7",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-01T20:26:39.504Z",
+        "mode": "admin-control-session"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T20:26:40.852Z"
     }
   },
   "audit": [
@@ -386,6 +400,15 @@
       "type": "device.enrolled",
       "deviceId": "dev_0fb2d720ecfb270f7dd4267aa6b035e6",
       "platform": "ios"
+    },
+    {
+      "at": "2026-08-01T20:26:40.852Z",
+      "type": "command.queued",
+      "commandId": "cmd_1cd76cec0bcecde5a031f560331526b7",
+      "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ]
     }
   ],
   "files": {},
