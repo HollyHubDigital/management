@@ -46,9 +46,14 @@ class GitHubStore {
 
   async pullState() {
     if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
-    const existing = await requestJson({ hostname: "api.github.com", path: `${this.contentPath()}?ref=${this.branch}`, method: "GET", headers: this.headers() });
-    const raw = Buffer.from(existing.content || "", "base64").toString("utf8");
-    return raw ? JSON.parse(raw) : {};
+    try {
+      const existing = await requestJson({ hostname: "api.github.com", path: `${this.contentPath()}?ref=${this.branch}`, method: "GET", headers: this.headers() });
+      const raw = Buffer.from(existing.content || "", "base64").toString("utf8");
+      return raw ? JSON.parse(raw) : {};
+    } catch (error) {
+      if (String(error.message).includes("Not Found")) return {};
+      throw error;
+    }
   }
 
   async pushState(state, message = "Update CP DEVICE state") {

@@ -40,7 +40,7 @@ async function persistState(message) {
   } catch (error) {
     store.state.audit.push({ at: new Date().toISOString(), type: "github.persist.failed", error: error.message, message });
     store.save();
-    throw error;
+    throw new Error(`GitHub persistence failed: ${error.message}. Verify GITHUB_TOKEN has Contents read/write access to ${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO} and GITHUB_BRANCH is correct.`);
   }
 }
 
@@ -250,7 +250,7 @@ function serveStoredFile(res, fileId) {
 }
 function sendError(res, error) {
   const message = error && error.message ? error.message : "Server error";
-  const status = ["Invalid JSON body", "Request body too large"].includes(message) ? 400 : 500;
+  const status = ["Invalid JSON body", "Request body too large"].includes(message) ? 400 : message.startsWith("GitHub persistence failed:") ? 503 : 500;
   send(res, status, { error: message });
 }
 function send(res, status, body, headers = {}) {
