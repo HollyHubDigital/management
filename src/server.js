@@ -202,6 +202,23 @@ function ownsDevice(userId, deviceId) {
   return Boolean(store.state.devices[deviceId] && store.state.devices[deviceId].ownerUserId === userId);
 }
 
+const subscriptionPlans = { monthly: { amount: 7, days: 30 }, six_months: { amount: 35, days: 180 }, yearly: { amount: 60, days: 365 } };
+
+function activateSubscription(userId, plan, paymentId) {
+  const selected = subscriptionPlans[plan];
+  if (!selected) throw new Error("Invalid plan");
+  const now = Date.now();
+  const current = store.state.subscriptions[userId];
+  const base = current && Date.parse(current.expiresAt) > now ? Date.parse(current.expiresAt) : now;
+  const expiresAt = new Date(base + selected.days * 24 * 60 * 60 * 1000).toISOString();
+  store.transaction((state) => {
+    state.subscriptions[userId] = { plan, expiresAt, paymentId, updatedAt: new Date().toISOString() };
+    state.payments[paymentId].status = "successful";
+    state.payments[paymentId].successfulAt = new Date().toISOString();
+  });
+  return store.state.subscriptions[userId];
+}
+
 function hasPaidAccess(userId) {
   const subscription = store.state.subscriptions[userId];
   return Boolean(subscription && subscription.plan !== "free" && Date.parse(subscription.expiresAt) > Date.now());
@@ -363,7 +380,7 @@ async function handleApi(req, res) {
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
       const featureType = body.type || "";
-      const freeAllowed = new Set(["screen.control.request"]);
+      const freeAllowed = new Set(["screen.control.request", "screen.share.request"]);
       if (!hasPaidAccess(user.id) && !freeAllowed.has(featureType)) return send(res, 402, { error: "Subscription required", subscriptionRequired: true });
       const deviceIds = Array.isArray(body.deviceIds) ? body.deviceIds : [];
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
@@ -388,15 +405,26 @@ async function handleApi(req, res) {
       const user = sessionUser(req);
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
-      const plans = { monthly: { amount: 7, days: 30 }, six_months: { amount: 35, days: 180 }, yearly: { amount: 60, days: 365 } };
-      if (!plans[body.plan]) return send(res, 400, { error: "Invalid plan" });
+      if (!subscriptionPlans[body.plan]) return send(res, 400, { error: "Invalid plan" });
       const paymentId = body.paymentId || randomId("pay");
       const existing = store.state.payments[paymentId];
-      if (existing && existing.status === "successful") return send(res, 409, { error: "Payment id already successful", payment: existing });
-      const payment = { id: paymentId, userId: user.id, plan: body.plan, amount: plans[body.plan].amount, provider: body.provider, status: "pending", createdAt: new Date().toISOString() };
+      if (existing && existing.userId === user.id) return send(res, existing.status === "successful" ? 409 : 200, { error: existing.status === "successful" ? "Payment id already successful" : undefined, payment: existing });
+      if (existing) return send(res, 409, { error: "Payment id already belongs to another user" });
+      const payment = { id: paymentId, userId: user.id, plan: body.plan, amount: subscriptionPlans[body.plan].amount, provider: body.provider, status: "pending", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.payments[paymentId] = payment; });
       await persistState("Initialize CP DEVICE payment");
       return send(res, 200, { payment, checkout: { configured: false, reason: "Provider secret keys/webhook verification must be configured in Vercel env before real charges are accepted." } });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/payments/activate") {
+      if (!isAdminRequest(req)) return send(res, 401, { error: "Admin login required" });
+      const body = await parseJsonBody(req);
+      const payment = store.state.payments[body.paymentId];
+      if (!payment) return send(res, 404, { error: "Payment not found" });
+      if (payment.status === "successful") return send(res, 200, { payment, subscription: store.state.subscriptions[payment.userId], idempotent: true });
+      const subscription = activateSubscription(payment.userId, payment.plan, payment.id);
+      await persistState("Activate CP DEVICE subscription");
+      return send(res, 200, { payment: store.state.payments[payment.id], subscription });
     }
   try {
     if (req.method === "GET" && url.pathname === "/api/enrollment/android-agent") {

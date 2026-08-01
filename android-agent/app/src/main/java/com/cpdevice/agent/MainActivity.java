@@ -98,7 +98,7 @@ public class MainActivity extends Activity {
     }
 
     private void requestScreenCapture() {
-        startAgent();
+        if (!startAgent()) return;
         MediaProjectionManager manager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         startActivityForResult(manager.createScreenCaptureIntent(), SCREEN_CAPTURE_REQUEST);
     }
@@ -114,12 +114,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void startAgent() {
+    private boolean startAgent() {
         String id = deviceId.getText().toString().trim();
         String token = deviceToken.getText().toString().trim();
         if (id.isEmpty() || token.isEmpty()) {
             status.setText("Device ID and Token are empty. Return to the User Portal and tap Open Installed Agent after downloading/installing the APK.");
-            return;
+            return false;
         }
         getSharedPreferences("cp-device", Context.MODE_PRIVATE).edit()
                 .putString("serverUrl", serverUrl.getText().toString().trim())
@@ -129,6 +129,7 @@ public class MainActivity extends Activity {
                 .apply();
         startForegroundService(new Intent(this, AgentService.class));
         status.setText("Agent started.");
+        return true;
     }
 }
 
