@@ -219,6 +219,11 @@ function serveStoredFile(res, fileId) {
   });
   fs.createReadStream(filePath).pipe(res);
 }
+function sendError(res, error) {
+  const message = error && error.message ? error.message : "Server error";
+  const status = ["Invalid JSON body", "Request body too large"].includes(message) ? 400 : 500;
+  send(res, status, { error: message });
+}
 function send(res, status, body, headers = {}) {
   res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store", ...headers });
   res.end(JSON.stringify(body));
@@ -446,16 +451,18 @@ async function handleApi(req, res) {
 
     send(res, 404, { error: "Not found" });
   } catch (error) {
-    send(res, 500, { error: error.message });
+    sendError(res, error);
   }
 }
 
 function requestHandler(req, res) {
   try {
-    if (req.url.startsWith("/api/")) return handleApi(req, res);
+    if (req.url.startsWith("/api/")) {
+      return Promise.resolve(handleApi(req, res)).catch((error) => sendError(res, error));
+    }
     if (!serveStatic(req, res)) send(res, 404, { error: "Not found" });
   } catch (error) {
-    send(res, 500, { error: error.message || "Server error" });
+    sendError(res, error);
   }
 }
 

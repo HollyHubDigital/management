@@ -36,10 +36,19 @@ const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
 let pendingEnrollmentLink = "";
 
+async function readJsonResponse(response) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return { error: text || `HTTP ${response.status}` };
+  }
+}
+
 async function loginAdmin() {
   const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ login: adminLogin.value, password: adminPassword.value }) });
-  const body = await response.json();
-  if (!response.ok || body.user.role !== "admin") throw new Error(body.error || "Admin login failed");
+  const body = await readJsonResponse(response);
+  if (!response.ok || !body.user || body.user.role !== "admin") throw new Error(body.error || "Admin login failed");
   adminToken.value = body.token;
   sessionStorage.setItem("cpAdminToken", body.token);
   showAdminApp();
@@ -75,7 +84,7 @@ async function api(path, options = {}) {
     ...options,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken.value}`, ...(options.headers || {}) }
   });
-  const body = await response.json();
+  const body = await readJsonResponse(response);
   if (!response.ok) throw new Error(body.error || "Request failed");
   return body;
 }
@@ -256,7 +265,7 @@ async function uploadFile(file) {
     headers: { Authorization: `Bearer ${adminToken.value}`, "Content-Type": file.type || "application/octet-stream", "X-File-Name": file.name },
     body: await file.arrayBuffer()
   });
-  const body = await response.json();
+  const body = await readJsonResponse(response);
   if (!response.ok) throw new Error(body.error || "Upload failed");
   return body;
 }
