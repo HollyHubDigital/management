@@ -6,13 +6,13 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T20:04:16.027Z",
+      "lastSeenAt": "2026-08-01T20:04:18.923Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
         "mdmProfile": false,
         "nativeAgent": true,
-        "deviceAdmin": true,
+        "deviceAdmin": false,
         "deviceOwner": false,
         "accessibility": true,
         "camera": true,
@@ -32,7 +32,7 @@
       "ownerUserId": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
       "operation": {
         "agent": "running",
-        "deviceAdmin": true,
+        "deviceAdmin": false,
         "deviceOwner": false,
         "accessibility": true
       }
