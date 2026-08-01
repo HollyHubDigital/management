@@ -6,7 +6,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T20:02:59.677Z",
+      "lastSeenAt": "2026-08-01T20:03:03.947Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -14,7 +14,7 @@
         "nativeAgent": true,
         "deviceAdmin": true,
         "deviceOwner": false,
-        "accessibility": true,
+        "accessibility": false,
         "camera": true,
         "files": true,
         "location": true,
@@ -34,7 +34,7 @@
         "agent": "running",
         "deviceAdmin": true,
         "deviceOwner": false,
-        "accessibility": true
+        "accessibility": false
       }
     }
   },
