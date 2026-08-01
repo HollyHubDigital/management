@@ -52,11 +52,12 @@ public class MainActivity extends Activity {
         Button admin = button("Enable Device Admin", view -> requestDeviceAdmin());
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.POST_NOTIFICATIONS}, 41); });
+        Button location = button("Allow Location", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 42); });
         Button files = button("Allow File Access", view -> startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)));
         Button battery = button("Allow Background Running", view -> requestBatteryOptimizationExemption());
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
-        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
+        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
         setContentView(layout);
         applyEnrollmentIntent(getIntent());
     }

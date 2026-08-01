@@ -16,6 +16,7 @@ const screen = document.getElementById("screen");
 const screenText = document.getElementById("screenText");
 const liveFrame = document.getElementById("liveFrame");
 let liveSocket = null;
+let livePollTimer = null;
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
 const terminalCommand = document.getElementById("terminalCommand");
@@ -31,6 +32,9 @@ const apkUrl = document.getElementById("apkUrl");
 const apkFile = document.getElementById("apkFile");
 const installApp = document.getElementById("installApp");
 const browseFiles = document.getElementById("browseFiles");
+const locateDevice = document.getElementById("locateDevice");
+const lockDevice = document.getElementById("lockDevice");
+const mobileDataOn = document.getElementById("mobileDataOn");
 const deviceFiles = document.getElementById("deviceFiles");
 const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
@@ -176,7 +180,7 @@ function commandGateMessage(device, type) {
   if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment first.";
   if (device.platform === "android") {
     if (type === "shell" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Android Device Owner or OEM/system privileges.";
-    if (["screen.control.request", "screen.tap"].includes(type) && !capabilities.accessibility) return "Requires CP DEVICE Accessibility service.";
+    if (type === "screen.tap" && !capabilities.accessibility) return "Requires CP DEVICE Accessibility service.";
     if (type === "camera.stream.request" && !capabilities.camera) return "Requires camera permission in the Android agent.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Android Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
@@ -206,6 +210,9 @@ function refreshCapabilityGates() {
   setButtonGate(browseFiles, commandGateMessage(target, "file.list"));
   setButtonGate(installApp, commandGateMessage(target, "app.install"));
   setButtonGate(firmwareUpgrade, commandGateMessage(target, "firmware.update"));
+  setButtonGate(locateDevice, commandGateMessage(target, "locate.device"));
+  setButtonGate(lockDevice, commandGateMessage(target, "lock.device"));
+  setButtonGate(mobileDataOn, commandGateMessage(target, "mobile.data.on"));
 }
 function appendTerminal(message) {
   const current = terminalOutput.textContent.includes("Terminal output will appear") ? "" : terminalOutput.textContent;
@@ -356,8 +363,33 @@ async function sendTerminalCommand(commandText) {
 }
 
 
+async function fetchLiveFrame(deviceId) {
+  const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${adminToken.value}` },
+    cache: "no-store"
+  });
+  if (!response.ok) throw new Error(response.status === 404 ? "No live frame yet. Start Live Screen in the Android agent, or Start Live Camera from the dashboard after camera permission is allowed." : "Live frame unavailable");
+  const blob = await response.blob();
+  const previous = liveFrame.src;
+  liveFrame.src = URL.createObjectURL(blob);
+  screen.classList.add("streaming");
+  screenText.textContent = "";
+  if (previous.startsWith("blob:")) URL.revokeObjectURL(previous);
+}
+
+function startLivePolling(deviceId) {
+  if (livePollTimer) clearInterval(livePollTimer);
+  const poll = () => fetchLiveFrame(deviceId).catch((error) => {
+    if (!screen.classList.contains("streaming")) screenText.textContent = error.message;
+  });
+  poll();
+  livePollTimer = setInterval(poll, 1200);
+}
+
 function openLiveViewer(deviceId) {
   if (liveSocket) liveSocket.close();
+  if (livePollTimer) clearInterval(livePollTimer);
+  startLivePolling(deviceId);
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
   liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken.value)}`);
   liveSocket.binaryType = "blob";
@@ -365,9 +397,11 @@ function openLiveViewer(deviceId) {
     const previous = liveFrame.src;
     liveFrame.src = URL.createObjectURL(event.data);
     screen.classList.add("streaming");
+    screenText.textContent = "";
     if (previous.startsWith("blob:")) URL.revokeObjectURL(previous);
   };
-  liveSocket.onclose = () => screen.classList.remove("streaming");
+  liveSocket.onclose = () => {};
+  liveSocket.onerror = () => {};
 }
 
 screen.addEventListener("click", (event) => {
@@ -383,8 +417,8 @@ async function sendLiveControl(type) {
   if (!target) throw new Error("Select exactly one target device for live control");
   const commandType = target.platform === "ios" && type === "screen.control.request" ? "screen.share.request" : type;
   await createCommand([target.id], commandType, { requestedAt: new Date().toISOString(), mode: "admin-control-session" });
-  if (commandType === "screen.control.request") openLiveViewer(target.id);
-  screenText.textContent = `${commandType} queued for ${target.name}. Waiting for enrolled agent/session transport.`;
+  if (["screen.control.request", "camera.stream.request"].includes(commandType)) openLiveViewer(target.id);
+  screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Waiting for camera frames from the agent.`;
   await refresh();
 }
 
@@ -433,6 +467,24 @@ openAgent.addEventListener("click", () => {
 
 installApp.addEventListener("click", () => installSelectedApp().catch((error) => (log.textContent = error.message)));
 browseFiles.addEventListener("click", () => browseDeviceFiles().catch((error) => (log.textContent = error.message)));
+locateDevice.addEventListener("click", async () => {
+  const target = targetDevice();
+  if (!target) return (log.textContent = "Select exactly one target device");
+  await createCommand([target.id], "locate.device", { requestedAt: new Date().toISOString() });
+  await refresh();
+});
+lockDevice.addEventListener("click", async () => {
+  const target = targetDevice();
+  if (!target) return (log.textContent = "Select exactly one target device");
+  await createCommand([target.id], "lock.device", { requestedAt: new Date().toISOString() });
+  await refresh();
+});
+mobileDataOn.addEventListener("click", async () => {
+  const target = targetDevice();
+  if (!target) return (log.textContent = "Select exactly one target device");
+  await createCommand([target.id], "mobile.data.on", { requestedAt: new Date().toISOString() });
+  await refresh();
+});
 firmwareUpgrade.addEventListener("click", async () => {
   const target = targetDevice();
   if (!target) return (log.textContent = "Select exactly one Android device");

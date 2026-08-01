@@ -21,6 +21,9 @@ import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.ByteBuffer;
 
 public class LiveStreamService extends Service {
@@ -98,12 +101,41 @@ public class LiveStreamService extends Service {
             Bitmap cropped = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight());
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             cropped.compress(Bitmap.CompressFormat.JPEG, 55, out);
-            ws.sendBinary(out.toByteArray());
+            byte[] frame = out.toByteArray();
+            try { if (ws != null) ws.sendBinary(frame); } catch (Exception ignored) { }
+            postFrame(frame);
             bitmap.recycle();
             cropped.recycle();
         } catch (Exception ignored) {
         } finally {
             if (image != null) image.close();
+        }
+    }
+
+    private void postFrame(byte[] frame) {
+        HttpURLConnection conn = null;
+        try {
+            SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
+            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+            String deviceId = prefs.getString("deviceId", "");
+            String token = prefs.getString("deviceToken", "");
+            if (deviceId.length() == 0 || token.length() == 0) return;
+            URL url = new URL(serverUrl + "/api/device/" + deviceId + "/live-frame");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setRequestProperty("Content-Type", "image/jpeg");
+            conn.setFixedLengthStreamingMode(frame.length);
+            OutputStream output = conn.getOutputStream();
+            output.write(frame);
+            output.close();
+            conn.getResponseCode();
+        } catch (Exception ignored) {
+        } finally {
+            if (conn != null) conn.disconnect();
         }
     }
 

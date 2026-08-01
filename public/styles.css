@@ -82,3 +82,6 @@ button:disabled {
   filter: grayscale(0.35);
   box-shadow: none;
 }
+img:not([src]), img[src=""] {
+  display: none;
+}

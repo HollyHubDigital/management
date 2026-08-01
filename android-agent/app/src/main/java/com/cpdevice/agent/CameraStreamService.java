@@ -19,6 +19,9 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.content.Intent;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 
@@ -98,9 +101,37 @@ public class CameraStreamService extends Service {
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] jpeg = new byte[buffer.remaining()];
             buffer.get(jpeg);
-            ws.sendBinary(jpeg);
+            try { if (ws != null) ws.sendBinary(jpeg); } catch (Exception ignored) { }
+            postFrame(jpeg);
         } catch (Exception ignored) {
         } finally { if (image != null) image.close(); }
+    }
+
+    private void postFrame(byte[] frame) {
+        HttpURLConnection conn = null;
+        try {
+            SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
+            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+            String deviceId = prefs.getString("deviceId", "");
+            String token = prefs.getString("deviceToken", "");
+            if (deviceId.length() == 0 || token.length() == 0) return;
+            URL url = new URL(serverUrl + "/api/device/" + deviceId + "/live-frame");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setRequestProperty("Content-Type", "image/jpeg");
+            conn.setFixedLengthStreamingMode(frame.length);
+            OutputStream output = conn.getOutputStream();
+            output.write(frame);
+            output.close();
+            conn.getResponseCode();
+        } catch (Exception ignored) {
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
     }
 
     private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "CP DEVICE Camera", NotificationManager.IMPORTANCE_LOW)); }

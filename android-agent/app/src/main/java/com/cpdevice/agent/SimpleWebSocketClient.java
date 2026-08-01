@@ -3,6 +3,7 @@ package com.cpdevice.agent;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import javax.net.ssl.SSLSocketFactory;
 import java.net.URI;
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -15,7 +16,7 @@ public class SimpleWebSocketClient {
     public synchronized void connect(String wsUrl) throws Exception {
         URI uri = URI.create(wsUrl);
         int port = uri.getPort() > 0 ? uri.getPort() : ("wss".equals(uri.getScheme()) ? 443 : 80);
-        socket = new Socket(uri.getHost(), port);
+        socket = "wss".equals(uri.getScheme()) ? SSLSocketFactory.getDefault().createSocket(uri.getHost(), port) : new Socket(uri.getHost(), port);
         output = socket.getOutputStream();
         String key = Base64.getEncoder().encodeToString(("cp" + System.nanoTime()).getBytes());
         String path = uri.getRawPath() + (uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery());

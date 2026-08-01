@@ -48,6 +48,7 @@ new RealtimeHub(registry).startOfflineSweep();
 
 
 const liveViewers = new Map();
+const liveFrames = new Map();
 
 function websocketAccept(key) {
   return crypto.createHash("sha1").update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest("base64");
@@ -109,6 +110,7 @@ function handleWebSocket(req, socket) {
     const token = url.searchParams.get("token") || "";
     if (!registry.authenticate(deviceId, token)) return socket.end();
     socket.on("data", (chunk) => readWsFrames(socket, chunk, (payload) => {
+      liveFrames.set(deviceId, { frame: Buffer.from(payload), contentType: "image/jpeg", updatedAt: new Date().toISOString() });
       const viewers = liveViewers.get(deviceId) || new Set();
       const frame = wsFrame(payload, 2);
       for (const viewer of viewers) if (!viewer.destroyed) viewer.write(frame);
@@ -128,7 +130,7 @@ function commandCapabilityError(device, type) {
   if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment before using this command.";
   if (device.platform === "android") {
     if (["shell"].includes(type) && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Android shell/admin commands require Device Owner or OEM/system privileges.";
-    if (["screen.control.request", "screen.tap"].includes(type) && !capabilities.accessibility) return "Android remote touch control requires the CP DEVICE Accessibility service.";
+    if (type === "screen.tap" && !capabilities.accessibility) return "Android remote touch control requires the CP DEVICE Accessibility service.";
     if (type === "camera.stream.request" && !capabilities.camera) return "Android camera streaming requires camera permission in the agent.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Android lock requires Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Mobile data toggle requires OEM/system privileges.";
@@ -200,6 +202,12 @@ function isAdminRequest(req) {
 
 function ownsDevice(userId, deviceId) {
   return Boolean(store.state.devices[deviceId] && store.state.devices[deviceId].ownerUserId === userId);
+}
+
+function canViewLiveFrame(req, deviceId) {
+  if (isAdminRequest(req)) return Boolean(store.state.devices[deviceId]);
+  const user = sessionUser(req);
+  return Boolean(user && user.role === "user" && ownsDevice(user.id, deviceId));
 }
 
 const subscriptionPlans = { monthly: { amount: 7, days: 30 }, six_months: { amount: 35, days: 180 }, yearly: { amount: 60, days: 365 } };
@@ -317,6 +325,15 @@ async function handleApi(req, res) {
         nextStep: "Configure Apple Business/School Manager, APNs MDM certificate, signed enrollment profile, and MDM command processing before production iPhone remote management."
       });
     }
+    if (req.method === "GET" && url.pathname.startsWith("/api/live/") && url.pathname.endsWith("/frame")) {
+      const deviceId = url.pathname.split("/")[3];
+      if (!canViewLiveFrame(req, deviceId)) return send(res, 401, { error: "Live frame access denied" });
+      const frame = liveFrames.get(deviceId);
+      if (!frame) return send(res, 404, { error: "No live frame received yet. Start Live Screen or Camera in the enrolled agent." });
+      res.writeHead(200, { "Content-Type": frame.contentType, "Cache-Control": "no-store", "X-Frame-Updated-At": frame.updatedAt });
+      return res.end(frame.frame);
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/signup") {
       const body = await parseJsonBody(req);
       for (const field of ["email", "username", "password", "phone"]) if (!body[field]) return send(res, 400, { error: `${field} is required` });
@@ -447,6 +464,12 @@ async function handleApi(req, res) {
       const token = (req.headers.authorization || "").replace("Bearer ", "");
       if (!registry.authenticate(deviceId, token)) return send(res, 401, { error: "Invalid device token" });
       if (req.method === "POST" && action === "heartbeat") return send(res, 200, registry.heartbeat(deviceId, await parseJsonBody(req)));
+      if (req.method === "POST" && action === "live-frame") {
+        const contentType = req.headers["content-type"] || "image/jpeg";
+        const frame = await readRawBody(req, 2 * 1024 * 1024);
+        liveFrames.set(deviceId, { frame, contentType, updatedAt: new Date().toISOString() });
+        return send(res, 200, { ok: true, size: frame.length });
+      }
       if (req.method === "GET" && action === "commands") return send(res, 200, { commands: registry.pullCommands(deviceId) });
       if (req.method === "POST" && action === "files") {
         const fileName = safeFileName(req.headers["x-file-name"] || "device-file.bin");
