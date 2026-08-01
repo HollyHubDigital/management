@@ -85,3 +85,6 @@ button:disabled {
 img:not([src]), img[src=""] {
   display: none;
 }
+
+.remove-device { margin-left: auto; padding: 5px 8px; font-size: 10px; background: #6f1d1d; }
+.device-card { gap: 8px; }

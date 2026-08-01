@@ -20,14 +20,18 @@ store.load();
 const githubStore = new GitHubStore(process.env);
 const registry = new DeviceRegistry(store, githubStore, requireEnv("CP_DEVICE_ENROLLMENT_SECRET", "change-this-long-random-enrollment-secret"));
 let hydratePromise = null;
+let hydratedAt = 0;
 
-async function hydrateStore() {
+async function hydrateStore(force = false) {
   if (!githubStore.enabled()) return;
-  hydratePromise ||= githubStore.pullState()
+  if (!force && hydratePromise && Date.now() - hydratedAt < 1500) return hydratePromise;
+  hydratePromise = githubStore.pullState()
     .then((state) => {
       if (state && !state.skipped) store.replaceState(state);
+      hydratedAt = Date.now();
     })
     .catch((error) => {
+      hydratedAt = Date.now();
       store.state.audit.push({ at: new Date().toISOString(), type: "github.hydrate.failed", error: error.message });
     });
   await hydratePromise;
@@ -161,7 +165,7 @@ function corsHeaders(req) {
   const origin = allowedOrigin(req.headers.origin || "");
   return origin ? {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET,POST,PUT,OPTIONS",
+    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type,Authorization,X-File-Name,X-Command-Id",
     "Vary": "Origin"
   } : {};
@@ -389,7 +393,12 @@ async function handleApi(req, res) {
     if (req.method === "GET" && url.pathname === "/api/user/devices") {
       const user = sessionUser(req);
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
-      return send(res, 200, { devices: Object.values(store.state.devices).filter((device) => device.ownerUserId === user.id), files: Object.values(store.state.files).filter((file) => ownsDevice(user.id, file.sourceDeviceId)) });
+      const ownedDeviceIds = new Set(Object.values(store.state.devices).filter((device) => device.ownerUserId === user.id).map((device) => device.id));
+      return send(res, 200, {
+        devices: Object.values(store.state.devices).filter((device) => device.ownerUserId === user.id),
+        files: Object.values(store.state.files).filter((file) => ownsDevice(user.id, file.sourceDeviceId)),
+        commands: Object.values(store.state.commands).filter((command) => command.deviceIds.some((deviceId) => ownedDeviceIds.has(deviceId)))
+      });
     }
 
     if (req.method === "POST" && url.pathname === "/api/user/commands") {
@@ -406,7 +415,23 @@ async function handleApi(req, res) {
         const capabilityError = assertCommandAllowed(device, featureType);
         if (capabilityError) return send(res, 400, { error: capabilityError });
       }
-      return send(res, 201, registry.createCommand(deviceIds, featureType, body.payload || {}));
+      const command = registry.createCommand(deviceIds, featureType, body.payload || {});
+      await persistState("Queue user device command");
+      return send(res, 201, command);
+    }
+
+    if (req.method === "DELETE" && url.pathname.startsWith("/api/user/devices/")) {
+      const user = sessionUser(req);
+      if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
+      const deviceId = url.pathname.split("/").pop();
+      if (!ownsDevice(user.id, deviceId)) return send(res, 404, { error: "Device not found" });
+      store.transaction((state) => {
+        delete state.devices[deviceId];
+        for (const command of Object.values(state.commands)) command.deviceIds = command.deviceIds.filter((id) => id !== deviceId);
+        state.audit.push({ at: new Date().toISOString(), type: "device.removed", deviceId, userId: user.id });
+      });
+      await persistState("Remove user device");
+      return send(res, 200, { ok: true });
     }
 
     if (req.method === "GET" && url.pathname.startsWith("/api/user/files/")) {
@@ -463,14 +488,20 @@ async function handleApi(req, res) {
       const [, , , deviceId, action] = url.pathname.split("/");
       const token = (req.headers.authorization || "").replace("Bearer ", "");
       if (!registry.authenticate(deviceId, token)) return send(res, 401, { error: "Invalid device token" });
-      if (req.method === "POST" && action === "heartbeat") return send(res, 200, registry.heartbeat(deviceId, await parseJsonBody(req)));
+      if (req.method === "POST" && action === "heartbeat") {
+        const device = registry.heartbeat(deviceId, await parseJsonBody(req));
+        return send(res, 200, device);
+      }
       if (req.method === "POST" && action === "live-frame") {
         const contentType = req.headers["content-type"] || "image/jpeg";
         const frame = await readRawBody(req, 2 * 1024 * 1024);
         liveFrames.set(deviceId, { frame, contentType, updatedAt: new Date().toISOString() });
         return send(res, 200, { ok: true, size: frame.length });
       }
-      if (req.method === "GET" && action === "commands") return send(res, 200, { commands: registry.pullCommands(deviceId) });
+      if (req.method === "GET" && action === "commands") {
+        await hydrateStore(true);
+        return send(res, 200, { commands: registry.pullCommands(deviceId) });
+      }
       if (req.method === "POST" && action === "files") {
         const fileName = safeFileName(req.headers["x-file-name"] || "device-file.bin");
         const commandId = req.headers["x-command-id"] || "manual";
@@ -486,13 +517,27 @@ async function handleApi(req, res) {
       }
       if (req.method === "POST" && action === "commands") {
         const body = await parseJsonBody(req);
-        return send(res, 200, registry.completeCommand(deviceId, body.commandId, body.result || {}));
+        const command = registry.completeCommand(deviceId, body.commandId, body.result || {});
+        await persistState("Complete device command");
+        return send(res, 200, command);
       }
     }
 
     if (!isAdminRequest(req)) return send(res, 401, { error: "Admin login required" });
 
     if (req.method === "GET" && url.pathname === "/api/state") return send(res, 200, store.state);
+
+    if (req.method === "DELETE" && url.pathname.startsWith("/api/devices/")) {
+      const deviceId = url.pathname.split("/").pop();
+      if (!store.state.devices[deviceId]) return send(res, 404, { error: "Device not found" });
+      store.transaction((state) => {
+        delete state.devices[deviceId];
+        for (const command of Object.values(state.commands)) command.deviceIds = command.deviceIds.filter((id) => id !== deviceId);
+        state.audit.push({ at: new Date().toISOString(), type: "admin.device.removed", deviceId });
+      });
+      await persistState("Remove admin device");
+      return send(res, 200, { ok: true });
+    }
 
     if (req.method === "POST" && url.pathname === "/api/files") {
       const fileName = safeFileName(req.headers["x-file-name"] || "upload.bin");
@@ -538,6 +583,7 @@ async function handleApi(req, res) {
         if (capabilityError) return send(res, 400, { error: capabilityError });
       }
       const command = registry.createCommand(deviceIds, body.type, body.payload || {});
+      await persistState("Queue admin device command");
       return send(res, 201, command);
     }
 

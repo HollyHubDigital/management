@@ -38,6 +38,9 @@ const mobileDataOn = document.getElementById("mobileDataOn");
 const deviceFiles = document.getElementById("deviceFiles");
 const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
+const locationModal = document.getElementById("locationModal");
+const locationText = document.getElementById("locationText");
+const locationMapLink = document.getElementById("locationMapLink");
 let pendingEnrollmentLink = "";
 
 async function readJsonResponse(response) {
@@ -257,6 +260,7 @@ function render() {
   log.textContent = JSON.stringify({ devices: list, commands: state.commands }, null, 2);
   renderTerminalResults();
   renderDeviceFileBrowser();
+  renderLocationResults();
   refreshCapabilityGates();
 }
 
@@ -303,6 +307,36 @@ async function browseDeviceFiles() {
   await refresh();
   setTimeout(refresh, 2500);
   return command;
+}
+
+
+function parseLocationOutput(output) {
+  try {
+    const parsed = typeof output === "string" ? JSON.parse(output) : output;
+    if (Number.isFinite(parsed.lat) && Number.isFinite(parsed.lng)) return parsed;
+  } catch {}
+  return null;
+}
+
+function showLocationModal(location, deviceName) {
+  const link = `https://www.google.com/maps?q=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
+  locationText.textContent = `${deviceName}: ${location.lat}, ${location.lng}${location.accuracy ? ` ? accuracy ${Math.round(location.accuracy)}m` : ""}`;
+  locationMapLink.href = link;
+  locationMapLink.textContent = link;
+  locationModal.showModal();
+}
+
+function renderLocationResults() {
+  const target = targetDevice();
+  if (!target || !locationModal) return;
+  const locateCommands = Object.values(state.commands || {}).filter((command) => command.type === "locate.device" && command.deviceIds.includes(target.id));
+  const latest = locateCommands[locateCommands.length - 1];
+  const result = latest && latest.results && latest.results[target.id];
+  const location = result && parseLocationOutput(result.output);
+  if (location && latest.id !== locationModal.dataset.commandId) {
+    locationModal.dataset.commandId = latest.id;
+    showLocationModal(location, target.name);
+  }
 }
 
 function renderDeviceFileBrowser() {
