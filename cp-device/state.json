@@ -121,6 +121,13 @@
       "role": "user",
       "createdAt": "2026-08-01T18:31:00.635Z",
       "expiresAt": "2026-08-31T18:31:00.635Z"
+    },
+    "sess_75651299bb1ad120a9f9bbc609e95885": {
+      "token": "sess_75651299bb1ad120a9f9bbc609e95885",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-01T18:40:30.695Z",
+      "expiresAt": "2026-08-31T18:40:30.696Z"
     }
   },
   "payments": {
