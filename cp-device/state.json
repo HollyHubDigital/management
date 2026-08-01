@@ -14,6 +14,15 @@
       "passwordHash": "29e497633f4005adb3696720df8e3680:ee91860b91efda44802ab3257e82d02794077bdfcf0b91a3f0888626c88386be",
       "role": "user",
       "createdAt": "2026-08-01T12:49:49.720Z"
+    },
+    "usr_9b0f966c8b1a37430eb6bd69a5acc625": {
+      "id": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
+      "email": "hollywilly418@gmail.com",
+      "username": "Hollywilly",
+      "phone": "+2348137448596",
+      "passwordHash": "b3dcf786af660d1eca1e1e122d9d69a0:44392f0b17f40b271010079b8303e2eab5caa144b09ce7219eca1273892ce65e",
+      "role": "user",
+      "createdAt": "2026-08-01T18:30:43.281Z"
     }
   },
   "sessions": {
@@ -38,6 +47,11 @@
       "plan": "free",
       "expiresAt": null,
       "updatedAt": "2026-08-01T12:49:49.720Z"
+    },
+    "usr_9b0f966c8b1a37430eb6bd69a5acc625": {
+      "plan": "free",
+      "expiresAt": null,
+      "updatedAt": "2026-08-01T18:30:43.281Z"
     }
   }
 }
