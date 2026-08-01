@@ -435,8 +435,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:28.125Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Location unavailable. Approve location permission and enable location services.",
+          "completedAt": "2026-08-01T21:53:41.354Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:29.614Z"
     },
     "cmd_8652463dd8209017228dfd0e158040aa": {
@@ -448,8 +454,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:32.369Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Location unavailable. Approve location permission and enable location services.",
+          "completedAt": "2026-08-01T21:53:41.741Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:33.859Z"
     },
     "cmd_6bf993147fb6cb906573529888418b50": {
