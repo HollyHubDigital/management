@@ -6,7 +6,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T18:37:47.273Z",
+      "lastSeenAt": "2026-08-01T18:37:50.242Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -93,7 +93,17 @@
       "expiresAt": "2026-08-31T18:31:00.635Z"
     }
   },
-  "payments": {},
+  "payments": {
+    "pay_670bfba4-ba8e-4794-bf45-3ed75a0a1cd5": {
+      "id": "pay_670bfba4-ba8e-4794-bf45-3ed75a0a1cd5",
+      "userId": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
+      "plan": "monthly",
+      "amount": 7,
+      "provider": "paystack",
+      "status": "pending",
+      "createdAt": "2026-08-01T18:37:51.503Z"
+    }
+  },
   "subscriptions": {
     "usr_f8856a85d4766a6016cbb561961a846b": {
       "plan": "free",
