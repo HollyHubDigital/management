@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T23:55:09.705Z",
+      "lastSeenAt": "2026-08-01T23:55:12.451Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
