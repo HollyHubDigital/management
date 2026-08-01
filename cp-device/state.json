@@ -16,7 +16,15 @@
       "createdAt": "2026-08-01T12:49:49.720Z"
     }
   },
-  "sessions": {},
+  "sessions": {
+    "sess_c7d34483e5ea7f3eec806bc881debb76": {
+      "token": "sess_c7d34483e5ea7f3eec806bc881debb76",
+      "userId": "usr_f8856a85d4766a6016cbb561961a846b",
+      "role": "user",
+      "createdAt": "2026-08-01T12:49:51.542Z",
+      "expiresAt": "2026-08-31T12:49:51.542Z"
+    }
+  },
   "payments": {},
   "subscriptions": {
     "usr_f8856a85d4766a6016cbb561961a846b": {
