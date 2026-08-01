@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T21:53:33.315Z",
+      "lastSeenAt": "2026-08-01T21:53:40.626Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -435,14 +435,8 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:28.125Z"
       },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Location unavailable. Approve location permission and enable location services.",
-          "completedAt": "2026-08-01T21:50:38.484Z"
-        }
-      },
+      "status": "queued",
+      "results": {},
       "createdAt": "2026-08-01T21:45:29.614Z"
     },
     "cmd_8652463dd8209017228dfd0e158040aa": {
@@ -454,14 +448,8 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:32.369Z"
       },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Location unavailable. Approve location permission and enable location services.",
-          "completedAt": "2026-08-01T21:50:38.884Z"
-        }
-      },
+      "status": "queued",
+      "results": {},
       "createdAt": "2026-08-01T21:45:33.859Z"
     },
     "cmd_6bf993147fb6cb906573529888418b50": {
@@ -473,14 +461,8 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:36.608Z"
       },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Device locked.",
-          "completedAt": "2026-08-01T21:50:39.289Z"
-        }
-      },
+      "status": "queued",
+      "results": {},
       "createdAt": "2026-08-01T21:45:38.105Z"
     },
     "cmd_45ca4554fe67be767e6cf8730a0cb80e": {
@@ -492,41 +474,22 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:40.484Z"
       },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Device locked.",
-          "completedAt": "2026-08-01T21:50:39.668Z"
-        }
-      },
-      "createdAt": "2026-08-01T21:45:41.994Z"
-    },
-    "cmd_4d245a36f2ac3fbdead93cac977cc8e8": {
-      "id": "cmd_4d245a36f2ac3fbdead93cac977cc8e8",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ],
-      "type": "locate.device",
-      "payload": {
-        "requestedAt": "2026-08-01T21:53:29.754Z"
-      },
       "status": "queued",
       "results": {},
-      "createdAt": "2026-08-01T21:53:31.286Z"
+      "createdAt": "2026-08-01T21:45:41.994Z"
     },
-    "cmd_26c483b80915ae9da519f417de2870b7": {
-      "id": "cmd_26c483b80915ae9da519f417de2870b7",
+    "cmd_cb61d662e5926953263b7acfb0c59714": {
+      "id": "cmd_cb61d662e5926953263b7acfb0c59714",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ],
       "type": "lock.device",
       "payload": {
-        "requestedAt": "2026-08-01T21:53:35.912Z"
+        "requestedAt": "2026-08-01T21:53:39.193Z"
       },
       "status": "queued",
       "results": {},
-      "createdAt": "2026-08-01T21:53:37.422Z"
+      "createdAt": "2026-08-01T21:53:40.698Z"
     }
   },
   "audit": [
@@ -738,18 +701,9 @@
       ]
     },
     {
-      "at": "2026-08-01T21:53:31.286Z",
+      "at": "2026-08-01T21:53:40.698Z",
       "type": "command.queued",
-      "commandId": "cmd_4d245a36f2ac3fbdead93cac977cc8e8",
-      "commandType": "locate.device",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ]
-    },
-    {
-      "at": "2026-08-01T21:53:37.422Z",
-      "type": "command.queued",
-      "commandId": "cmd_26c483b80915ae9da519f417de2870b7",
+      "commandId": "cmd_cb61d662e5926953263b7acfb0c59714",
       "commandType": "lock.device",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
