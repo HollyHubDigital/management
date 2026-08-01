@@ -62,7 +62,7 @@ public class CameraStreamService extends Service {
             String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
-            ws.connect(wsUrl);
+            try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
             reader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 2);
             reader.setOnImageAvailableListener(this::onImage, handler);
             CameraManager manager = (CameraManager) getSystemService(CAMERA_SERVICE);

@@ -66,7 +66,7 @@ public class LiveStreamService extends Service {
             String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
-            ws.connect(wsUrl);
+            try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
 
             WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
             DisplayMetrics metrics = new DisplayMetrics();
