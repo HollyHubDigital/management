@@ -308,6 +308,20 @@
       "status": "queued",
       "results": {},
       "createdAt": "2026-08-01T20:26:40.852Z"
+    },
+    "cmd_c34982890fcacd7a7e011ad572d40995": {
+      "id": "cmd_c34982890fcacd7a7e011ad572d40995",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-01T20:29:25.280Z",
+        "mode": "admin-control-session"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T20:29:26.617Z"
     }
   },
   "audit": [
@@ -426,6 +440,15 @@
       "commandType": "camera.stream.request",
       "deviceIds": [
         "dev_818d04034b4efe45d0c034ba0b85074d"
+      ]
+    },
+    {
+      "at": "2026-08-01T20:29:26.617Z",
+      "type": "command.queued",
+      "commandId": "cmd_c34982890fcacd7a7e011ad572d40995",
+      "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
     }
   ],
