@@ -454,8 +454,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:32.369Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Location unavailable. Approve location permission and enable location services.",
+          "completedAt": "2026-08-01T21:50:38.884Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:33.859Z"
     },
     "cmd_6bf993147fb6cb906573529888418b50": {
@@ -467,8 +473,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:36.608Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:50:39.289Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:38.105Z"
     },
     "cmd_45ca4554fe67be767e6cf8730a0cb80e": {
@@ -480,8 +492,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:40.484Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-01T21:50:39.668Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:41.994Z"
     }
   },
