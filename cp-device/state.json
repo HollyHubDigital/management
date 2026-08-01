@@ -1,0 +1,28 @@
+{
+  "devices": {},
+  "commands": {},
+  "audit": [],
+  "files": {},
+  "apps": {},
+  "firmware": {},
+  "users": {
+    "usr_f8856a85d4766a6016cbb561961a846b": {
+      "id": "usr_f8856a85d4766a6016cbb561961a846b",
+      "email": "codex_smoke_1785588587@example.com",
+      "username": "codex_smoke_1785588587",
+      "phone": "+15551785588",
+      "passwordHash": "367e5b752eb11e4085adc9ad398e13c0:614a1d556a683e558735be434403aabe018bebd216bd6d70bf447c0a028844b9",
+      "role": "user",
+      "createdAt": "2026-08-01T12:49:49.720Z"
+    }
+  },
+  "sessions": {},
+  "payments": {},
+  "subscriptions": {
+    "usr_f8856a85d4766a6016cbb561961a846b": {
+      "plan": "free",
+      "expiresAt": null,
+      "updatedAt": "2026-08-01T12:49:49.720Z"
+    }
+  }
+}
