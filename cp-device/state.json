@@ -6,18 +6,36 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T18:31:15.767Z",
+      "lastSeenAt": "2026-08-01T18:36:06.722Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
-        "mdmProfile": false
+        "mdmProfile": false,
+        "nativeAgent": true,
+        "deviceAdmin": true,
+        "deviceOwner": false,
+        "accessibility": true,
+        "camera": true,
+        "files": true,
+        "location": true,
+        "oemPrivileged": false
       },
       "tokenHash": "ea6e022564f55a0d769f2f17a280649e374b4a0a8b5ec684886d4dcbf29179cf",
       "info": {
-        "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36"
+        "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36",
+        "manufacturer": "samsung",
+        "model": "SM-G970U1",
+        "androidVersion": "12",
+        "androidId": "edbc7a8528620096"
       },
       "alerts": [],
-      "ownerUserId": "usr_9b0f966c8b1a37430eb6bd69a5acc625"
+      "ownerUserId": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
+      "operation": {
+        "agent": "running",
+        "deviceAdmin": true,
+        "deviceOwner": false,
+        "accessibility": true
+      }
     }
   },
   "commands": {},
