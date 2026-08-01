@@ -43,8 +43,8 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T21:36:20.096Z",
-      "status": "offline",
+      "lastSeenAt": "2026-08-01T21:50:37.751Z",
+      "status": "online",
       "capabilities": {
         "browserEnrollment": true,
         "mdmProfile": false,
@@ -435,8 +435,14 @@
       "payload": {
         "requestedAt": "2026-08-01T21:45:28.125Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Location unavailable. Approve location permission and enable location services.",
+          "completedAt": "2026-08-01T21:50:38.484Z"
+        }
+      },
       "createdAt": "2026-08-01T21:45:29.614Z"
     },
     "cmd_8652463dd8209017228dfd0e158040aa": {
