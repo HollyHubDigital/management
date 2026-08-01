@@ -6,7 +6,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785609073202",
       "enrolledAt": "2026-08-01T18:31:15.767Z",
-      "lastSeenAt": "2026-08-01T18:40:47.946Z",
+      "lastSeenAt": "2026-08-01T18:40:45.206Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -58,6 +58,20 @@
         }
       },
       "createdAt": "2026-08-01T18:39:43.263Z"
+    },
+    "cmd_ef5655af65aa713b4a2d305aba631ec2": {
+      "id": "cmd_ef5655af65aa713b4a2d305aba631ec2",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-01T18:40:52.089Z",
+        "mode": "admin-control-session"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-01T18:40:53.471Z"
     }
   },
   "audit": [
@@ -72,6 +86,15 @@
       "type": "command.queued",
       "commandId": "cmd_61fcb84d1d1434eff906fea5aa0b6bf7",
       "commandType": "screen.control.request",
+      "deviceIds": [
+        "dev_818d04034b4efe45d0c034ba0b85074d"
+      ]
+    },
+    {
+      "at": "2026-08-01T18:40:53.471Z",
+      "type": "command.queued",
+      "commandId": "cmd_ef5655af65aa713b4a2d305aba631ec2",
+      "commandType": "camera.stream.request",
       "deviceIds": [
         "dev_818d04034b4efe45d0c034ba0b85074d"
       ]
