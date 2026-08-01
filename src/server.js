@@ -11,7 +11,7 @@ const { RealtimeHub } = require("./services/realtimeHub");
 
 const PORT = Number(process.env.PORT || 8080);
 const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? "/tmp/cp-device-data" : ".cp-device-data");
-const DATA_ROOT = path.isAbsolute(DATA_DIR) ? DATA_DIR : path.join(process.cwd(), DATA_DIR);
+const DATA_ROOT = path.isAbsolute(DATA_DIR) ? DATA_DIR : path.join(process.env.VERCEL ? "/tmp" : process.cwd(), DATA_DIR);
 const FILE_DIR = path.join(DATA_ROOT, "files");
 fs.mkdirSync(FILE_DIR, { recursive: true });
 const store = new JsonStore(path.join(DATA_ROOT, "state.json"));
