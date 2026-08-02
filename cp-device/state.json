@@ -588,8 +588,14 @@
       "payload": {
         "requestedAt": "2026-08-02T23:38:01.280Z"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-02T23:38:04.155Z"
+        }
+      },
       "createdAt": "2026-08-02T23:38:01.243Z"
     }
   },
