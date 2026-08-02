@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-02T23:37:52.305Z",
+      "lastSeenAt": "2026-08-02T23:37:58.069Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -569,8 +569,14 @@
         "requestedAt": "2026-08-02T23:37:54.700Z",
         "mode": "admin-control-session"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Accessibility control is active. Live screen must be started from the device permission screen.",
+          "completedAt": "2026-08-02T23:37:55.688Z"
+        }
+      },
       "createdAt": "2026-08-02T23:37:54.661Z"
     }
   },
