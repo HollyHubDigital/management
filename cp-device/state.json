@@ -558,6 +558,20 @@
         }
       },
       "createdAt": "2026-08-01T21:54:13.172Z"
+    },
+    "cmd_cfdfb42ad07d716e4e230aeb8cba1f69": {
+      "id": "cmd_cfdfb42ad07d716e4e230aeb8cba1f69",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "screen.control.request",
+      "payload": {
+        "requestedAt": "2026-08-02T23:37:54.700Z",
+        "mode": "admin-control-session"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-02T23:37:54.661Z"
     }
   },
   "audit": [
@@ -800,6 +814,15 @@
       "type": "github.persist.failed",
       "error": "cp-device/state.json does not match 4f345b9d7fc649e1581e835ee0157c0be260acf5",
       "message": "Create admin session"
+    },
+    {
+      "at": "2026-08-02T23:37:54.661Z",
+      "type": "command.queued",
+      "commandId": "cmd_cfdfb42ad07d716e4e230aeb8cba1f69",
+      "commandType": "screen.control.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
     }
   ],
   "files": {},
