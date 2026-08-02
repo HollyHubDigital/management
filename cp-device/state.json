@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-02T23:39:19.562Z",
+      "lastSeenAt": "2026-08-02T23:39:22.264Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -559,64 +559,25 @@
       },
       "createdAt": "2026-08-01T21:54:13.172Z"
     },
-    "cmd_cfdfb42ad07d716e4e230aeb8cba1f69": {
-      "id": "cmd_cfdfb42ad07d716e4e230aeb8cba1f69",
+    "cmd_a1fa2aa8f24aa6648880982220d8aa28": {
+      "id": "cmd_a1fa2aa8f24aa6648880982220d8aa28",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ],
-      "type": "screen.control.request",
+      "type": "camera.stream.request",
       "payload": {
-        "requestedAt": "2026-08-02T23:37:54.700Z",
+        "requestedAt": "2026-08-02T23:37:49.122Z",
         "mode": "admin-control-session"
       },
       "status": "completed",
       "results": {
         "dev_d8dc1729d619e2906231e8ea5e0998af": {
           "ok": true,
-          "output": "Accessibility control is active. Live screen must be started from the device permission screen.",
-          "completedAt": "2026-08-02T23:37:55.688Z"
+          "output": "Camera stream requested. Android camera permission must be approved on the device.",
+          "completedAt": "2026-08-02T23:39:23.012Z"
         }
       },
-      "createdAt": "2026-08-02T23:37:54.661Z"
-    },
-    "cmd_26ebce2a9fe4886094c425019aa350c4": {
-      "id": "cmd_26ebce2a9fe4886094c425019aa350c4",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ],
-      "type": "lock.device",
-      "payload": {
-        "requestedAt": "2026-08-02T23:38:01.280Z"
-      },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "Device locked.",
-          "completedAt": "2026-08-02T23:38:04.155Z"
-        }
-      },
-      "createdAt": "2026-08-02T23:38:01.243Z"
-    },
-    "cmd_45af1a38f7fe7f933781ebadf0ae7684": {
-      "id": "cmd_45af1a38f7fe7f933781ebadf0ae7684",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ],
-      "type": "file.list",
-      "payload": {
-        "path": "/sdcard",
-        "requestedAt": "2026-08-02T23:38:15.275Z"
-      },
-      "status": "completed",
-      "results": {
-        "dev_d8dc1729d619e2906231e8ea5e0998af": {
-          "ok": true,
-          "output": "{\\\"files\\\":[{\\\"name\\\":\\\"zbd\\\",\\\"path\\\":\\\"/storage/emulated/0/zbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"littlepepe_clone\\\",\\\"path\\\":\\\"/storage/emulated/0/littlepepe_clone\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Android\\\",\\\"path\\\":\\\"/storage/emulated/0/Android\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"ShowthemZbd\\\",\\\"path\\\":\\\"/storage/emulated/0/ShowthemZbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Music\\\",\\\"path\\\":\\\"/storage/emulated/0/Music\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My-personal\\\",\\\"path\\\":\\\"/storage/emulated/0/My-personal\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move8.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move8.png\\\",\\\"directory\\\":false,\\\"size\\\":5048},{\\\"name\\\":\\\"PHXBrowser\\\",\\\"path\\\":\\\"/storage/emulated/0/PHXBrowser\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\".wallpaper\\\",\\\"path\\\":\\\"/storage/emulated/0/.wallpaper\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My project file\\\",\\\"path\\\":\\\"/storage/emulated/0/My project file\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Project375\\\",\\\"path\\\":\\\"/storage/emulated/0/Project375\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"OnlyFan\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js(1)\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js(1)\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move15.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move15.png\\\",\\\"directory\\\":false,\\\"size\\\":3405},{\\\"name\\\":\\\"Move3.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move3.png\\\",\\\"directory\\\":false,\\\"size\\\":3089},{\\\"name\\\":\\\"Pictures\\\",\\\"path\\\":\\\"/storage/emulated/0/Pictures\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move5.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move5.png\\\",\\\"directory\\\":false,\\\"size\\\":5824},{\\\"name\\\":\\\"Move13.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move13.png\\\",\\\"directory\\\":false,\\\"size\\\":2206},{\\\"name\\\":\\\"funmilayo\\\",\\\"path\\\":\\\"/storage/emulated/0/funmilayo\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move9.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move9.png\\\",\\\"directory\\\":false,\\\"size\\\":9644},{\\\"name\\\":\\\"Movies\\\",\\\"path\\\":\\\"/storage/emulated/0/Movies\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move14.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move14.png\\\",\\\"directory\\\":false,\\\"size\\\":2310},{\\\"name\\\":\\\"index.html\\\",\\\"path\\\":\\\"/storage/emulated/0/index.html\\\",\\\"directory\\\":false,\\\"size\\\":283},{\\\"name\\\":\\\"New work\\\",\\\"path\\\":\\\"/storage/emulated/0/New work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Rolling.jpeg\\\",\\\"path\\\":\\\"/storage/emulated/0/Rolling.jpeg\\\",\\\"directory\\\":false,\\\"size\\\":45757},{\\\"name\\\":\\\"Move11.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move11.png\\\",\\\"directory\\\":false,\\\"size\\\":8185},{\\\"name\\\":\\\"CryptoHub project\\\",\\\"path\\\":\\\"/storage/emulated/0/CryptoHub project\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move6.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move6.png\\\",\\\"directory\\\":false,\\\"size\\\":9204},{\\\"name\\\":\\\"Buy.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Buy.jpg\\\",\\\"directory\\\":false,\\\"size\\\":56856},{\\\"name\\\":\\\"Audiobooks\\\",\\\"path\\\":\\\"/storage/emulated/0/Audiobooks\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"File Manager\\\",\\\"path\\\":\\\"/storage/emulated/0/File Manager\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"log\\\",\\\"path\\\":\\\"/storage/emulated/0/log\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Alarms\\\",\\\"path\\\":\\\"/storage/emulated/0/Alarms\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Testing-work\\\",\\\"path\\\":\\\"/storage/emulated/0/Testing-work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Download\\\",\\\"path\\\":\\\"/storage/emulated/0/Download\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move4.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move4.png\\\",\\\"directory\\\":false,\\\"size\\\":3595},{\\\"name\\\":\\\"Recordings\\\",\\\"path\\\":\\\"/storage/emulated/0/Recordings\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move10.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move10.png\\\",\\\"directory\\\":false,\\\"size\\\":5840},{\\\"name\\\":\\\"Documents\\\",\\\"path\\\":\\\"/storage/emulated/0/Documents\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"fonts\\\",\\\"path\\\":\\\"/storage/emulated/0/fonts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Podcasts\\\",\\\"path\\\":\\\"/storage/emulated/0/Podcasts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"MxPlayerAd\\\",\\\"path\\\":\\\"/storage/emulated/0/MxPlayerAd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Screen Recording 2026-03-03 122134.mp4\\\",\\\"path\\\":\\\"/storage/emulated/0/Screen Recording 2026-03-03 122134.mp4\\\",\\\"directory\\\":false,\\\"size\\\":42254449},{\\\"name\\\":\\\"Notifications\\\",\\\"path\\\":\\\"/storage/emulated/0/Notifications\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"DCIM\\\",\\\"path\\\":\\\"/storage/emulated/0/DCIM\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move1.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move1.png\\\",\\\"directory\\\":false,\\\"size\\\":2902},{\\\"name\\\":\\\"OnlyFan1\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan1\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Page_section.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Page_section.jpg\\\",\\\"directory\\\":false,\\\"size\\\":148855},{\\\"name\\\":\\\"Web3\\\",\\\"path\\\":\\\"/storage/emulated/0/Web3\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ringtones\\\",\\\"path\\\":\\\"/storage/emulated/0/Ringtones\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Xender\\\",\\\"path\\\":\\\"/storage/emulated/0/Xender\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"PHX_Archive\\\",\\\"path\\\":\\\"/storage/emulated/0/PHX_Archive\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ecommerce\\\",\\\"path\\\":\\\"/storage/emulated/0/Ecommerce\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move16.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move16.png\\\",\\\"directory\\\":false,\\\"size\\\":3626},{\\\"name\\\":\\\"PabloNew\\\",\\\"path\\\":\\\"/storage/emulated/0/PabloNew\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move2.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move2.png\\\",\\\"directory\\\":false,\\\"size\\\":2809},{\\\"name\\\":\\\".xd_did\\\",\\\"path\\\":\\\"/storage/emulated/0/.xd_did\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"page2.html\\\",\\\"path\\\":\\\"/storage/emulated/0/page2.html\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\".moffice_wr_check127250487\\\",\\\"path\\\":\\\"/storage/emulated/0/.moffice_wr_check127250487\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"Ticketmaster\\\",\\\"path\\\":\\\"/storage/emulated/0/Ticketmaster\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"multispace\\\",\\\"path\\\":\\\"/storage/emulated/0/multispace\\\",\\\"directory\\\":true,\\\"size\\\":0}]}",
-          "completedAt": "2026-08-02T23:38:18.177Z"
-        }
-      },
-      "createdAt": "2026-08-02T23:38:15.241Z"
+      "createdAt": "2026-08-02T23:37:49.133Z"
     }
   },
   "audit": [
@@ -861,28 +822,10 @@
       "message": "Create admin session"
     },
     {
-      "at": "2026-08-02T23:37:54.661Z",
+      "at": "2026-08-02T23:37:49.133Z",
       "type": "command.queued",
-      "commandId": "cmd_cfdfb42ad07d716e4e230aeb8cba1f69",
-      "commandType": "screen.control.request",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ]
-    },
-    {
-      "at": "2026-08-02T23:38:01.243Z",
-      "type": "command.queued",
-      "commandId": "cmd_26ebce2a9fe4886094c425019aa350c4",
-      "commandType": "lock.device",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ]
-    },
-    {
-      "at": "2026-08-02T23:38:15.241Z",
-      "type": "command.queued",
-      "commandId": "cmd_45af1a38f7fe7f933781ebadf0ae7684",
-      "commandType": "file.list",
+      "commandId": "cmd_a1fa2aa8f24aa6648880982220d8aa28",
+      "commandType": "camera.stream.request",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
