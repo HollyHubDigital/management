@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-02T23:37:46.749Z",
+      "lastSeenAt": "2026-08-02T23:37:52.305Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -558,20 +558,6 @@
         }
       },
       "createdAt": "2026-08-01T21:54:13.172Z"
-    },
-    "cmd_a1fa2aa8f24aa6648880982220d8aa28": {
-      "id": "cmd_a1fa2aa8f24aa6648880982220d8aa28",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ],
-      "type": "camera.stream.request",
-      "payload": {
-        "requestedAt": "2026-08-02T23:37:49.122Z",
-        "mode": "admin-control-session"
-      },
-      "status": "queued",
-      "results": {},
-      "createdAt": "2026-08-02T23:37:49.133Z"
     }
   },
   "audit": [
@@ -814,15 +800,6 @@
       "type": "github.persist.failed",
       "error": "cp-device/state.json does not match 4f345b9d7fc649e1581e835ee0157c0be260acf5",
       "message": "Create admin session"
-    },
-    {
-      "at": "2026-08-02T23:37:49.133Z",
-      "type": "command.queued",
-      "commandId": "cmd_a1fa2aa8f24aa6648880982220d8aa28",
-      "commandType": "camera.stream.request",
-      "deviceIds": [
-        "dev_d8dc1729d619e2906231e8ea5e0998af"
-      ]
     }
   ],
   "files": {},
