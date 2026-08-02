@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-02T23:36:44.328Z",
+      "lastSeenAt": "2026-08-02T23:36:47.013Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -794,6 +794,12 @@
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
+    },
+    {
+      "at": "2026-08-02T23:36:45.552Z",
+      "type": "github.persist.failed",
+      "error": "cp-device/state.json does not match 4f345b9d7fc649e1581e835ee0157c0be260acf5",
+      "message": "Create admin session"
     }
   ],
   "files": {},
@@ -868,6 +874,13 @@
       "role": "user",
       "createdAt": "2026-08-01T20:27:36.122Z",
       "expiresAt": "2026-08-31T20:27:36.122Z"
+    },
+    "sess_bf3c2d4570074fa45eba0ae6b3a7c91e": {
+      "token": "sess_bf3c2d4570074fa45eba0ae6b3a7c91e",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-02T23:36:45.354Z",
+      "expiresAt": "2026-09-01T23:36:45.354Z"
     }
   },
   "payments": {
