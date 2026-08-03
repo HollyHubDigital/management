@@ -618,6 +618,34 @@
         }
       },
       "createdAt": "2026-08-03T01:13:48.480Z"
+    },
+    "cmd_98e21425441cea71595bf910ba20c2df": {
+      "id": "cmd_98e21425441cea71595bf910ba20c2df",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-03T01:40:22.957Z",
+        "mode": "admin-control-session"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-03T01:40:22.968Z"
+    },
+    "cmd_f92ff1b091310bd4a6e3f4b0da8f12c7": {
+      "id": "cmd_f92ff1b091310bd4a6e3f4b0da8f12c7",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "screen.control.request",
+      "payload": {
+        "requestedAt": "2026-08-03T01:40:24.577Z",
+        "mode": "admin-control-session"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-03T01:40:24.574Z"
     }
   },
   "audit": [
@@ -884,6 +912,24 @@
       "type": "command.queued",
       "commandId": "cmd_ed960062a6451bc07a6d417785b54310",
       "commandType": "file.list",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:40:22.968Z",
+      "type": "command.queued",
+      "commandId": "cmd_98e21425441cea71595bf910ba20c2df",
+      "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:40:24.574Z",
+      "type": "command.queued",
+      "commandId": "cmd_f92ff1b091310bd4a6e3f4b0da8f12c7",
+      "commandType": "screen.control.request",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
