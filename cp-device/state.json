@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-03T23:19:12.907Z",
+      "lastSeenAt": "2026-08-03T23:19:15.115Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -51,7 +51,7 @@
         "nativeAgent": true,
         "deviceAdmin": true,
         "deviceOwner": false,
-        "accessibility": true,
+        "accessibility": false,
         "camera": true,
         "files": true,
         "location": true,
@@ -71,7 +71,7 @@
         "agent": "running",
         "deviceAdmin": true,
         "deviceOwner": false,
-        "accessibility": true
+        "accessibility": false
       }
     },
     "dev_0fb2d720ecfb270f7dd4267aa6b035e6": {
