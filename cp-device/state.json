@@ -592,6 +592,20 @@
       "status": "queued",
       "results": {},
       "createdAt": "2026-08-03T01:13:44.675Z"
+    },
+    "cmd_ed960062a6451bc07a6d417785b54310": {
+      "id": "cmd_ed960062a6451bc07a6d417785b54310",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "file.list",
+      "payload": {
+        "path": "/sdcard",
+        "requestedAt": "2026-08-03T01:13:48.447Z"
+      },
+      "status": "queued",
+      "results": {},
+      "createdAt": "2026-08-03T01:13:48.480Z"
     }
   },
   "audit": [
@@ -849,6 +863,15 @@
       "type": "command.queued",
       "commandId": "cmd_d4de0d9dcbd6d15de2cfb084d9ea1d43",
       "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:13:48.480Z",
+      "type": "command.queued",
+      "commandId": "cmd_ed960062a6451bc07a6d417785b54310",
+      "commandType": "file.list",
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
