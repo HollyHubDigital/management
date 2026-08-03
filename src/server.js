@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { JsonStore } = require("./lib/store");
 const { parseJsonBody, requireEnv, verifyAdmin, hashPassword, verifyPassword, randomId, bearerToken } = require("./lib/security");
-const { GitHubStore } = require("./services/githubStore");
+const { SupabaseStore } = require("./services/supabaseStore");
 const { DeviceRegistry } = require("./services/deviceRegistry");
 const { RealtimeHub } = require("./services/realtimeHub");
 
@@ -17,22 +17,22 @@ fs.mkdirSync(FILE_DIR, { recursive: true });
 const store = new JsonStore(path.join(DATA_ROOT, "state.json"));
 store.load();
 
-const githubStore = new GitHubStore(process.env);
-const registry = new DeviceRegistry(store, githubStore, requireEnv("CP_DEVICE_ENROLLMENT_SECRET", "change-this-long-random-enrollment-secret"));
+const persistenceStore = new SupabaseStore(process.env);
+const registry = new DeviceRegistry(store, persistenceStore, requireEnv("CP_DEVICE_ENROLLMENT_SECRET", "change-this-long-random-enrollment-secret"));
 let hydratePromise = null;
 let hydratedAt = 0;
 
 async function hydrateStore(force = false) {
-  if (!githubStore.enabled()) return;
+  if (!persistenceStore.enabled()) return;
   if (!force && hydratePromise && Date.now() - hydratedAt < 1500) return hydratePromise;
-  hydratePromise = githubStore.pullState()
+  hydratePromise = persistenceStore.pullState()
     .then((state) => {
       if (state && !state.skipped) store.replaceState(state);
       hydratedAt = Date.now();
     })
     .catch((error) => {
       hydratedAt = Date.now();
-      store.state.audit.push({ at: new Date().toISOString(), type: "github.hydrate.failed", error: error.message });
+      store.state.audit.push({ at: new Date().toISOString(), type: "supabase.hydrate.failed", error: error.message });
     });
   await hydratePromise;
 }
@@ -40,11 +40,11 @@ async function hydrateStore(force = false) {
 async function persistState(message) {
   store.save();
   try {
-    return await githubStore.pushState(store.state, message);
+    return await persistenceStore.pushState(store.state, message);
   } catch (error) {
-    store.state.audit.push({ at: new Date().toISOString(), type: "github.persist.failed", error: error.message, message });
+    store.state.audit.push({ at: new Date().toISOString(), type: "supabase.persist.failed", error: error.message, message });
     store.save();
-    throw new Error(`GitHub persistence failed: ${error.message}. Verify GITHUB_TOKEN has Contents read/write access to ${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO} and GITHUB_BRANCH is correct.`);
+    throw new Error(`Supabase persistence failed: ${error.message}`);
   }
 }
 

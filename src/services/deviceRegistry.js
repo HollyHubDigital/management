@@ -1,14 +1,14 @@
 const { hashToken, randomId, signPayload } = require("../lib/security");
 
 class DeviceRegistry {
-  constructor(store, githubStore, enrollmentSecret) {
+  constructor(store, persistenceStore, enrollmentSecret) {
     this.store = store;
-    this.githubStore = githubStore;
+    this.persistenceStore = persistenceStore;
     this.enrollmentSecret = enrollmentSecret;
   }
 
   persist(message) {
-    this.githubStore.pushState(this.store.state, message).catch(() => {});
+    this.persistenceStore.pushState(this.store.state, message).catch(() => {});
   }
 
   enroll(input) {
@@ -94,7 +94,7 @@ class DeviceRegistry {
   }
 
   async sync(message) {
-    return this.githubStore.pushState(this.store.state, message);
+    return this.persistenceStore.pushState(this.store.state, message);
   }
 }
 
