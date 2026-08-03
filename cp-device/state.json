@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-01T22:53:25.976Z",
+      "lastSeenAt": "2026-08-03T13:54:37.950Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -558,6 +558,106 @@
         }
       },
       "createdAt": "2026-08-01T21:54:13.172Z"
+    },
+    "cmd_a1fa2aa8f24aa6648880982220d8aa28": {
+      "id": "cmd_a1fa2aa8f24aa6648880982220d8aa28",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-02T23:37:49.122Z",
+        "mode": "admin-control-session"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Camera stream requested. Android camera permission must be approved on the device.",
+          "completedAt": "2026-08-02T23:39:23.012Z"
+        }
+      },
+      "createdAt": "2026-08-02T23:37:49.133Z"
+    },
+    "cmd_d4de0d9dcbd6d15de2cfb084d9ea1d43": {
+      "id": "cmd_d4de0d9dcbd6d15de2cfb084d9ea1d43",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-03T01:13:44.624Z",
+        "mode": "admin-control-session"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Camera stream requested. Android camera permission must be approved on the device.",
+          "completedAt": "2026-08-03T01:14:23.457Z"
+        }
+      },
+      "createdAt": "2026-08-03T01:13:44.675Z"
+    },
+    "cmd_ed960062a6451bc07a6d417785b54310": {
+      "id": "cmd_ed960062a6451bc07a6d417785b54310",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "file.list",
+      "payload": {
+        "path": "/sdcard",
+        "requestedAt": "2026-08-03T01:13:48.447Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "{\\\"files\\\":[{\\\"name\\\":\\\"zbd\\\",\\\"path\\\":\\\"/storage/emulated/0/zbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"littlepepe_clone\\\",\\\"path\\\":\\\"/storage/emulated/0/littlepepe_clone\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Android\\\",\\\"path\\\":\\\"/storage/emulated/0/Android\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"ShowthemZbd\\\",\\\"path\\\":\\\"/storage/emulated/0/ShowthemZbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Music\\\",\\\"path\\\":\\\"/storage/emulated/0/Music\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My-personal\\\",\\\"path\\\":\\\"/storage/emulated/0/My-personal\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move8.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move8.png\\\",\\\"directory\\\":false,\\\"size\\\":5048},{\\\"name\\\":\\\"PHXBrowser\\\",\\\"path\\\":\\\"/storage/emulated/0/PHXBrowser\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\".wallpaper\\\",\\\"path\\\":\\\"/storage/emulated/0/.wallpaper\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My project file\\\",\\\"path\\\":\\\"/storage/emulated/0/My project file\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Project375\\\",\\\"path\\\":\\\"/storage/emulated/0/Project375\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"OnlyFan\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js(1)\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js(1)\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move15.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move15.png\\\",\\\"directory\\\":false,\\\"size\\\":3405},{\\\"name\\\":\\\"Move3.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move3.png\\\",\\\"directory\\\":false,\\\"size\\\":3089},{\\\"name\\\":\\\"Pictures\\\",\\\"path\\\":\\\"/storage/emulated/0/Pictures\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move5.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move5.png\\\",\\\"directory\\\":false,\\\"size\\\":5824},{\\\"name\\\":\\\"Move13.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move13.png\\\",\\\"directory\\\":false,\\\"size\\\":2206},{\\\"name\\\":\\\"funmilayo\\\",\\\"path\\\":\\\"/storage/emulated/0/funmilayo\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move9.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move9.png\\\",\\\"directory\\\":false,\\\"size\\\":9644},{\\\"name\\\":\\\"Movies\\\",\\\"path\\\":\\\"/storage/emulated/0/Movies\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move14.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move14.png\\\",\\\"directory\\\":false,\\\"size\\\":2310},{\\\"name\\\":\\\"index.html\\\",\\\"path\\\":\\\"/storage/emulated/0/index.html\\\",\\\"directory\\\":false,\\\"size\\\":283},{\\\"name\\\":\\\"New work\\\",\\\"path\\\":\\\"/storage/emulated/0/New work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Rolling.jpeg\\\",\\\"path\\\":\\\"/storage/emulated/0/Rolling.jpeg\\\",\\\"directory\\\":false,\\\"size\\\":45757},{\\\"name\\\":\\\"Move11.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move11.png\\\",\\\"directory\\\":false,\\\"size\\\":8185},{\\\"name\\\":\\\"CryptoHub project\\\",\\\"path\\\":\\\"/storage/emulated/0/CryptoHub project\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move6.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move6.png\\\",\\\"directory\\\":false,\\\"size\\\":9204},{\\\"name\\\":\\\"Buy.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Buy.jpg\\\",\\\"directory\\\":false,\\\"size\\\":56856},{\\\"name\\\":\\\"Audiobooks\\\",\\\"path\\\":\\\"/storage/emulated/0/Audiobooks\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"File Manager\\\",\\\"path\\\":\\\"/storage/emulated/0/File Manager\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"log\\\",\\\"path\\\":\\\"/storage/emulated/0/log\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Alarms\\\",\\\"path\\\":\\\"/storage/emulated/0/Alarms\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Testing-work\\\",\\\"path\\\":\\\"/storage/emulated/0/Testing-work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Download\\\",\\\"path\\\":\\\"/storage/emulated/0/Download\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move4.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move4.png\\\",\\\"directory\\\":false,\\\"size\\\":3595},{\\\"name\\\":\\\"Recordings\\\",\\\"path\\\":\\\"/storage/emulated/0/Recordings\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move10.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move10.png\\\",\\\"directory\\\":false,\\\"size\\\":5840},{\\\"name\\\":\\\"Documents\\\",\\\"path\\\":\\\"/storage/emulated/0/Documents\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"fonts\\\",\\\"path\\\":\\\"/storage/emulated/0/fonts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Podcasts\\\",\\\"path\\\":\\\"/storage/emulated/0/Podcasts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"MxPlayerAd\\\",\\\"path\\\":\\\"/storage/emulated/0/MxPlayerAd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Screen Recording 2026-03-03 122134.mp4\\\",\\\"path\\\":\\\"/storage/emulated/0/Screen Recording 2026-03-03 122134.mp4\\\",\\\"directory\\\":false,\\\"size\\\":42254449},{\\\"name\\\":\\\"Notifications\\\",\\\"path\\\":\\\"/storage/emulated/0/Notifications\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"DCIM\\\",\\\"path\\\":\\\"/storage/emulated/0/DCIM\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move1.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move1.png\\\",\\\"directory\\\":false,\\\"size\\\":2902},{\\\"name\\\":\\\"OnlyFan1\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan1\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Page_section.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Page_section.jpg\\\",\\\"directory\\\":false,\\\"size\\\":148855},{\\\"name\\\":\\\"Web3\\\",\\\"path\\\":\\\"/storage/emulated/0/Web3\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ringtones\\\",\\\"path\\\":\\\"/storage/emulated/0/Ringtones\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Xender\\\",\\\"path\\\":\\\"/storage/emulated/0/Xender\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"PHX_Archive\\\",\\\"path\\\":\\\"/storage/emulated/0/PHX_Archive\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ecommerce\\\",\\\"path\\\":\\\"/storage/emulated/0/Ecommerce\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move16.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move16.png\\\",\\\"directory\\\":false,\\\"size\\\":3626},{\\\"name\\\":\\\"PabloNew\\\",\\\"path\\\":\\\"/storage/emulated/0/PabloNew\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move2.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move2.png\\\",\\\"directory\\\":false,\\\"size\\\":2809},{\\\"name\\\":\\\".xd_did\\\",\\\"path\\\":\\\"/storage/emulated/0/.xd_did\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"page2.html\\\",\\\"path\\\":\\\"/storage/emulated/0/page2.html\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\".moffice_wr_check127250487\\\",\\\"path\\\":\\\"/storage/emulated/0/.moffice_wr_check127250487\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"Ticketmaster\\\",\\\"path\\\":\\\"/storage/emulated/0/Ticketmaster\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"multispace\\\",\\\"path\\\":\\\"/storage/emulated/0/multispace\\\",\\\"directory\\\":true,\\\"size\\\":0}]}",
+          "completedAt": "2026-08-03T01:14:24.177Z"
+        }
+      },
+      "createdAt": "2026-08-03T01:13:48.480Z"
+    },
+    "cmd_98e21425441cea71595bf910ba20c2df": {
+      "id": "cmd_98e21425441cea71595bf910ba20c2df",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "camera.stream.request",
+      "payload": {
+        "requestedAt": "2026-08-03T01:40:22.957Z",
+        "mode": "admin-control-session"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Camera stream requested. Android camera permission must be approved on the device.",
+          "completedAt": "2026-08-03T01:40:25.662Z"
+        }
+      },
+      "createdAt": "2026-08-03T01:40:22.968Z"
+    },
+    "cmd_f92ff1b091310bd4a6e3f4b0da8f12c7": {
+      "id": "cmd_f92ff1b091310bd4a6e3f4b0da8f12c7",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "screen.control.request",
+      "payload": {
+        "requestedAt": "2026-08-03T01:40:24.577Z",
+        "mode": "admin-control-session"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Accessibility control is active. Live screen must be started from the device permission screen.",
+          "completedAt": "2026-08-03T01:40:26.007Z"
+        }
+      },
+      "createdAt": "2026-08-03T01:40:24.574Z"
     }
   },
   "audit": [
@@ -794,6 +894,57 @@
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
+    },
+    {
+      "at": "2026-08-02T23:36:45.552Z",
+      "type": "github.persist.failed",
+      "error": "cp-device/state.json does not match 4f345b9d7fc649e1581e835ee0157c0be260acf5",
+      "message": "Create admin session"
+    },
+    {
+      "at": "2026-08-02T23:37:49.133Z",
+      "type": "command.queued",
+      "commandId": "cmd_a1fa2aa8f24aa6648880982220d8aa28",
+      "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:13:44.675Z",
+      "type": "command.queued",
+      "commandId": "cmd_d4de0d9dcbd6d15de2cfb084d9ea1d43",
+      "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:13:48.480Z",
+      "type": "command.queued",
+      "commandId": "cmd_ed960062a6451bc07a6d417785b54310",
+      "commandType": "file.list",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:40:22.968Z",
+      "type": "command.queued",
+      "commandId": "cmd_98e21425441cea71595bf910ba20c2df",
+      "commandType": "camera.stream.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T01:40:24.574Z",
+      "type": "command.queued",
+      "commandId": "cmd_f92ff1b091310bd4a6e3f4b0da8f12c7",
+      "commandType": "screen.control.request",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
     }
   ],
   "files": {},
@@ -868,6 +1019,41 @@
       "role": "user",
       "createdAt": "2026-08-01T20:27:36.122Z",
       "expiresAt": "2026-08-31T20:27:36.122Z"
+    },
+    "sess_bf3c2d4570074fa45eba0ae6b3a7c91e": {
+      "token": "sess_bf3c2d4570074fa45eba0ae6b3a7c91e",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-02T23:36:45.354Z",
+      "expiresAt": "2026-09-01T23:36:45.354Z"
+    },
+    "sess_76729e73a61185e31c66cf4d3d58bdc4": {
+      "token": "sess_76729e73a61185e31c66cf4d3d58bdc4",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-02T23:37:24.015Z",
+      "expiresAt": "2026-09-01T23:37:24.015Z"
+    },
+    "sess_cb21e19bef404589101d785bb44ee4f1": {
+      "token": "sess_cb21e19bef404589101d785bb44ee4f1",
+      "userId": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
+      "role": "user",
+      "createdAt": "2026-08-03T01:12:46.240Z",
+      "expiresAt": "2026-09-02T01:12:46.240Z"
+    },
+    "sess_3ce974b978e68b0ef6f5e8efeda698fa": {
+      "token": "sess_3ce974b978e68b0ef6f5e8efeda698fa",
+      "userId": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
+      "role": "user",
+      "createdAt": "2026-08-03T01:39:21.750Z",
+      "expiresAt": "2026-09-02T01:39:21.750Z"
+    },
+    "sess_e1cf1d0a9a421d757102c109f0494bae": {
+      "token": "sess_e1cf1d0a9a421d757102c109f0494bae",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-03T01:39:56.597Z",
+      "expiresAt": "2026-09-02T01:39:56.597Z"
     }
   },
   "payments": {
