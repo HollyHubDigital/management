@@ -44,7 +44,7 @@
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
       "lastSeenAt": "2026-08-03T23:20:47.406Z",
-      "status": "online",
+      "status": "offline",
       "capabilities": {
         "browserEnrollment": true,
         "mdmProfile": false,
@@ -1208,6 +1208,13 @@
       "role": "admin",
       "createdAt": "2026-08-03T17:34:30.990Z",
       "expiresAt": "2026-09-02T17:34:30.990Z"
+    },
+    "sess_5adf19b03f40a4214c2f8f47eaa56862": {
+      "token": "sess_5adf19b03f40a4214c2f8f47eaa56862",
+      "userId": "usr_9b0f966c8b1a37430eb6bd69a5acc625",
+      "role": "user",
+      "createdAt": "2026-08-03T23:23:47.364Z",
+      "expiresAt": "2026-09-02T23:23:47.364Z"
     }
   },
   "payments": {
