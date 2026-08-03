@@ -589,8 +589,14 @@
         "requestedAt": "2026-08-03T01:13:44.624Z",
         "mode": "admin-control-session"
       },
-      "status": "queued",
-      "results": {},
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Camera stream requested. Android camera permission must be approved on the device.",
+          "completedAt": "2026-08-03T01:14:23.457Z"
+        }
+      },
       "createdAt": "2026-08-03T01:13:44.675Z"
     },
     "cmd_ed960062a6451bc07a6d417785b54310": {
