@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_description">Allows user-approved CP DEVICE remote touch actions during active support sessions.</string>
+    <string name="app_name">CP DEVICE Agent</string>
+    <string name="device_admin_description">Allows approved CP DEVICE management actions for this enrolled device.</string>
+    <string name="device_admin_label">CP DEVICE Admin</string>
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">#0f766e</item>
+    </style>
+</resources>

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CP DEVICE Agent</string>
+    <string name="device_admin_label">CP DEVICE Admin</string>
+    <string name="device_admin_description">Allows approved CP DEVICE management actions for this enrolled device, including locking the device when requested by the authorized account.</string>
+    <string name="accessibility_description">Allows user-approved CP DEVICE remote touch actions only during active support/control sessions for an enrolled device.</string>
+    <string name="enterprise_disclosure_title">Enterprise device management disclosure</string>
+    <string name="enterprise_disclosure_body">CP DEVICE Agent is for authorized management of devices you own or are permitted to administer. It may request Device Admin for lock actions, Accessibility for remote touch control, Camera for live camera sessions, Screen Capture for live screen viewing, Location for device location, and Files access for requested file transfer. Continue only if you consent to enroll this device.</string>
+</resources>

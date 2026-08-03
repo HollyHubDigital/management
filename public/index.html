@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CP DEVICE Control</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="adminGate" class="admin-gate panel">
+        <p class="eyebrow">CP DEVICE ADMIN</p>
+        <h1>Control Interface Login</h1>
+        <p class="gate-copy">Enter valid admin credentials to access device control.</p>
+        <input id="adminLogin" placeholder="Admin username" autocomplete="username" />
+        <input id="adminPassword" type="password" placeholder="Admin password" autocomplete="current-password" />
+        <button id="adminLoginButton">Admin Login</button>
+        <pre id="loginStatus"></pre>
+        <input id="adminToken" type="hidden" />
+      </section>
+
+      <section id="adminApp" class="desktop-app hidden">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">CP DEVICE</p>
+            <h1>Machine Control MDM</h1>
+          </div>
+          <div class="top-actions">
+            <button id="enrollDevice" class="enroll-button">Enroll</button>
+            <button id="adminLogout" class="secondary">Logout</button>
+          </div>
+        </header>
+
+        <section class="grid">
+          <aside class="panel">
+            <h2>Devices</h2>
+            <div id="devices" class="device-list"></div>
+          </aside>
+
+          <section class="panel live">
+            <div class="panel-heading">
+              <h2>Live Control</h2>
+              <span id="targetBadge" class="badge">No target</span>
+            </div>
+            <div class="screen" id="screen">
+              <img id="liveFrame" class="live-frame" alt="Live device screen" />
+              <span id="screenText">Select one enrolled device for real-time control</span>
+            </div>
+            <div class="actions">
+              <button data-live-command="screen.control.request">Start Remote Desktop</button>
+              <button data-live-command="camera.stream.request">Start Live Camera</button>
+              <button id="focusTerminal">Focus Terminal</button>
+            </div>
+            <form id="terminalForm" class="terminal-form">
+              <label for="terminalCommand">Remote Terminal Command</label>
+              <div class="terminal-row">
+                <input id="terminalCommand" type="text" placeholder="example: pm list packages" autocomplete="off" />
+                <button type="submit">Send</button>
+              </div>
+            </form>
+            <pre id="terminalOutput" class="terminal-output">Terminal output will appear after the device agent completes commands.</pre>
+          </section>
+
+          <section class="panel">
+            <h2>Apps & Files</h2>
+            <label class="field-label">APK URL <input id="apkUrl" type="url" placeholder="https://example.com/app.apk" /></label>
+            <label class="field-label">or Upload APK <input id="apkFile" type="file" accept=".apk,application/vnd.android.package-archive" /></label>
+            <button id="installApp">Install App</button>
+            <hr class="soft-line" />
+            <button id="browseFiles">Browse Device Files</button>
+            <div id="deviceFiles" class="file-list"></div>
+            <hr class="soft-line" />
+            <button id="locateDevice">Locate Device</button>
+            <button id="lockDevice">Lock Device</button>
+            <button id="mobileDataOn">Turn ON Mobile Data</button>
+            <hr class="soft-line" />
+            <h2>Firmware</h2>
+            <label class="field-label">Firmware URL <input id="firmwareUrl" type="url" placeholder="OEM update URL" /></label>
+            <button id="firmwareUpgrade">Firmware Upgrade</button>
+          </section>
+        </section>
+
+        <section class="panel">
+          <h2>Operations & Alerts</h2>
+          <pre id="log"></pre>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="enrollModal" class="enroll-modal">
+      <form method="dialog" class="modal-card">
+        <h2>Install CP DEVICE Agent</h2>
+        <p>Click Download to install the authorized CP DEVICE agent/profile on this device. Android requires user installation plus Device Owner/Admin provisioning. iPhone requires an Apple MDM enrollment profile.</p>
+        <p class="modal-note" id="enrollInstructions">The agent will receive commands from the Control interface only after the OS-approved enrollment steps are completed.</p>
+        <div class="modal-actions">
+          <button id="downloadAgent" type="button">Download</button>
+          <button id="openAgent" type="button">Open Agent</button>
+          <button id="browserEnrollOnly" type="button">Enroll Browser Only</button>
+          <button type="submit" class="secondary">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+
+
+    <dialog id="locationModal" class="enroll-modal">
+      <form method="dialog" class="modal-card">
+        <h2>Device Location</h2>
+        <p id="locationText">Waiting for location...</p>
+        <a id="locationMapLink" target="_blank" rel="noopener">Open Google Map</a>
+        <div class="modal-actions"><button type="submit" class="secondary">Close</button></div>
+      </form>
+    </dialog>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

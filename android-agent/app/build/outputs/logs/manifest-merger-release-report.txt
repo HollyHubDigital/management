@@ -1,0 +1,324 @@
+-- Merging decision tree log ---
+manifest
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:1:1-45:12
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:1:1-45:12
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:1:1-45:12
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:1:1-45:12
+MERGED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\e8a27b07aaf9a09f743d9d92c6b6912f\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\918e7c269ea911fb9167f3db83902ef0\transformed\interpolator-1.0.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] C:\Users\holly\.gradle\caches\8.10.2\transforms\d1d6428ed2724f8e911fe7b6bd5cab02\transformed\lifecycle-runtime-2.6.2\AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\b58956d8d673c37133b2224f43b6b63f\transformed\core-runtime-2.2.0\AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\2e5ae3ffc244668ddf4f42a3e03c2998\transformed\tracing-1.0.0\AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.annotation:annotation-experimental:1.4.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\78d88454d98e0893920678cf3f7e5ff9\transformed\annotation-experimental-1.4.0\AndroidManifest.xml:2:1-7:12
+	package
+		INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+	android:versionName
+		INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+	android:versionCode
+		INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+	xmlns:android
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:1:11-69
+uses-permission#android.permission.INTERNET
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:2:5-67
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:2:22-64
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:3:5-79
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:3:22-76
+uses-permission#android.permission.FOREGROUND_SERVICE
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:4:5-77
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:4:22-74
+uses-permission#android.permission.FOREGROUND_SERVICE_DATA_SYNC
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:5:5-87
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:5:22-84
+uses-permission#android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:6:5-94
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:6:22-91
+uses-permission#android.permission.FOREGROUND_SERVICE_CAMERA
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:7:5-84
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:7:22-81
+uses-permission#android.permission.POST_NOTIFICATIONS
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:8:5-77
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:8:22-74
+uses-permission#android.permission.CAMERA
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:9:5-65
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:9:22-62
+uses-permission#android.permission.ACCESS_FINE_LOCATION
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:10:5-79
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:10:22-76
+uses-permission#android.permission.ACCESS_COARSE_LOCATION
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:11:5-81
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:11:22-78
+uses-permission#android.permission.READ_EXTERNAL_STORAGE
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:12:5-107
+	android:maxSdkVersion
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:12:78-104
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:12:22-77
+uses-permission#android.permission.READ_MEDIA_IMAGES
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:13:5-76
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:13:22-73
+uses-permission#android.permission.READ_MEDIA_VIDEO
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:14:5-75
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:14:22-72
+uses-permission#android.permission.MANAGE_EXTERNAL_STORAGE
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:15:5-82
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:15:22-79
+application
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:5-44:19
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:5-44:19
+MERGED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:28:5-89
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\e8a27b07aaf9a09f743d9d92c6b6912f\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\e8a27b07aaf9a09f743d9d92c6b6912f\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:25:5-31:19
+	android:extractNativeLibs
+		INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+	android:label
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:46-78
+	android:allowBackup
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:18-45
+	android:theme
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:115-146
+	android:usesCleartextTraffic
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:79-114
+activity#com.cpdevice.agent.MainActivity
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:18:9-29:20
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:18:48-71
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:18:19-47
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:19:13-22:29
+action#android.intent.action.MAIN
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:20:17-69
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:20:25-66
+category#android.intent.category.LAUNCHER
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:21:17-77
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:21:27-74
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:enroll+data:scheme:cpdevice
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:23:13-28:29
+action#android.intent.action.VIEW
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:24:17-69
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:24:25-66
+category#android.intent.category.DEFAULT
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:25:17-76
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:25:27-73
+category#android.intent.category.BROWSABLE
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:26:17-78
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:26:27-75
+data
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:27:17-73
+	android:host
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:27:49-70
+	android:scheme
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:27:23-48
+provider#androidx.core.content.FileProvider
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:9-293
+	android:grantUriPermissions
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:148-182
+	android:authorities
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:69-122
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:123-147
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:19-68
+meta-data#android.support.FILE_PROVIDER_PATHS
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:183-282
+	android:resource
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:245-279
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:194-244
+service#com.cpdevice.agent.AgentService
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:9-115
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:47-71
+	android:foregroundServiceType
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:72-112
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:18-46
+service#com.cpdevice.agent.LiveStreamService
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:9-127
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:52-76
+	android:foregroundServiceType
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:77-124
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:18-51
+service#com.cpdevice.agent.CameraStreamService
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:9-120
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:54-78
+	android:foregroundServiceType
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:79-117
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:18-53
+service#com.cpdevice.agent.CpAccessibilityService
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:9-38:19
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:124-147
+	android:permission
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:57-123
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:18-56
+intent-filter#action:name:android.accessibilityservice.AccessibilityService
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:36:13-119
+action#android.accessibilityservice.AccessibilityService
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:36:28-103
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:36:36-100
+meta-data#android.accessibilityservice
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:37:13-116
+	android:resource
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:37:68-113
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:37:24-67
+receiver#com.cpdevice.agent.CpDeviceAdminReceiver
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:9-43:20
+	android:label
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:136-178
+	android:exported
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:112-135
+	android:permission
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:179-236
+	android:description
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:57-111
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:19-56
+meta-data#android.app.device_admin
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:41:13-103
+	android:resource
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:41:64-100
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:41:24-63
+intent-filter#action:name:android.app.action.DEVICE_ADMIN_ENABLED
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:42:13-109
+action#android.app.action.DEVICE_ADMIN_ENABLED
+ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:42:28-93
+	android:name
+		ADDED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:42:36-90
+uses-sdk
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+MERGED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:20:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\e8a27b07aaf9a09f743d9d92c6b6912f\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\e8a27b07aaf9a09f743d9d92c6b6912f\transformed\versionedparcelable-1.1.1\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\918e7c269ea911fb9167f3db83902ef0\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\918e7c269ea911fb9167f3db83902ef0\transformed\interpolator-1.0.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] C:\Users\holly\.gradle\caches\8.10.2\transforms\d1d6428ed2724f8e911fe7b6bd5cab02\transformed\lifecycle-runtime-2.6.2\AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] C:\Users\holly\.gradle\caches\8.10.2\transforms\d1d6428ed2724f8e911fe7b6bd5cab02\transformed\lifecycle-runtime-2.6.2\AndroidManifest.xml:5:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\b58956d8d673c37133b2224f43b6b63f\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\b58956d8d673c37133b2224f43b6b63f\transformed\core-runtime-2.2.0\AndroidManifest.xml:20:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:21:5-44
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\2e5ae3ffc244668ddf4f42a3e03c2998\transformed\tracing-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.tracing:tracing:1.0.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\2e5ae3ffc244668ddf4f42a3e03c2998\transformed\tracing-1.0.0\AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.annotation:annotation-experimental:1.4.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\78d88454d98e0893920678cf3f7e5ff9\transformed\annotation-experimental-1.4.0\AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.4.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\78d88454d98e0893920678cf3f7e5ff9\transformed\annotation-experimental-1.4.0\AndroidManifest.xml:5:5-44
+	android:targetSdkVersion
+		INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+permission#com.cpdevice.agent.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+uses-permission#com.cpdevice.agent.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\5e2da9d8621751b7ecdd2cc83e82811d\transformed\startup-runtime-1.1.1\AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:28:13-31
+	android:authorities
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:26:13-68
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:27:13-37
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:25:13-67
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+receiver#androidx.profileinstaller.ProfileInstallReceiver
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+	android:enabled
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+	android:permission
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
+	android:directBootAware
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+intent-filter#action:name:androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+action#androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
+intent-filter#action:name:androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+action#androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+intent-filter#action:name:androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+action#androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+intent-filter#action:name:androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+action#androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92

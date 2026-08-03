@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>PayloadContent</key>
+  <array>
+    <dict>
+      <key>PayloadDescription</key>
+      <string>Configures CP DEVICE MDM enrollment. Configures CP DEVICE MDM enrollment. This profile must be signed and completed with production Apple MDM APNs Topic and identity certificate values before iPhone fleet deployment.</string>
+      <key>PayloadDisplayName</key>
+      <string>CP DEVICE MDM Enrollment</string>
+      <key>PayloadIdentifier</key>
+      <string>com.cpdevice.mdm.enrollment</string>
+      <key>PayloadOrganization</key>
+      <string>CP DEVICE</string>
+      <key>PayloadType</key>
+      <string>com.apple.mdm</string>
+      <key>PayloadUUID</key>
+      <string>11111111-2222-4333-8444-555555555555</string>
+      <key>PayloadVersion</key>
+      <integer>1</integer>
+      <key>AccessRights</key>
+      <integer>8191</integer>
+      <key>CheckInURL</key>
+      <string>https://admin-device-management.vercel.app/api/mdm/checkin</string>
+      <key>ServerURL</key>
+      <string>https://admin-device-management.vercel.app/api/mdm/connect</string>
+      <key>SignMessage</key>
+      <true/>
+      <key>Topic</key>
+      <string>com.apple.mgmt.External.placeholder</string>
+    </dict>
+  </array>
+  <key>PayloadDescription</key>
+  <string>CP DEVICE iOS MDM enrollment profile template. Must be signed and configured with Apple MDM/APNs production credentials.</string>
+  <key>PayloadDisplayName</key>
+  <string>CP DEVICE Enrollment</string>
+  <key>PayloadIdentifier</key>
+  <string>com.cpdevice.enrollment.profile</string>
+  <key>PayloadOrganization</key>
+  <string>CP DEVICE</string>
+  <key>PayloadRemovalDisallowed</key>
+  <false/>
+  <key>PayloadType</key>
+  <string>Configuration</string>
+  <key>PayloadUUID</key>
+  <string>aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee</string>
+  <key>PayloadVersion</key>
+  <integer>1</integer>
+</dict>
+</plist>

@@ -1,0 +1,266 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.cpdevice.agent"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:2:5-67
+11-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:2:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:3:5-79
+12-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:3:22-76
+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+13-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:4:5-77
+13-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:4:22-74
+14    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+14-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:5:5-87
+14-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:5:22-84
+15    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+15-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:6:5-94
+15-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:6:22-91
+16    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+16-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:7:5-84
+16-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:7:22-81
+17    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+17-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:8:5-77
+17-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:8:22-74
+18    <uses-permission android:name="android.permission.CAMERA" />
+18-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:9:5-65
+18-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:9:22-62
+19    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+19-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:10:5-79
+19-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:10:22-76
+20    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+20-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:11:5-81
+20-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:11:22-78
+21    <uses-permission
+21-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:12:5-107
+22        android:name="android.permission.READ_EXTERNAL_STORAGE"
+22-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:12:22-77
+23        android:maxSdkVersion="32" />
+23-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:12:78-104
+24    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+24-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:13:5-76
+24-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:13:22-73
+25    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+25-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:14:5-75
+25-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:14:22-72
+26    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+26-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:15:5-82
+26-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:15:22-79
+27
+28    <permission
+28-->[androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+29        android:name="com.cpdevice.agent.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+29-->[androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+30        android:protectionLevel="signature" />
+30-->[androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+31
+32    <uses-permission android:name="com.cpdevice.agent.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+32-->[androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+32-->[androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+33
+34    <application
+34-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:5-44:19
+35        android:allowBackup="false"
+35-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:18-45
+36        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+36-->[androidx.core:core:1.13.1] C:\Users\holly\.gradle\caches\8.10.2\transforms\ccd7ff5efb2dab4a7cbe1fb9f60b4100\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+37        android:extractNativeLibs="false"
+38        android:label="@string/app_name"
+38-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:46-78
+39        android:theme="@style/AppTheme"
+39-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:115-146
+40        android:usesCleartextTraffic="true" >
+40-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:17:79-114
+41        <activity
+41-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:18:9-29:20
+42            android:name="com.cpdevice.agent.MainActivity"
+42-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:18:19-47
+43            android:exported="true" >
+43-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:18:48-71
+44            <intent-filter>
+44-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:19:13-22:29
+45                <action android:name="android.intent.action.MAIN" />
+45-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:20:17-69
+45-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:20:25-66
+46
+47                <category android:name="android.intent.category.LAUNCHER" />
+47-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:21:17-77
+47-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:21:27-74
+48            </intent-filter>
+49            <intent-filter>
+49-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:23:13-28:29
+50                <action android:name="android.intent.action.VIEW" />
+50-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:24:17-69
+50-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:24:25-66
+51
+52                <category android:name="android.intent.category.DEFAULT" />
+52-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:25:17-76
+52-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:25:27-73
+53                <category android:name="android.intent.category.BROWSABLE" />
+53-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:26:17-78
+53-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:26:27-75
+54
+55                <data
+55-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:27:17-73
+56                    android:host="enroll"
+56-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:27:49-70
+57                    android:scheme="cpdevice" />
+57-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:27:23-48
+58            </intent-filter>
+59        </activity>
+60
+61        <provider
+61-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:9-293
+62            android:name="androidx.core.content.FileProvider"
+62-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:19-68
+63            android:authorities="com.cpdevice.agent.fileprovider"
+63-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:69-122
+64            android:exported="false"
+64-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:123-147
+65            android:grantUriPermissions="true" >
+65-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:148-182
+66            <meta-data
+66-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:183-282
+67                android:name="android.support.FILE_PROVIDER_PATHS"
+67-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:194-244
+68                android:resource="@xml/file_paths" />
+68-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:31:245-279
+69        </provider>
+70
+71        <service
+71-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:9-115
+72            android:name="com.cpdevice.agent.AgentService"
+72-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:18-46
+73            android:exported="false"
+73-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:47-71
+74            android:foregroundServiceType="dataSync" />
+74-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:32:72-112
+75        <service
+75-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:9-127
+76            android:name="com.cpdevice.agent.LiveStreamService"
+76-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:18-51
+77            android:exported="false"
+77-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:52-76
+78            android:foregroundServiceType="mediaProjection" />
+78-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:33:77-124
+79        <service
+79-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:9-120
+80            android:name="com.cpdevice.agent.CameraStreamService"
+80-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:18-53
+81            android:exported="false"
+81-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:54-78
+82            android:foregroundServiceType="camera" />
+82-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:34:79-117
+83        <service
+83-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:9-38:19
+84            android:name="com.cpdevice.agent.CpAccessibilityService"
+84-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:18-56
+85            android:exported="true"
+85-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:124-147
+86            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+86-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:35:57-123
+87            <intent-filter>
+87-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:36:13-119
+88                <action android:name="android.accessibilityservice.AccessibilityService" />
+88-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:36:28-103
+88-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:36:36-100
+89            </intent-filter>
+90
+91            <meta-data
+91-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:37:13-116
+92                android:name="android.accessibilityservice"
+92-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:37:24-67
+93                android:resource="@xml/accessibility_service" />
+93-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:37:68-113
+94        </service>
+95
+96        <receiver
+96-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:9-43:20
+97            android:name="com.cpdevice.agent.CpDeviceAdminReceiver"
+97-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:19-56
+98            android:description="@string/device_admin_description"
+98-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:57-111
+99            android:exported="true"
+99-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:112-135
+100            android:label="@string/device_admin_label"
+100-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:136-178
+101            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+101-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:40:179-236
+102            <meta-data
+102-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:41:13-103
+103                android:name="android.app.device_admin"
+103-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:41:24-63
+104                android:resource="@xml/device_admin" />
+104-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:41:64-100
+105
+106            <intent-filter>
+106-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:42:13-109
+107                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+107-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:42:28-93
+107-->C:\Users\holly\Remote-Control\android-agent\app\src\main\AndroidManifest.xml:42:36-90
+108            </intent-filter>
+109        </receiver>
+110
+111        <provider
+111-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:24:9-32:20
+112            android:name="androidx.startup.InitializationProvider"
+112-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:25:13-67
+113            android:authorities="com.cpdevice.agent.androidx-startup"
+113-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:26:13-68
+114            android:exported="false" >
+114-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:27:13-37
+115            <meta-data
+115-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+116                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+116-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+117                android:value="androidx.startup" />
+117-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+118        </provider>
+119
+120        <receiver
+120-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+121            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+121-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+122            android:directBootAware="false"
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+123            android:enabled="true"
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+124            android:exported="true"
+124-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+125            android:permission="android.permission.DUMP" >
+125-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
+126            <intent-filter>
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+127                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+127-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
+128            </intent-filter>
+129            <intent-filter>
+129-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+130                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+130-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+130-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+131            </intent-filter>
+132            <intent-filter>
+132-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+133                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+133-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+133-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+134            </intent-filter>
+135            <intent-filter>
+135-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+136                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+136-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+136-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\holly\.gradle\caches\8.10.2\transforms\3da0ebcfe303679ec191ffe8871d98cd\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+137            </intent-filter>
+138        </receiver>
+139    </application>
+140
+141</manifest>
