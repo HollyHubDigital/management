@@ -43,7 +43,7 @@
       "name": "User Android Device",
       "serial": "WEB-1785615537599",
       "enrolledAt": "2026-08-01T20:18:59.566Z",
-      "lastSeenAt": "2026-08-03T13:54:37.950Z",
+      "lastSeenAt": "2026-08-03T20:06:52.735Z",
       "status": "online",
       "capabilities": {
         "browserEnrollment": true,
@@ -658,6 +658,84 @@
         }
       },
       "createdAt": "2026-08-03T01:40:24.574Z"
+    },
+    "cmd_aff6a6d2598f81fcfac11281c51e9ccb": {
+      "id": "cmd_aff6a6d2598f81fcfac11281c51e9ccb",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "file.list",
+      "payload": {
+        "path": "/sdcard",
+        "requestedAt": "2026-08-03T14:49:57.420Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "{\\\"files\\\":[{\\\"name\\\":\\\"zbd\\\",\\\"path\\\":\\\"/storage/emulated/0/zbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"littlepepe_clone\\\",\\\"path\\\":\\\"/storage/emulated/0/littlepepe_clone\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Android\\\",\\\"path\\\":\\\"/storage/emulated/0/Android\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"ShowthemZbd\\\",\\\"path\\\":\\\"/storage/emulated/0/ShowthemZbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Music\\\",\\\"path\\\":\\\"/storage/emulated/0/Music\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My-personal\\\",\\\"path\\\":\\\"/storage/emulated/0/My-personal\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move8.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move8.png\\\",\\\"directory\\\":false,\\\"size\\\":5048},{\\\"name\\\":\\\"PHXBrowser\\\",\\\"path\\\":\\\"/storage/emulated/0/PHXBrowser\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\".wallpaper\\\",\\\"path\\\":\\\"/storage/emulated/0/.wallpaper\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My project file\\\",\\\"path\\\":\\\"/storage/emulated/0/My project file\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Project375\\\",\\\"path\\\":\\\"/storage/emulated/0/Project375\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"OnlyFan\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js(1)\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js(1)\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move15.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move15.png\\\",\\\"directory\\\":false,\\\"size\\\":3405},{\\\"name\\\":\\\"Move3.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move3.png\\\",\\\"directory\\\":false,\\\"size\\\":3089},{\\\"name\\\":\\\"Pictures\\\",\\\"path\\\":\\\"/storage/emulated/0/Pictures\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move5.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move5.png\\\",\\\"directory\\\":false,\\\"size\\\":5824},{\\\"name\\\":\\\"Move13.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move13.png\\\",\\\"directory\\\":false,\\\"size\\\":2206},{\\\"name\\\":\\\"funmilayo\\\",\\\"path\\\":\\\"/storage/emulated/0/funmilayo\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move9.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move9.png\\\",\\\"directory\\\":false,\\\"size\\\":9644},{\\\"name\\\":\\\"Movies\\\",\\\"path\\\":\\\"/storage/emulated/0/Movies\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move14.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move14.png\\\",\\\"directory\\\":false,\\\"size\\\":2310},{\\\"name\\\":\\\"index.html\\\",\\\"path\\\":\\\"/storage/emulated/0/index.html\\\",\\\"directory\\\":false,\\\"size\\\":283},{\\\"name\\\":\\\"New work\\\",\\\"path\\\":\\\"/storage/emulated/0/New work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Rolling.jpeg\\\",\\\"path\\\":\\\"/storage/emulated/0/Rolling.jpeg\\\",\\\"directory\\\":false,\\\"size\\\":45757},{\\\"name\\\":\\\"Move11.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move11.png\\\",\\\"directory\\\":false,\\\"size\\\":8185},{\\\"name\\\":\\\"CryptoHub project\\\",\\\"path\\\":\\\"/storage/emulated/0/CryptoHub project\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move6.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move6.png\\\",\\\"directory\\\":false,\\\"size\\\":9204},{\\\"name\\\":\\\"Buy.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Buy.jpg\\\",\\\"directory\\\":false,\\\"size\\\":56856},{\\\"name\\\":\\\"Audiobooks\\\",\\\"path\\\":\\\"/storage/emulated/0/Audiobooks\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"File Manager\\\",\\\"path\\\":\\\"/storage/emulated/0/File Manager\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"log\\\",\\\"path\\\":\\\"/storage/emulated/0/log\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Alarms\\\",\\\"path\\\":\\\"/storage/emulated/0/Alarms\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Testing-work\\\",\\\"path\\\":\\\"/storage/emulated/0/Testing-work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Download\\\",\\\"path\\\":\\\"/storage/emulated/0/Download\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move4.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move4.png\\\",\\\"directory\\\":false,\\\"size\\\":3595},{\\\"name\\\":\\\"Recordings\\\",\\\"path\\\":\\\"/storage/emulated/0/Recordings\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move10.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move10.png\\\",\\\"directory\\\":false,\\\"size\\\":5840},{\\\"name\\\":\\\"Documents\\\",\\\"path\\\":\\\"/storage/emulated/0/Documents\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"fonts\\\",\\\"path\\\":\\\"/storage/emulated/0/fonts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Podcasts\\\",\\\"path\\\":\\\"/storage/emulated/0/Podcasts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"MxPlayerAd\\\",\\\"path\\\":\\\"/storage/emulated/0/MxPlayerAd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Screen Recording 2026-03-03 122134.mp4\\\",\\\"path\\\":\\\"/storage/emulated/0/Screen Recording 2026-03-03 122134.mp4\\\",\\\"directory\\\":false,\\\"size\\\":42254449},{\\\"name\\\":\\\"Notifications\\\",\\\"path\\\":\\\"/storage/emulated/0/Notifications\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"DCIM\\\",\\\"path\\\":\\\"/storage/emulated/0/DCIM\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move1.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move1.png\\\",\\\"directory\\\":false,\\\"size\\\":2902},{\\\"name\\\":\\\"OnlyFan1\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan1\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Page_section.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Page_section.jpg\\\",\\\"directory\\\":false,\\\"size\\\":148855},{\\\"name\\\":\\\"Web3\\\",\\\"path\\\":\\\"/storage/emulated/0/Web3\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ringtones\\\",\\\"path\\\":\\\"/storage/emulated/0/Ringtones\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Xender\\\",\\\"path\\\":\\\"/storage/emulated/0/Xender\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"PHX_Archive\\\",\\\"path\\\":\\\"/storage/emulated/0/PHX_Archive\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ecommerce\\\",\\\"path\\\":\\\"/storage/emulated/0/Ecommerce\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move16.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move16.png\\\",\\\"directory\\\":false,\\\"size\\\":3626},{\\\"name\\\":\\\"PabloNew\\\",\\\"path\\\":\\\"/storage/emulated/0/PabloNew\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move2.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move2.png\\\",\\\"directory\\\":false,\\\"size\\\":2809},{\\\"name\\\":\\\".xd_did\\\",\\\"path\\\":\\\"/storage/emulated/0/.xd_did\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"page2.html\\\",\\\"path\\\":\\\"/storage/emulated/0/page2.html\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\".moffice_wr_check127250487\\\",\\\"path\\\":\\\"/storage/emulated/0/.moffice_wr_check127250487\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"Ticketmaster\\\",\\\"path\\\":\\\"/storage/emulated/0/Ticketmaster\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"multispace\\\",\\\"path\\\":\\\"/storage/emulated/0/multispace\\\",\\\"directory\\\":true,\\\"size\\\":0}]}",
+          "completedAt": "2026-08-03T14:49:59.510Z"
+        }
+      },
+      "createdAt": "2026-08-03T14:49:57.980Z"
+    },
+    "cmd_de00873f8c7ef0007afd97de0859903d": {
+      "id": "cmd_de00873f8c7ef0007afd97de0859903d",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "lock.device",
+      "payload": {
+        "requestedAt": "2026-08-03T14:53:55.480Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Device locked.",
+          "completedAt": "2026-08-03T14:54:00.455Z"
+        }
+      },
+      "createdAt": "2026-08-03T14:53:56.391Z"
+    },
+    "cmd_01ebde8e15138d15fceea88de7279263": {
+      "id": "cmd_01ebde8e15138d15fceea88de7279263",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "locate.device",
+      "payload": {
+        "requestedAt": "2026-08-03T17:40:59.967Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "Location unavailable. Approve location permission and enable location services.",
+          "completedAt": "2026-08-03T17:41:00.657Z"
+        }
+      },
+      "createdAt": "2026-08-03T17:40:59.379Z"
+    },
+    "cmd_87cf297bf47a1b52d602bf39e53eead6": {
+      "id": "cmd_87cf297bf47a1b52d602bf39e53eead6",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ],
+      "type": "file.list",
+      "payload": {
+        "path": "/sdcard",
+        "requestedAt": "2026-08-03T17:41:21.407Z"
+      },
+      "status": "completed",
+      "results": {
+        "dev_d8dc1729d619e2906231e8ea5e0998af": {
+          "ok": true,
+          "output": "{\\\"files\\\":[{\\\"name\\\":\\\"zbd\\\",\\\"path\\\":\\\"/storage/emulated/0/zbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"littlepepe_clone\\\",\\\"path\\\":\\\"/storage/emulated/0/littlepepe_clone\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Android\\\",\\\"path\\\":\\\"/storage/emulated/0/Android\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"ShowthemZbd\\\",\\\"path\\\":\\\"/storage/emulated/0/ShowthemZbd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Music\\\",\\\"path\\\":\\\"/storage/emulated/0/Music\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My-personal\\\",\\\"path\\\":\\\"/storage/emulated/0/My-personal\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move8.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move8.png\\\",\\\"directory\\\":false,\\\"size\\\":5048},{\\\"name\\\":\\\"PHXBrowser\\\",\\\"path\\\":\\\"/storage/emulated/0/PHXBrowser\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\".wallpaper\\\",\\\"path\\\":\\\"/storage/emulated/0/.wallpaper\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"My project file\\\",\\\"path\\\":\\\"/storage/emulated/0/My project file\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Project375\\\",\\\"path\\\":\\\"/storage/emulated/0/Project375\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"OnlyFan\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js(1)\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js(1)\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move15.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move15.png\\\",\\\"directory\\\":false,\\\"size\\\":3405},{\\\"name\\\":\\\"Move3.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move3.png\\\",\\\"directory\\\":false,\\\"size\\\":3089},{\\\"name\\\":\\\"Pictures\\\",\\\"path\\\":\\\"/storage/emulated/0/Pictures\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move5.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move5.png\\\",\\\"directory\\\":false,\\\"size\\\":5824},{\\\"name\\\":\\\"Move13.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move13.png\\\",\\\"directory\\\":false,\\\"size\\\":2206},{\\\"name\\\":\\\"funmilayo\\\",\\\"path\\\":\\\"/storage/emulated/0/funmilayo\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move9.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move9.png\\\",\\\"directory\\\":false,\\\"size\\\":9644},{\\\"name\\\":\\\"Movies\\\",\\\"path\\\":\\\"/storage/emulated/0/Movies\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move14.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move14.png\\\",\\\"directory\\\":false,\\\"size\\\":2310},{\\\"name\\\":\\\"index.html\\\",\\\"path\\\":\\\"/storage/emulated/0/index.html\\\",\\\"directory\\\":false,\\\"size\\\":283},{\\\"name\\\":\\\"New work\\\",\\\"path\\\":\\\"/storage/emulated/0/New work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Rolling.jpeg\\\",\\\"path\\\":\\\"/storage/emulated/0/Rolling.jpeg\\\",\\\"directory\\\":false,\\\"size\\\":45757},{\\\"name\\\":\\\"Move11.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move11.png\\\",\\\"directory\\\":false,\\\"size\\\":8185},{\\\"name\\\":\\\"CryptoHub project\\\",\\\"path\\\":\\\"/storage/emulated/0/CryptoHub project\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move6.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move6.png\\\",\\\"directory\\\":false,\\\"size\\\":9204},{\\\"name\\\":\\\"Buy.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Buy.jpg\\\",\\\"directory\\\":false,\\\"size\\\":56856},{\\\"name\\\":\\\"Audiobooks\\\",\\\"path\\\":\\\"/storage/emulated/0/Audiobooks\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"next.js\\\",\\\"path\\\":\\\"/storage/emulated/0/next.js\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"File Manager\\\",\\\"path\\\":\\\"/storage/emulated/0/File Manager\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"log\\\",\\\"path\\\":\\\"/storage/emulated/0/log\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Alarms\\\",\\\"path\\\":\\\"/storage/emulated/0/Alarms\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Testing-work\\\",\\\"path\\\":\\\"/storage/emulated/0/Testing-work\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Download\\\",\\\"path\\\":\\\"/storage/emulated/0/Download\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move4.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move4.png\\\",\\\"directory\\\":false,\\\"size\\\":3595},{\\\"name\\\":\\\"Recordings\\\",\\\"path\\\":\\\"/storage/emulated/0/Recordings\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move10.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move10.png\\\",\\\"directory\\\":false,\\\"size\\\":5840},{\\\"name\\\":\\\"Documents\\\",\\\"path\\\":\\\"/storage/emulated/0/Documents\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"fonts\\\",\\\"path\\\":\\\"/storage/emulated/0/fonts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Podcasts\\\",\\\"path\\\":\\\"/storage/emulated/0/Podcasts\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"MxPlayerAd\\\",\\\"path\\\":\\\"/storage/emulated/0/MxPlayerAd\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Screen Recording 2026-03-03 122134.mp4\\\",\\\"path\\\":\\\"/storage/emulated/0/Screen Recording 2026-03-03 122134.mp4\\\",\\\"directory\\\":false,\\\"size\\\":42254449},{\\\"name\\\":\\\"Notifications\\\",\\\"path\\\":\\\"/storage/emulated/0/Notifications\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"DCIM\\\",\\\"path\\\":\\\"/storage/emulated/0/DCIM\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move1.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move1.png\\\",\\\"directory\\\":false,\\\"size\\\":2902},{\\\"name\\\":\\\"OnlyFan1\\\",\\\"path\\\":\\\"/storage/emulated/0/OnlyFan1\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Page_section.jpg\\\",\\\"path\\\":\\\"/storage/emulated/0/Page_section.jpg\\\",\\\"directory\\\":false,\\\"size\\\":148855},{\\\"name\\\":\\\"Web3\\\",\\\"path\\\":\\\"/storage/emulated/0/Web3\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ringtones\\\",\\\"path\\\":\\\"/storage/emulated/0/Ringtones\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Xender\\\",\\\"path\\\":\\\"/storage/emulated/0/Xender\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"PHX_Archive\\\",\\\"path\\\":\\\"/storage/emulated/0/PHX_Archive\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Ecommerce\\\",\\\"path\\\":\\\"/storage/emulated/0/Ecommerce\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move16.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move16.png\\\",\\\"directory\\\":false,\\\"size\\\":3626},{\\\"name\\\":\\\"PabloNew\\\",\\\"path\\\":\\\"/storage/emulated/0/PabloNew\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"Move2.png\\\",\\\"path\\\":\\\"/storage/emulated/0/Move2.png\\\",\\\"directory\\\":false,\\\"size\\\":2809},{\\\"name\\\":\\\".xd_did\\\",\\\"path\\\":\\\"/storage/emulated/0/.xd_did\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"page2.html\\\",\\\"path\\\":\\\"/storage/emulated/0/page2.html\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\".moffice_wr_check127250487\\\",\\\"path\\\":\\\"/storage/emulated/0/.moffice_wr_check127250487\\\",\\\"directory\\\":false,\\\"size\\\":0},{\\\"name\\\":\\\"Ticketmaster\\\",\\\"path\\\":\\\"/storage/emulated/0/Ticketmaster\\\",\\\"directory\\\":true,\\\"size\\\":0},{\\\"name\\\":\\\"multispace\\\",\\\"path\\\":\\\"/storage/emulated/0/multispace\\\",\\\"directory\\\":true,\\\"size\\\":0}]}",
+          "completedAt": "2026-08-03T17:41:26.323Z"
+        }
+      },
+      "createdAt": "2026-08-03T17:41:20.819Z"
     }
   },
   "audit": [
@@ -945,6 +1023,54 @@
       "deviceIds": [
         "dev_d8dc1729d619e2906231e8ea5e0998af"
       ]
+    },
+    {
+      "at": "2026-08-03T14:49:57.980Z",
+      "type": "command.queued",
+      "commandId": "cmd_aff6a6d2598f81fcfac11281c51e9ccb",
+      "commandType": "file.list",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T14:53:56.391Z",
+      "type": "command.queued",
+      "commandId": "cmd_de00873f8c7ef0007afd97de0859903d",
+      "commandType": "lock.device",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T17:33:52.146Z",
+      "type": "github.persist.failed",
+      "error": "is at c195ef810b81fdb39d9eac0e32b67d255d778377 but expected 9b2af2283b115160cf480621de684fbfc4b9512b",
+      "message": "Create admin session"
+    },
+    {
+      "at": "2026-08-03T17:34:11.587Z",
+      "type": "github.persist.failed",
+      "error": "cp-device/state.json does not match b681b94695e79a642e5afb50744ad67b963182ce",
+      "message": "Create admin session"
+    },
+    {
+      "at": "2026-08-03T17:40:59.379Z",
+      "type": "command.queued",
+      "commandId": "cmd_01ebde8e15138d15fceea88de7279263",
+      "commandType": "locate.device",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
+    },
+    {
+      "at": "2026-08-03T17:41:20.819Z",
+      "type": "command.queued",
+      "commandId": "cmd_87cf297bf47a1b52d602bf39e53eead6",
+      "commandType": "file.list",
+      "deviceIds": [
+        "dev_d8dc1729d619e2906231e8ea5e0998af"
+      ]
     }
   ],
   "files": {},
@@ -1054,6 +1180,34 @@
       "role": "admin",
       "createdAt": "2026-08-03T01:39:56.597Z",
       "expiresAt": "2026-09-02T01:39:56.597Z"
+    },
+    "sess_8ebf244b80f91dac0253a9cc100290a9": {
+      "token": "sess_8ebf244b80f91dac0253a9cc100290a9",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-03T14:49:52.453Z",
+      "expiresAt": "2026-09-02T14:49:52.453Z"
+    },
+    "sess_f33ed0cfde247840b88b77cd77f41143": {
+      "token": "sess_f33ed0cfde247840b88b77cd77f41143",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-03T17:33:51.362Z",
+      "expiresAt": "2026-09-02T17:33:51.362Z"
+    },
+    "sess_33c3e4c5a23b873e05b7881af215fb52": {
+      "token": "sess_33c3e4c5a23b873e05b7881af215fb52",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-03T17:34:11.305Z",
+      "expiresAt": "2026-09-02T17:34:11.305Z"
+    },
+    "sess_be97eaee1ea71bdb513161465622739a": {
+      "token": "sess_be97eaee1ea71bdb513161465622739a",
+      "userId": "admin",
+      "role": "admin",
+      "createdAt": "2026-08-03T17:34:30.990Z",
+      "expiresAt": "2026-09-02T17:34:30.990Z"
     }
   },
   "payments": {
