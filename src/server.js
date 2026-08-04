@@ -395,7 +395,12 @@ async function handleApi(req, res) {
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
       const body = await parseJsonBody(req);
-      if (body.login === (process.env.CP_DEVICE_ADMIN_USERNAME || "admin") && body.password === process.env.CP_DEVICE_ADMIN_PASSWORD) {
+      const adminUsername = process.env.CP_DEVICE_ADMIN_USERNAME || "admin";
+      const adminPassword = process.env.CP_DEVICE_ADMIN_PASSWORD;
+      if (!adminPassword) {
+        return send(res, 500, { error: "Admin password is not configured on the server." });
+      }
+      if (body.login === adminUsername && body.password === adminPassword) {
         const token = createSession("admin", "admin");
         await persistState("Create admin session");
         return send(res, 200, { token, user: { id: "admin", role: "admin", username: "admin", email: "admin" } });
