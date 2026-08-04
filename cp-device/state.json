@@ -26,6 +26,15 @@
       "passwordHash": "004f23f7dd510824b10a329c03510e91:c838fb3e1820efdbdc5a032a76ac36986cd2ac6e7279a0d4ffcb2b9a73f02a1f",
       "role": "user",
       "createdAt": "2026-08-04T16:11:12.309Z"
+    },
+    "usr_ead6627e5773e8260136a77dafc97313": {
+      "id": "usr_ead6627e5773e8260136a77dafc97313",
+      "email": "hollyhubdigitals@gmail.com",
+      "username": "Holly1",
+      "phone": "+2348033059832",
+      "passwordHash": "fac8bdd373e58efb32d28192c7288a6e:b56543ca82715a483570c57cefea5856144bbc6653ef367e4db81bca2c277626",
+      "role": "user",
+      "createdAt": "2026-08-04T16:16:21.653Z"
     }
   },
   "devices": {
