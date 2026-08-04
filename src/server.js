@@ -22,12 +22,25 @@ const registry = new DeviceRegistry(store, persistenceStore, requireEnv("CP_DEVI
 let hydratePromise = null;
 let hydratedAt = 0;
 
+function hasMeaningfulPersistedState(state) {
+  if (!state || typeof state !== "object" || Array.isArray(state)) return false;
+  return Object.entries(state).some(([key, value]) => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (value && typeof value === "object") return Object.keys(value).length > 0;
+    return Boolean(value);
+  });
+}
+
 async function hydrateStore(force = false) {
   if (!persistenceStore.enabled()) return;
   if (!force && hydratePromise && Date.now() - hydratedAt < 1500) return hydratePromise;
   hydratePromise = persistenceStore.pullState()
     .then((state) => {
-      if (state && !state.skipped) store.replaceState(state);
+      if (state && !state.skipped && hasMeaningfulPersistedState(state)) {
+        store.replaceState(state);
+      } else if (state && state.skipped) {
+        store.save();
+      }
       hydratedAt = Date.now();
     })
     .catch((error) => {
@@ -44,7 +57,7 @@ async function persistState(message) {
   } catch (error) {
     store.state.audit.push({ at: new Date().toISOString(), type: "supabase.persist.failed", error: error.message, message });
     store.save();
-    throw new Error(`Supabase persistence failed: ${error.message}`);
+    return { skipped: true, reason: error.message };
   }
 }
 
@@ -188,7 +201,7 @@ function findUser(login) {
 function createSession(userId, role = "user") {
   const token = randomId("sess");
   store.transaction((state) => {
-    state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString() };
+    state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() };
   });
   return token;
 }
