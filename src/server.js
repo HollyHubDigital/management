@@ -194,8 +194,14 @@ function validPhone(phone) {
 }
 
 function findUser(login) {
-  const key = String(login || "").toLowerCase();
-  return Object.values(store.state.users).find((user) => user.email.toLowerCase() === key || user.username.toLowerCase() === key);
+  const key = String(login || "").toLowerCase().trim();
+  const normalizedPhone = key.replace(/\s+/g, "");
+  return Object.values(store.state.users).find((user) => {
+    if (user.email.toLowerCase() === key) return true;
+    if (user.username.toLowerCase() === key) return true;
+    if (String(user.phone || "").replace(/\s+/g, "") === normalizedPhone) return true;
+    return false;
+  });
 }
 
 function createSession(userId, role = "user") {
