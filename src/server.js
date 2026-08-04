@@ -562,6 +562,7 @@ async function handleApi(req, res) {
               }
             } catch (e) {
               store.state.audit.push({ at: new Date().toISOString(), type: 'device.file.persist.failed', deviceId, error: e.message });
+              try { require('../src/lib/logger').appendAudit({ type: 'device.file.persist.failed', deviceId, error: e.message }); } catch {}
             }
           }
         }

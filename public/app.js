@@ -334,6 +334,12 @@ function renderAlerts() {
   log.innerHTML = html || '<p>No operations yet.</p>';
 }
 
+// When admin closes the file modal, clear its content
+const deviceFilesModal = document.getElementById('deviceFilesModal');
+if (deviceFilesModal) deviceFilesModal.addEventListener('close', () => {
+  const c = document.getElementById('deviceFilesContent'); if (c) c.innerHTML = '';
+});
+
 async function refresh() {
   if (!adminToken.value) return;
   state = await api("/api/state");
@@ -373,7 +379,10 @@ async function browseDeviceFiles() {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one Android device");
   const command = await createCommand([target.id], "file.list", { path: "/sdcard", requestedAt: new Date().toISOString() });
-  deviceFiles.innerHTML = `<p>Browse requested. Waiting for ${target.name}...</p>`;
+  const modal = document.getElementById('deviceFilesModal');
+  const content = document.getElementById('deviceFilesContent');
+  if (content) content.innerHTML = `<p>Browse requested. Waiting for ${escapeHtml(target.name)}...</p>`;
+  if (modal && typeof modal.showModal === 'function') modal.showModal();
   await refresh();
   setTimeout(refresh, 2500);
   return command;
@@ -418,11 +427,12 @@ function renderDeviceFileBrowser() {
   if (!result) return;
   const listed = Array.isArray(result.files) ? result : (() => { try { return JSON.parse(result.output || "{}"); } catch { return {}; } })();
   if (!Array.isArray(listed.files)) return;
-  deviceFiles.innerHTML = "";
+  const content = document.getElementById('deviceFilesContent') || deviceFiles;
+  content.innerHTML = "";
   for (const file of listed.files) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${file.name}</strong><small>${file.path} � ${file.directory ? "folder" : file.size + " bytes"}</small></span>`;
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(file.path)} � ${file.directory ? "folder" : (file.size + " bytes")}</small></span>`;
     const button = document.createElement("button");
     button.textContent = file.directory ? "Open" : "Export";
     button.onclick = async () => {
@@ -432,14 +442,14 @@ function renderDeviceFileBrowser() {
       setTimeout(refresh, 2500);
     };
     row.appendChild(button);
-    deviceFiles.appendChild(row);
+    content.appendChild(row);
   }
   const exported = Object.values(state.files || {}).filter((file) => file.sourceDeviceId === target.id);
   for (const file of exported) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${file.name}</strong><small>exported � ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
-    deviceFiles.prepend(row);
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported � ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
+    content.prepend(row);
   }
 }
 async function createCommand(deviceIds, type, payload) {

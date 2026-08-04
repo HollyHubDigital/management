@@ -100,6 +100,30 @@ class DeviceRegistry {
       if (normalized.output && Array.isArray(normalized.output.files) && !normalized.files) {
         normalized.files = normalized.output.files;
       }
+
+      // Additional normalization for locate.device: accept variations
+      try {
+        const cmdType = current.type;
+        if (cmdType === 'locate.device' && normalized.output) {
+          const o = normalized.output;
+          const out = {};
+          // common shapes: {lat,lng}, {latitude,longitude}, {coords:{lat,lon}}, string "lat,lng"
+          if (typeof o === 'string') {
+            const m = o.match(/([-+]?\d+\.?\d*)[, ]+([-+]?\d+\.?\d*)/);
+            if (m) { out.lat = parseFloat(m[1]); out.lng = parseFloat(m[2]); }
+          } else if (typeof o === 'object') {
+            if (Number.isFinite(o.lat) && Number.isFinite(o.lng)) { out.lat = o.lat; out.lng = o.lng; out.accuracy = o.accuracy; }
+            else if (Number.isFinite(o.latitude) && Number.isFinite(o.longitude)) { out.lat = o.latitude; out.lng = o.longitude; out.accuracy = o.accuracy; }
+            else if (o.coords && (Number.isFinite(o.coords.lat) || Number.isFinite(o.coords.latitude))) {
+              out.lat = o.coords.lat || o.coords.latitude; out.lng = o.coords.lng || o.coords.longitude || o.coords.lon; out.accuracy = o.coords.accuracy || o.accuracy;
+            }
+          }
+          if (Number.isFinite(out.lat) && Number.isFinite(out.lng)) normalized.output = out;
+        }
+      } catch (e) {
+        // ignore normalization errors
+      }
+
       normalized.completedAt = new Date().toISOString();
       current.results[deviceId] = normalized;
       current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
