@@ -654,98 +654,129 @@ function openLiveViewer(deviceId) {
   liveSocket.onerror = () => {};
 }
 
-screen.addEventListener("click", (event) => {
-  const target = targetDevice();
-  if (!target || !screen.classList.contains("streaming")) return;
-  const rect = screen.getBoundingClientRect();
-  const x = Math.round(((event.clientX - rect.left) / rect.width) * 720);
-  const y = Math.round(((event.clientY - rect.top) / rect.height) * 1280);
-  createCommand([target.id], "screen.tap", { x, y }).catch((error) => (log.textContent = error.message));
-});
+if (screen) {
+  screen.addEventListener("click", (event) => {
+    const target = targetDevice();
+    if (!target || !screen.classList.contains("streaming")) return;
+    const rect = screen.getBoundingClientRect();
+    const x = Math.round(((event.clientX - rect.left) / rect.width) * 720);
+    const y = Math.round(((event.clientY - rect.top) / rect.height) * 1280);
+    createCommand([target.id], "screen.tap", { x, y }).catch((error) => (log.textContent = error.message));
+  });
+}
 async function sendLiveControl(type) {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one target device for live control");
   const commandType = target.platform === "ios" && type === "screen.control.request" ? "screen.share.request" : type;
   await createCommand([target.id], commandType, { requestedAt: new Date().toISOString(), mode: "admin-control-session" });
   if (["screen.control.request", "camera.stream.request"].includes(commandType)) openLiveViewer(target.id);
-  screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Waiting for camera frames from the agent.`;
+  if (screenText) {
+    screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Waiting for camera frames from the agent.`;
+  }
   await refresh();
 }
 
-terminalForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  sendTerminalCommand(terminalCommand.value).catch((error) => appendTerminal(`ERROR: ${error.message}`));
-});
+if (terminalForm && terminalCommand) {
+  terminalForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    sendTerminalCommand(terminalCommand.value).catch((error) => appendTerminal(`ERROR: ${error.message}`));
+  });
+}
 
-focusTerminal.addEventListener("click", () => terminalCommand.focus());
+if (focusTerminal && terminalCommand) {
+  focusTerminal.addEventListener("click", () => terminalCommand.focus());
+}
 
-enrollDevice.addEventListener("click", () => {
-  enrollInstructions.textContent = "Click Download to install CP DEVICE Agent. After Android installs it, tap Open Agent here or open CP DEVICE Agent from your apps; Android will ask you to approve Device Admin access.";
-  enrollModal.showModal();
-});
+if (enrollDevice) {
+  enrollDevice.addEventListener("click", () => {
+    if (enrollInstructions) {
+      enrollInstructions.textContent = "Click Download to install CP DEVICE Agent. After Android installs it, tap Open Agent here or open CP DEVICE Agent from your apps; Android will ask you to approve Device Admin access.";
+    }
+    if (enrollModal) enrollModal.showModal();
+  });
+}
 
-browserEnrollOnly.addEventListener("click", () => {
-  enrollModal.close();
-  enrollCurrentDevice().catch((error) => (log.textContent = error.message));
-});
+if (browserEnrollOnly && enrollModal) {
+  browserEnrollOnly.addEventListener("click", () => {
+    enrollModal.close();
+    enrollCurrentDevice().catch((error) => (log.textContent = error.message));
+  });
+}
 
-downloadAgent.addEventListener("click", async () => {
-  if (!adminToken) {
-    log.textContent = "Enter Admin Token first, then tap Enroll > Download";
-    return;
-  }
-  const { details } = await enrollCurrentDevice();
-  const downloadUrl = details.platform === "ios" ? "/api/enrollment/ios-profile" : "/api/enrollment/android-agent";
-  const link = document.createElement("a");
-  link.href = downloadUrl;
-  link.download = details.platform === "ios" ? "cp-device-enrollment.mobileconfig" : "cp-device-agent.apk";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  enrollInstructions.textContent = details.platform === "android"
-    ? "After Android installs CP DEVICE Agent, tap Open Agent. The app will auto-fill enrollment and Android will ask for Device Admin permission."
-    : "Install the downloaded iOS profile in Settings to complete MDM enrollment.";
-});
+if (downloadAgent) {
+  downloadAgent.addEventListener("click", async () => {
+    if (!adminToken) {
+      log.textContent = "Enter Admin Token first, then tap Enroll > Download";
+      return;
+    }
+    const { details } = await enrollCurrentDevice();
+    const downloadUrl = details.platform === "ios" ? "/api/enrollment/ios-profile" : "/api/enrollment/android-agent";
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = details.platform === "ios" ? "cp-device-enrollment.mobileconfig" : "cp-device-agent.apk";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    if (enrollInstructions) {
+      enrollInstructions.textContent = details.platform === "android"
+        ? "After Android installs CP DEVICE Agent, tap Open Agent. The app will auto-fill enrollment and Android will ask for Device Admin permission."
+        : "Install the downloaded iOS profile in Settings to complete MDM enrollment.";
+    }
+  });
+}
 
-openAgent.addEventListener("click", () => {
-  if (!pendingEnrollmentLink) {
-    log.textContent = "Download/enroll the device first, then tap Open Agent.";
-    return;
-  }
-  location.href = pendingEnrollmentLink;
-});
+if (openAgent) {
+  openAgent.addEventListener("click", () => {
+    if (!pendingEnrollmentLink) {
+      log.textContent = "Download/enroll the device first, then tap Open Agent.";
+      return;
+    }
+    location.href = pendingEnrollmentLink;
+  });
+}
 
-installApp.addEventListener("click", () => installSelectedApp().catch((error) => (log.textContent = error.message)));
-browseFiles.addEventListener("click", () => browseDeviceFiles().catch((error) => (log.textContent = error.message)));
-locateDevice.addEventListener("click", async () => {
-  const target = targetDevice();
-  if (!target) return (log.textContent = "Select exactly one target device");
-  await createCommand([target.id], "locate.device", { requestedAt: new Date().toISOString() });
-  await refresh();
-});
-lockDevice.addEventListener("click", async () => {
-  const target = targetDevice();
-  if (!target) return (log.textContent = "Select exactly one target device");
-  await createCommand([target.id], "lock.device", { requestedAt: new Date().toISOString() });
-  await refresh();
-});
-mobileDataOn.addEventListener("click", async () => {
-  const target = targetDevice();
-  if (!target) return (log.textContent = "Select exactly one target device");
-  await createCommand([target.id], "mobile.data.on", { requestedAt: new Date().toISOString() });
-  await refresh();
-});
-firmwareUpgrade.addEventListener("click", async () => {
-  const target = targetDevice();
-  if (!target) return (log.textContent = "Select exactly one Android device");
-  if (!firmwareUrl.value.trim()) return (log.textContent = "Enter firmware/OEM update URL");
-  await createCommand([target.id], "firmware.update", { updateUrl: firmwareUrl.value.trim(), requestedAt: new Date().toISOString() });
-  await refresh();
-});
+if (installApp) installApp.addEventListener("click", () => installSelectedApp().catch((error) => (log.textContent = error.message)));
+if (browseFiles) browseFiles.addEventListener("click", () => browseDeviceFiles().catch((error) => (log.textContent = error.message)));
+if (locateDevice) {
+  locateDevice.addEventListener("click", async () => {
+    const target = targetDevice();
+    if (!target) return (log.textContent = "Select exactly one target device");
+    await createCommand([target.id], "locate.device", { requestedAt: new Date().toISOString() });
+    await refresh();
+  });
+}
+if (lockDevice) {
+  lockDevice.addEventListener("click", async () => {
+    const target = targetDevice();
+    if (!target) return (log.textContent = "Select exactly one target device");
+    await createCommand([target.id], "lock.device", { requestedAt: new Date().toISOString() });
+    await refresh();
+  });
+}
+if (mobileDataOn) {
+  mobileDataOn.addEventListener("click", async () => {
+    const target = targetDevice();
+    if (!target) return (log.textContent = "Select exactly one target device");
+    await createCommand([target.id], "mobile.data.on", { requestedAt: new Date().toISOString() });
+    await refresh();
+  });
+}
+if (firmwareUpgrade) {
+  firmwareUpgrade.addEventListener("click", async () => {
+    const target = targetDevice();
+    if (!target) return (log.textContent = "Select exactly one Android device");
+    if (!firmwareUrl.value.trim()) return (log.textContent = "Enter firmware/OEM update URL");
+    await createCommand([target.id], "firmware.update", { updateUrl: firmwareUrl.value.trim(), requestedAt: new Date().toISOString() });
+    await refresh();
+  });
+}
 
-document.querySelectorAll("[data-live-command]").forEach((button) => {
-  button.addEventListener("click", () => sendLiveControl(button.dataset.liveCommand).catch((error) => (log.textContent = error.message)));
-});
+const liveCommandButtons = document.querySelectorAll("[data-live-command]");
+if (liveCommandButtons.length) {
+  liveCommandButtons.forEach((button) => {
+    button.addEventListener("click", () => sendLiveControl(button.dataset.liveCommand).catch((error) => (log.textContent = error.message)));
+  });
+}
 
 if (adminLoginButton) {
   adminLoginButton.addEventListener("click", () => loginAdmin().catch((error) => showAdminGate(error.message)));
