@@ -246,7 +246,7 @@ function render() {
   for (const device of list) {
     const card = document.createElement("button");
     card.className = `device-card ${selectedDeviceIds.includes(device.id) ? "active" : ""}`;
-    card.innerHTML = `<span><strong>${device.name}</strong><br><small>${device.platform} · ${device.serial}</small></span><i class="status ${device.status}"></i>`;
+    card.innerHTML = `<span><strong>${device.name}</strong><br><small>${device.platform} ï¿½ ${device.serial}</small></span><i class="status ${device.status}"></i>`;
     card.onclick = () => {
       selectedDeviceIds = selectedDeviceIds.includes(device.id) ? selectedDeviceIds.filter((id) => id !== device.id) : [device.id];
       const target = targetDevice();
@@ -256,12 +256,63 @@ function render() {
     devices.appendChild(card);
   }
   const target = targetDevice();
-  targetBadge.textContent = target ? `${target.name} · ${target.status}` : "No target";
-  log.textContent = JSON.stringify({ devices: list, commands: state.commands }, null, 2);
+  targetBadge.textContent = target ? `${target.name} ï¿½ ${target.status}` : "No target";
+  renderAlerts();
   renderTerminalResults();
   renderDeviceFileBrowser();
   renderLocationResults();
   refreshCapabilityGates();
+}
+
+function escapeHtml(str) {
+  return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function openFilesForCommand(commandId, deviceId) {
+  selectedDeviceIds = [deviceId];
+  render();
+  const df = document.getElementById("deviceFiles");
+  if (df) df.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function renderAlerts() {
+  const commands = Object.values(state.commands || {});
+  if (!commands.length) { log.innerHTML = '<p>No operations yet.</p>'; return; }
+  const sorted = commands.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  let html = "";
+  for (const command of sorted) {
+    for (const deviceId of command.deviceIds || []) {
+      const device = state.devices[deviceId] || { id: deviceId, name: deviceId };
+      const result = command.results && command.results[deviceId];
+      if (!result) continue;
+      html += '<div class="alert-item">';
+      html += `<strong>${escapeHtml(device.name)}</strong> â€” ${escapeHtml(command.type)}`;
+      if (command.type === "locate.device") {
+        try {
+          const payload = typeof result.output === 'string' ? JSON.parse(result.output) : result.output;
+          if (payload && typeof payload.lat === 'number' && typeof payload.lng === 'number') {
+            const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.lat},${payload.lng}`)}`;
+            html += `: <a href="${mapUrl}" target="_blank">View location</a> (${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)})`;
+          } else {
+            html += `: ${escapeHtml(String(result.output))}`;
+          }
+        } catch (e) {
+          html += `: ${escapeHtml(String(result.output))}`;
+        }
+      } else if (command.type === "file.list") {
+        // show browse button to reveal file browser for this device/command
+        html += `: <button onclick="openFilesForCommand('${command.id}','${deviceId}')">Browse files</button>`;
+      } else if (command.type === "file.pull") {
+        html += `: ${escapeHtml(String(result.output))}`;
+      } else if (command.type === "screen.control.request" || command.type === "camera.stream.request") {
+        html += `: ${escapeHtml(String(result.output))}`;
+      } else {
+        html += `: ${escapeHtml(String(result.output || result.error || ''))}`;
+      }
+      html += '</div>';
+    }
+  }
+  log.innerHTML = html || '<p>No operations yet.</p>';
 }
 
 async function refresh() {
@@ -352,7 +403,7 @@ function renderDeviceFileBrowser() {
   for (const file of listed.files) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${file.name}</strong><small>${file.path} · ${file.directory ? "folder" : file.size + " bytes"}</small></span>`;
+    row.innerHTML = `<span><strong>${file.name}</strong><small>${file.path} ï¿½ ${file.directory ? "folder" : file.size + " bytes"}</small></span>`;
     const button = document.createElement("button");
     button.textContent = file.directory ? "Open" : "Export";
     button.onclick = async () => {
@@ -368,7 +419,7 @@ function renderDeviceFileBrowser() {
   for (const file of exported) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${file.name}</strong><small>exported · ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
+    row.innerHTML = `<span><strong>${file.name}</strong><small>exported ï¿½ ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
     deviceFiles.prepend(row);
   }
 }
