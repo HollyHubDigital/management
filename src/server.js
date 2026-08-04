@@ -201,7 +201,9 @@ function findUser(login) {
 function createSession(userId, role = "user") {
   const token = randomId("sess");
   store.transaction((state) => {
-    state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() };
+    // Admin sessions remain short-lived; user sessions are long-lived (persisted) so clients can "remember me".
+    const expiresAt = role === "admin" ? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() : new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString();
+    state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt };
   });
   return token;
 }
@@ -384,7 +386,20 @@ async function handleApi(req, res) {
       if (!user || !verifyPassword(body.currentPassword, user.passwordHash)) return send(res, 401, { error: "Current password is incorrect" });
       if (!body.newPassword || body.newPassword !== body.confirmNewPassword) return send(res, 400, { error: "New passwords do not match" });
       store.transaction((state) => { state.users[user.id].passwordHash = hashPassword(body.newPassword); });
-      await persistState("Reset CP DEVICE user password");
+      // Invalidate all sessions for this user so they must re-authenticate after a password change
+      store.transaction((state) => {
+        for (const [token, session] of Object.entries(state.sessions || {})) {
+          if (session && session.userId === user.id) delete state.sessions[token];
+        }
+      });
+      await persistState("Reset CP DEVICE user password and invalidate sessions");
+      return send(res, 200, { ok: true });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+      const token = bearerToken(req);
+      store.transaction((state) => { if (state.sessions[token]) delete state.sessions[token]; });
+      await persistState("User logout");
       return send(res, 200, { ok: true });
     }
 
