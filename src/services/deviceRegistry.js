@@ -86,7 +86,22 @@ class DeviceRegistry {
     const command = this.store.transaction((state) => {
       const current = state.commands[commandId];
       if (!current || !current.deviceIds.includes(deviceId)) throw new Error("Unknown command");
-      current.results[deviceId] = { ...result, completedAt: new Date().toISOString() };
+      // Normalize result.output if it's a JSON string so UI gets consistent shapes
+      const normalized = { ...result };
+      if (typeof normalized.output === "string") {
+        try {
+          const parsed = JSON.parse(normalized.output);
+          normalized.output = parsed;
+        } catch (e) {
+          // leave as string if it's not valid JSON
+        }
+      }
+      // If the agent returned a files list inside output, normalize to top-level files
+      if (normalized.output && Array.isArray(normalized.output.files) && !normalized.files) {
+        normalized.files = normalized.output.files;
+      }
+      normalized.completedAt = new Date().toISOString();
+      current.results[deviceId] = normalized;
       current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
       return current;
     });

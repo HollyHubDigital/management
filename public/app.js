@@ -244,15 +244,34 @@ function render() {
   const list = Object.values(state.devices);
   devices.innerHTML = list.length ? "" : "<p>No enrolled devices yet.</p>";
   for (const device of list) {
-    const card = document.createElement("button");
+    const card = document.createElement("div");
     card.className = `device-card ${selectedDeviceIds.includes(device.id) ? "active" : ""}`;
-    card.innerHTML = `<span><strong>${device.name}</strong><br><small>${device.platform} � ${device.serial}</small></span><i class="status ${device.status}"></i>`;
-    card.onclick = () => {
+    card.innerHTML = `<div class="device-main"><span><strong>${escapeHtml(device.name)}</strong><br><small>${escapeHtml(device.platform)} � ${escapeHtml(device.serial)}</small></span><i class="status ${device.status}"></i></div>`;
+    const controls = document.createElement("div");
+    controls.className = "device-controls";
+    const selectBtn = document.createElement("button");
+    selectBtn.textContent = selectedDeviceIds.includes(device.id) ? "Deselect" : "Select";
+    selectBtn.onclick = () => {
       selectedDeviceIds = selectedDeviceIds.includes(device.id) ? selectedDeviceIds.filter((id) => id !== device.id) : [device.id];
       const target = targetDevice();
       screenText.textContent = target ? `${target.name} selected. Remote desktop/camera/terminal commands will target this device.` : "Select one enrolled device for real-time control";
       render();
     };
+    const del = document.createElement("button");
+    del.className = "danger";
+    del.textContent = "Delete";
+    del.title = "Permanently remove this device";
+    del.onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Delete device ${device.name}? This cannot be undone.`)) return;
+      try {
+        await api(`/api/devices/${encodeURIComponent(device.id)}`, { method: "DELETE" });
+        await refresh();
+      } catch (err) { log.textContent = err.message; }
+    };
+    controls.appendChild(selectBtn);
+    controls.appendChild(del);
+    card.appendChild(controls);
     devices.appendChild(card);
   }
   const target = targetDevice();
