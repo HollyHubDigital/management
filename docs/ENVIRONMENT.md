@@ -26,6 +26,22 @@ GITHUB_BRANCH=main
 GITHUB_DATA_PATH=cp-device/state.json
 ```
 
+Supabase persistence:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-secret-key
+```
+
+Mixed persistence behavior:
+
+- When both Supabase and GitHub are configured, Supabase is the primary runtime store.
+- Device heartbeats, commands, file metadata, sessions, and subscriptions are saved to Supabase.
+- Users and enrolled device metadata are also backed up to GitHub, but GitHub is not used for frequent heartbeat commits.
+- If Supabase is unavailable, GitHub can still provide a backup copy of users/devices metadata.
+
+If GitHub persistence is configured, the backend will store users/devices metadata to the configured GitHub repo. If Supabase is configured, it handles all runtime state and avoids GitHub commit churn.
+
 Signup notification:
 
 ```env

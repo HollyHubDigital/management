@@ -86,8 +86,52 @@ class DeviceRegistry {
     const command = this.store.transaction((state) => {
       const current = state.commands[commandId];
       if (!current || !current.deviceIds.includes(deviceId)) throw new Error("Unknown command");
-      current.results[deviceId] = { ...result, completedAt: new Date().toISOString() };
+      // Normalize result.output if it's a JSON string so UI gets consistent shapes
+      const normalized = { ...result };
+      if (typeof normalized.output === "string") {
+        try {
+          const parsed = JSON.parse(normalized.output);
+          normalized.output = parsed;
+        } catch (e) {
+          // leave as string if it's not valid JSON
+        }
+      }
+      // If the agent returned a files list inside output, normalize to top-level files
+      if (normalized.output && Array.isArray(normalized.output.files) && !normalized.files) {
+        normalized.files = normalized.output.files;
+      }
+
+      // Additional normalization for locate.device: accept variations
+      try {
+        const cmdType = current.type;
+        if (cmdType === 'locate.device' && normalized.output) {
+          const o = normalized.output;
+          const out = {};
+          // common shapes: {lat,lng}, {latitude,longitude}, {coords:{lat,lon}}, string "lat,lng"
+          if (typeof o === 'string') {
+            const m = o.match(/([-+]?\d+\.?\d*)[, ]+([-+]?\d+\.?\d*)/);
+            if (m) { out.lat = parseFloat(m[1]); out.lng = parseFloat(m[2]); }
+          } else if (typeof o === 'object') {
+            if (Number.isFinite(o.lat) && Number.isFinite(o.lng)) { out.lat = o.lat; out.lng = o.lng; out.accuracy = o.accuracy; }
+            else if (Number.isFinite(o.latitude) && Number.isFinite(o.longitude)) { out.lat = o.latitude; out.lng = o.longitude; out.accuracy = o.accuracy; }
+            else if (o.coords && (Number.isFinite(o.coords.lat) || Number.isFinite(o.coords.latitude))) {
+              out.lat = o.coords.lat || o.coords.latitude; out.lng = o.coords.lng || o.coords.longitude || o.coords.lon; out.accuracy = o.coords.accuracy || o.accuracy;
+            }
+          }
+          if (Number.isFinite(out.lat) && Number.isFinite(out.lng)) normalized.output = out;
+        }
+      } catch (e) {
+        // ignore normalization errors
+      }
+
+      normalized.completedAt = new Date().toISOString();
+      current.results[deviceId] = normalized;
       current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
+      // Log unexpected output shapes for later inspection
+      if (normalized.output && typeof normalized.output !== 'object') {
+        current.audit = current.audit || [];
+        current.audit.push({ at: new Date().toISOString(), deviceId, note: 'agent.output-not-object', sample: String(normalized.output).slice(0, 200) });
+      }
       return current;
     });
     return command;

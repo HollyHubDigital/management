@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { JsonStore } = require("./lib/store");
 const { parseJsonBody, requireEnv, verifyAdmin, hashPassword, verifyPassword, randomId, bearerToken } = require("./lib/security");
-const { SupabaseStore } = require("./services/supabaseStore");
+const { StatePersistence } = require("./services/statePersistence");
 const { DeviceRegistry } = require("./services/deviceRegistry");
 const { RealtimeHub } = require("./services/realtimeHub");
 
@@ -17,17 +17,30 @@ fs.mkdirSync(FILE_DIR, { recursive: true });
 const store = new JsonStore(path.join(DATA_ROOT, "state.json"));
 store.load();
 
-const persistenceStore = new SupabaseStore(process.env);
+const persistenceStore = new StatePersistence(process.env);
 const registry = new DeviceRegistry(store, persistenceStore, requireEnv("CP_DEVICE_ENROLLMENT_SECRET", "change-this-long-random-enrollment-secret"));
 let hydratePromise = null;
 let hydratedAt = 0;
+
+function hasMeaningfulPersistedState(state) {
+  if (!state || typeof state !== "object" || Array.isArray(state)) return false;
+  return Object.entries(state).some(([key, value]) => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (value && typeof value === "object") return Object.keys(value).length > 0;
+    return Boolean(value);
+  });
+}
 
 async function hydrateStore(force = false) {
   if (!persistenceStore.enabled()) return;
   if (!force && hydratePromise && Date.now() - hydratedAt < 1500) return hydratePromise;
   hydratePromise = persistenceStore.pullState()
     .then((state) => {
-      if (state && !state.skipped) store.replaceState(state);
+      if (state && !state.skipped && hasMeaningfulPersistedState(state)) {
+        store.replaceState(state);
+      } else if (state && state.skipped) {
+        store.save();
+      }
       hydratedAt = Date.now();
     })
     .catch((error) => {
@@ -44,7 +57,7 @@ async function persistState(message) {
   } catch (error) {
     store.state.audit.push({ at: new Date().toISOString(), type: "supabase.persist.failed", error: error.message, message });
     store.save();
-    throw new Error(`Supabase persistence failed: ${error.message}`);
+    return { skipped: true, reason: error.message };
   }
 }
 
@@ -188,7 +201,9 @@ function findUser(login) {
 function createSession(userId, role = "user") {
   const token = randomId("sess");
   store.transaction((state) => {
-    state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString() };
+    // Admin sessions remain short-lived; user sessions are long-lived (persisted) so clients can "remember me".
+    const expiresAt = role === "admin" ? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() : new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString();
+    state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt };
   });
   return token;
 }
@@ -234,6 +249,11 @@ function activateSubscription(userId, plan, paymentId) {
 function hasPaidAccess(userId) {
   const subscription = store.state.subscriptions[userId];
   return Boolean(subscription && subscription.plan !== "free" && Date.parse(subscription.expiresAt) > Date.now());
+}
+
+function devicePaidAccessAllowed(userId, device) {
+  if (hasPaidAccess(userId)) return true;
+  return Boolean(device && device.subscriptionOverride && device.subscriptionOverride.active);
 }
 
 async function submitWeb3Forms(user) {
@@ -338,11 +358,27 @@ async function handleApi(req, res) {
       return res.end(frame.frame);
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/check-availability") {
+      const field = (url.searchParams.get("field") || "").toLowerCase();
+      const value = String(url.searchParams.get("value") || "").trim();
+      if (!field || !value || !["email", "username", "phone"].includes(field)) return send(res, 400, { error: "field and value are required", available: false });
+      const normalized = field === "phone" ? value.replace(/\s+/g, "") : value.toLowerCase();
+      const exists = Object.values(store.state.users).some((user) => {
+        if (field === "email") return user.email.toLowerCase() === normalized;
+        if (field === "username") return user.username.toLowerCase() === normalized;
+        if (field === "phone") return String(user.phone || "").replace(/\s+/g, "") === normalized;
+        return false;
+      });
+      return send(res, 200, { available: !exists });
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/signup") {
       const body = await parseJsonBody(req);
       for (const field of ["email", "username", "password", "phone"]) if (!body[field]) return send(res, 400, { error: `${field} is required` });
       if (!validPhone(body.phone)) return send(res, 400, { error: "Phone must include country code, e.g. +12345678900" });
-      if (findUser(body.email) || findUser(body.username)) return send(res, 409, { error: "Email or username already exists" });
+      if (findUser(body.email)) return send(res, 409, { error: "Email already exists" });
+      if (findUser(body.username)) return send(res, 409, { error: "Username already exists" });
+      if (Object.values(store.state.users).some((user) => String(user.phone || "").replace(/\s+/g, "") === String(body.phone).replace(/\s+/g, ""))) return send(res, 409, { error: "Phone already exists" });
       const userId = randomId("usr");
       const user = { id: userId, email: body.email, username: body.username, phone: String(body.phone).replace(/\s+/g, ""), passwordHash: hashPassword(body.password), role: "user", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.users[userId] = user; state.subscriptions[userId] = { plan: "free", expiresAt: null, updatedAt: new Date().toISOString() }; });
@@ -371,7 +407,20 @@ async function handleApi(req, res) {
       if (!user || !verifyPassword(body.currentPassword, user.passwordHash)) return send(res, 401, { error: "Current password is incorrect" });
       if (!body.newPassword || body.newPassword !== body.confirmNewPassword) return send(res, 400, { error: "New passwords do not match" });
       store.transaction((state) => { state.users[user.id].passwordHash = hashPassword(body.newPassword); });
-      await persistState("Reset CP DEVICE user password");
+      // Invalidate all sessions for this user so they must re-authenticate after a password change
+      store.transaction((state) => {
+        for (const [token, session] of Object.entries(state.sessions || {})) {
+          if (session && session.userId === user.id) delete state.sessions[token];
+        }
+      });
+      await persistState("Reset CP DEVICE user password and invalidate sessions");
+      return send(res, 200, { ok: true });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+      const token = bearerToken(req);
+      store.transaction((state) => { if (state.sessions[token]) delete state.sessions[token]; });
+      await persistState("User logout");
       return send(res, 200, { ok: true });
     }
 
@@ -401,16 +450,36 @@ async function handleApi(req, res) {
       });
     }
 
+    // Allow a user to update capabilities for devices they own (owner-only, for testing/agent handshake flows)
+    if (req.method === "POST" && url.pathname.startsWith("/api/user/devices/") && url.pathname.endsWith("/capabilities")) {
+      const user = sessionUser(req);
+      if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
+      const parts = url.pathname.split("/");
+      const deviceId = parts[4];
+      if (!ownsDevice(user.id, deviceId)) return send(res, 403, { error: "Device not found or not owned by user" });
+      const body = await parseJsonBody(req);
+      const caps = body.capabilities || body;
+      store.transaction((state) => {
+        const d = state.devices[deviceId];
+        if (!d) throw new Error("Unknown device");
+        d.capabilities = { ...(d.capabilities || {}), ...(caps || {}) };
+        state.audit.push({ at: new Date().toISOString(), type: "user.update.device.capabilities", deviceId, userId: user.id, changes: Object.keys(caps || {}) });
+      });
+      await persistState("User update device capabilities");
+      return send(res, 200, { ok: true, device: store.state.devices[deviceId] });
+    }
+
     if (req.method === "POST" && url.pathname === "/api/user/commands") {
       const user = sessionUser(req);
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
       const featureType = body.type || "";
       const freeAllowed = new Set(["screen.control.request", "screen.share.request"]);
-      if (!hasPaidAccess(user.id) && !freeAllowed.has(featureType)) return send(res, 402, { error: "Subscription required", subscriptionRequired: true });
       const deviceIds = Array.isArray(body.deviceIds) ? body.deviceIds : [];
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
       const requestedDevices = deviceIds.map((deviceId) => store.state.devices[deviceId]);
+      const targetHasPaidAccess = requestedDevices.every((device) => devicePaidAccessAllowed(user.id, device));
+      if (!targetHasPaidAccess && !freeAllowed.has(featureType)) return send(res, 402, { error: "Subscription required", subscriptionRequired: true });
       for (const device of requestedDevices) {
         const capabilityError = assertCommandAllowed(device, featureType);
         if (capabilityError) return send(res, 400, { error: capabilityError });
@@ -517,7 +586,28 @@ async function handleApi(req, res) {
       }
       if (req.method === "POST" && action === "commands") {
         const body = await parseJsonBody(req);
-        const command = registry.completeCommand(deviceId, body.commandId, body.result || {});
+        // If agent returned files inline (base64), persist them as exported files so UI can list/download
+        const result = body.result || {};
+        if (Array.isArray(result.files) && result.files.length) {
+          for (const f of result.files) {
+            try {
+              if (f.contentBase64) {
+                const data = Buffer.from(f.contentBase64, 'base64');
+                const fileId = `file_${crypto.randomBytes(12).toString('hex')}`;
+                fs.writeFileSync(path.join(FILE_DIR, fileId), data);
+                store.transaction((state) => {
+                  state.files[fileId] = { id: fileId, name: f.name || f.path || fileId, size: data.length, contentType: f.contentType || 'application/octet-stream', sourceDeviceId: deviceId, commandId: body.commandId || 'manual', createdAt: new Date().toISOString() };
+                });
+                // attach id back to result so UI can show download link
+                f.id = fileId;
+              }
+            } catch (e) {
+              store.state.audit.push({ at: new Date().toISOString(), type: 'device.file.persist.failed', deviceId, error: e.message });
+              try { require('../src/lib/logger').appendAudit({ type: 'device.file.persist.failed', deviceId, error: e.message }); } catch {}
+            }
+          }
+        }
+        const command = registry.completeCommand(deviceId, body.commandId, result);
         await persistState("Complete device command");
         return send(res, 200, command);
       }
@@ -526,6 +616,28 @@ async function handleApi(req, res) {
     if (!isAdminRequest(req)) return send(res, 401, { error: "Admin login required" });
 
     if (req.method === "GET" && url.pathname === "/api/state") return send(res, 200, store.state);
+
+    if (req.method === "POST" && url.pathname.startsWith("/api/devices/") && url.pathname.endsWith("/subscription-override")) {
+      const parts = url.pathname.split("/");
+      const deviceId = parts[3];
+      const device = store.state.devices[deviceId];
+      if (!device) return send(res, 404, { error: "Device not found" });
+      const body = await parseJsonBody(req);
+      const active = body.active === true;
+      store.transaction((state) => {
+        const d = state.devices[deviceId];
+        if (!d) throw new Error("Unknown device");
+        if (active) {
+          d.subscriptionOverride = { active: true, grantedBy: "admin", updatedAt: new Date().toISOString() };
+          state.audit.push({ at: new Date().toISOString(), type: "admin.device.subscription.override", deviceId, details: "enabled" });
+        } else {
+          delete d.subscriptionOverride;
+          state.audit.push({ at: new Date().toISOString(), type: "admin.device.subscription.override", deviceId, details: "disabled" });
+        }
+      });
+      await persistState("Update admin device subscription override");
+      return send(res, 200, { ok: true, device: store.state.devices[deviceId] });
+    }
 
     if (req.method === "DELETE" && url.pathname.startsWith("/api/devices/")) {
       const deviceId = url.pathname.split("/").pop();

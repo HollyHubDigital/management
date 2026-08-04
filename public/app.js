@@ -244,25 +244,197 @@ function render() {
   const list = Object.values(state.devices);
   devices.innerHTML = list.length ? "" : "<p>No enrolled devices yet.</p>";
   for (const device of list) {
-    const card = document.createElement("button");
+    const card = document.createElement("div");
     card.className = `device-card ${selectedDeviceIds.includes(device.id) ? "active" : ""}`;
-    card.innerHTML = `<span><strong>${device.name}</strong><br><small>${device.platform} · ${device.serial}</small></span><i class="status ${device.status}"></i>`;
-    card.onclick = () => {
+    const subtitle = formatDeviceDisplayVersion(device);
+    card.innerHTML = `<div class="device-main"><span><strong>${escapeHtml(formatDeviceDisplayName(device))}</strong>${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}</span><i class="status ${device.status}"></i></div>`;
+    const controls = document.createElement("div");
+    controls.className = "device-controls";
+    const selectBtn = document.createElement("button");
+    selectBtn.textContent = selectedDeviceIds.includes(device.id) ? "Deselect" : "Select";
+    selectBtn.onclick = () => {
       selectedDeviceIds = selectedDeviceIds.includes(device.id) ? selectedDeviceIds.filter((id) => id !== device.id) : [device.id];
       const target = targetDevice();
       screenText.textContent = target ? `${target.name} selected. Remote desktop/camera/terminal commands will target this device.` : "Select one enrolled device for real-time control";
       render();
     };
+    const overrideButton = document.createElement("button");
+    overrideButton.textContent = device.subscriptionOverride && device.subscriptionOverride.active ? "Unsubscribe Device" : "Subscribe Device";
+    overrideButton.title = device.subscriptionOverride && device.subscriptionOverride.active ? "Remove admin subscription override for this device" : "Grant paid-device access override";
+    overrideButton.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        const active = !(device.subscriptionOverride && device.subscriptionOverride.active);
+        await api(`/api/devices/${encodeURIComponent(device.id)}/subscription-override`, {
+          method: "POST",
+          body: JSON.stringify({ active })
+        });
+        await refresh();
+      } catch (err) { log.textContent = err.message; }
+    };
+    const del = document.createElement("button");
+    del.className = "danger";
+    del.textContent = "Delete";
+    del.title = "Permanently remove this device";
+    del.onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Delete device ${device.name}? This cannot be undone.`)) return;
+      try {
+        await api(`/api/devices/${encodeURIComponent(device.id)}`, { method: "DELETE" });
+        await refresh();
+      } catch (err) { log.textContent = err.message; }
+    };
+    controls.appendChild(selectBtn);
+    controls.appendChild(overrideButton);
+    controls.appendChild(del);
+    if (device.subscriptionOverride && device.subscriptionOverride.active) {
+      const badge = document.createElement("span");
+      badge.className = "device-badge";
+      badge.textContent = "Admin override";
+      card.appendChild(badge);
+    }
+    card.appendChild(controls);
     devices.appendChild(card);
   }
   const target = targetDevice();
-  targetBadge.textContent = target ? `${target.name} · ${target.status}` : "No target";
-  log.textContent = JSON.stringify({ devices: list, commands: state.commands }, null, 2);
+  targetBadge.textContent = target ? `${target.name} ï¿½ ${target.status}` : "No target";
+  renderAlerts();
   renderTerminalResults();
   renderDeviceFileBrowser();
   renderLocationResults();
   refreshCapabilityGates();
 }
+
+function escapeHtml(str) {
+  return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function formatDeviceDisplayName(device) {
+  const info = device.info || {};
+  const manufacturer = (info.manufacturer || "").trim();
+  const model = (info.model || "").trim();
+  const name = device.name || "";
+  const candidate = `${manufacturer} ${model}`.trim();
+  return candidate || name || device.serial || device.id;
+}
+
+function formatDeviceDisplayVersion(device) {
+  const info = device.info || {};
+  if (info.androidVersion) return `Android ${info.androidVersion}`;
+  if (info.iosVersion) return `iPhone ${info.iosVersion}`;
+  if (info.systemVersion) return info.systemVersion;
+  if (device.version) return device.version;
+  return device.platform ? device.platform.charAt(0).toUpperCase() + device.platform.slice(1) : "Device";
+}
+
+function friendlyCommandLabel(type) {
+  const map = {
+    "locate.device": "Locate device",
+    "file.list": "Browse files",
+    "file.pull": "Export file",
+    "screen.control.request": "Start remote screen",
+    "camera.stream.request": "Start live camera",
+    "lock.device": "Lock device",
+    "mobile.data.on": "Turn on mobile data",
+    "shell": "Execute shell command",
+    "app.install": "Install app",
+    "firmware.update": "Firmware update"
+  };
+  return map[type] || type.replace(/\./g, " ");
+}
+
+function renderCommandResultText(command, result) {
+  if (!result) return "Queued: waiting for device agent...";
+  if (result.error) return `Failed: ${String(result.error)}`;
+  if (command.type === "locate.device") {
+    const loc = typeof result.output === "object" ? result.output : null;
+    if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) return `Location found: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}${loc.accuracy ? ` (Â±${Math.round(loc.accuracy)}m)` : ""}`;
+  }
+  if (command.type === "file.list") {
+    if (result.files && Array.isArray(result.files)) return `Listed ${result.files.length} items.`;
+    const listed = typeof result.output === "object" ? result.output : null;
+    if (listed && Array.isArray(listed.files)) return `Listed ${listed.files.length} items.`;
+    return "File list available.";
+  }
+  if (command.type === "file.pull") {
+    if (result.files && Array.isArray(result.files)) return `Exported ${result.files.length} file(s).`;
+    if (result.output && typeof result.output === "string") return result.output;
+    return "File export completed.";
+  }
+  if (command.type === "screen.control.request" || command.type === "camera.stream.request") {
+    return result.ok ? "Live session started." : "Live session requested.";
+  }
+  if (command.type === "lock.device") return result.ok ? "Lock command sent." : "Lock command requested.";
+  if (command.type === "mobile.data.on") return result.ok ? "Mobile data toggle requested." : "Mobile data request queued.";
+  if (result.output && typeof result.output === "string") return result.output;
+  if (result.output && typeof result.output === "object") {
+    const keys = Object.keys(result.output);
+    if (keys.length) return `Result: ${keys.join(", ")}`;
+  }
+  return result.ok ? "Command completed." : "Command returned result.";
+}
+
+function openFilesForCommand(commandId, deviceId) {
+  selectedDeviceIds = [deviceId];
+  render();
+  const df = document.getElementById("deviceFiles");
+  if (df) df.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function renderAlerts() {
+  const commands = Object.values(state.commands || {});
+  if (!commands.length) { log.innerHTML = '<p>No operations yet.</p>'; return; }
+  const sorted = commands.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  log.innerHTML = "";
+  for (const command of sorted) {
+    for (const deviceId of command.deviceIds || []) {
+      const device = state.devices[deviceId] || { id: deviceId, name: deviceId };
+      const result = command.results && command.results[deviceId];
+      const item = document.createElement("div");
+      item.className = "alert-item";
+      const title = document.createElement("div");
+      title.className = "alert-title";
+      title.textContent = `${formatDeviceDisplayName(device)} â€” ${friendlyCommandLabel(command.type)}`;
+      item.appendChild(title);
+      const detail = document.createElement("div");
+      detail.className = "alert-detail";
+      if (!result) {
+        detail.textContent = "Queued: waiting for device agent...";
+      } else {
+        detail.textContent = renderCommandResultText(command, result);
+      }
+      item.appendChild(detail);
+      if (command.type === "file.list" && result) {
+        const actions = document.createElement("div");
+        actions.className = "alert-actions";
+        const browseBtn = document.createElement("button");
+        browseBtn.textContent = "Browse files";
+        browseBtn.onclick = () => openFilesForCommand(command.id, deviceId);
+        actions.appendChild(browseBtn);
+        item.appendChild(actions);
+      }
+      if (command.type === "locate.device" && result && result.output && typeof result.output === "object") {
+        const loc = result.output;
+        if (Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
+          const mapLink = document.createElement("a");
+          mapLink.href = `https://www.google.com/maps?q=${encodeURIComponent(`${loc.lat},${loc.lng}`)}`;
+          mapLink.target = "_blank";
+          mapLink.rel = "noopener";
+          mapLink.textContent = "View location";
+          mapLink.className = "alert-link";
+          item.appendChild(mapLink);
+        }
+      }
+      log.appendChild(item);
+    }
+  }
+}
+
+// When admin closes the file modal, clear its content
+const deviceFilesModal = document.getElementById('deviceFilesModal');
+if (deviceFilesModal) deviceFilesModal.addEventListener('close', () => {
+  const c = document.getElementById('deviceFilesContent'); if (c) c.innerHTML = '';
+});
 
 async function refresh() {
   if (!adminToken.value) return;
@@ -303,7 +475,10 @@ async function browseDeviceFiles() {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one Android device");
   const command = await createCommand([target.id], "file.list", { path: "/sdcard", requestedAt: new Date().toISOString() });
-  deviceFiles.innerHTML = `<p>Browse requested. Waiting for ${target.name}...</p>`;
+  const modal = document.getElementById('deviceFilesModal');
+  const content = document.getElementById('deviceFilesContent');
+  if (content) content.innerHTML = `<p>Browse requested. Waiting for ${escapeHtml(target.name)}...</p>`;
+  if (modal && typeof modal.showModal === 'function') modal.showModal();
   await refresh();
   setTimeout(refresh, 2500);
   return command;
@@ -348,11 +523,12 @@ function renderDeviceFileBrowser() {
   if (!result) return;
   const listed = Array.isArray(result.files) ? result : (() => { try { return JSON.parse(result.output || "{}"); } catch { return {}; } })();
   if (!Array.isArray(listed.files)) return;
-  deviceFiles.innerHTML = "";
+  const content = document.getElementById('deviceFilesContent') || deviceFiles;
+  content.innerHTML = "";
   for (const file of listed.files) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${file.name}</strong><small>${file.path} · ${file.directory ? "folder" : file.size + " bytes"}</small></span>`;
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(file.path)} ï¿½ ${file.directory ? "folder" : (file.size + " bytes")}</small></span>`;
     const button = document.createElement("button");
     button.textContent = file.directory ? "Open" : "Export";
     button.onclick = async () => {
@@ -362,14 +538,14 @@ function renderDeviceFileBrowser() {
       setTimeout(refresh, 2500);
     };
     row.appendChild(button);
-    deviceFiles.appendChild(row);
+    content.appendChild(row);
   }
   const exported = Object.values(state.files || {}).filter((file) => file.sourceDeviceId === target.id);
   for (const file of exported) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${file.name}</strong><small>exported · ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
-    deviceFiles.prepend(row);
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported ï¿½ ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
+    content.prepend(row);
   }
 }
 async function createCommand(deviceIds, type, payload) {
