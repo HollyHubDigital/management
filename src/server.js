@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { JsonStore } = require("./lib/store");
 const { parseJsonBody, requireEnv, verifyAdmin, hashPassword, verifyPassword, randomId, bearerToken } = require("./lib/security");
-const { SupabaseStore } = require("./services/supabaseStore");
+const { StatePersistence } = require("./services/statePersistence");
 const { DeviceRegistry } = require("./services/deviceRegistry");
 const { RealtimeHub } = require("./services/realtimeHub");
 
@@ -17,7 +17,7 @@ fs.mkdirSync(FILE_DIR, { recursive: true });
 const store = new JsonStore(path.join(DATA_ROOT, "state.json"));
 store.load();
 
-const persistenceStore = new SupabaseStore(process.env);
+const persistenceStore = new StatePersistence(process.env);
 const registry = new DeviceRegistry(store, persistenceStore, requireEnv("CP_DEVICE_ENROLLMENT_SECRET", "change-this-long-random-enrollment-secret"));
 let hydratePromise = null;
 let hydratedAt = 0;
@@ -251,6 +251,11 @@ function hasPaidAccess(userId) {
   return Boolean(subscription && subscription.plan !== "free" && Date.parse(subscription.expiresAt) > Date.now());
 }
 
+function devicePaidAccessAllowed(userId, device) {
+  if (hasPaidAccess(userId)) return true;
+  return Boolean(device && device.subscriptionOverride && device.subscriptionOverride.active);
+}
+
 async function submitWeb3Forms(user) {
   if (!process.env.WEB3FORMS_ACCESS_KEY) return { skipped: true, reason: "WEB3FORMS_ACCESS_KEY not configured" };
   const body = JSON.stringify({ access_key: process.env.WEB3FORMS_ACCESS_KEY, subject: "CP DEVICE Signup", email: user.email, username: user.username, phone: user.phone });
@@ -353,11 +358,27 @@ async function handleApi(req, res) {
       return res.end(frame.frame);
     }
 
+    if (req.method === "GET" && url.pathname === "/api/auth/check-availability") {
+      const field = (url.searchParams.get("field") || "").toLowerCase();
+      const value = String(url.searchParams.get("value") || "").trim();
+      if (!field || !value || !["email", "username", "phone"].includes(field)) return send(res, 400, { error: "field and value are required", available: false });
+      const normalized = field === "phone" ? value.replace(/\s+/g, "") : value.toLowerCase();
+      const exists = Object.values(store.state.users).some((user) => {
+        if (field === "email") return user.email.toLowerCase() === normalized;
+        if (field === "username") return user.username.toLowerCase() === normalized;
+        if (field === "phone") return String(user.phone || "").replace(/\s+/g, "") === normalized;
+        return false;
+      });
+      return send(res, 200, { available: !exists });
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/signup") {
       const body = await parseJsonBody(req);
       for (const field of ["email", "username", "password", "phone"]) if (!body[field]) return send(res, 400, { error: `${field} is required` });
       if (!validPhone(body.phone)) return send(res, 400, { error: "Phone must include country code, e.g. +12345678900" });
-      if (findUser(body.email) || findUser(body.username)) return send(res, 409, { error: "Email or username already exists" });
+      if (findUser(body.email)) return send(res, 409, { error: "Email already exists" });
+      if (findUser(body.username)) return send(res, 409, { error: "Username already exists" });
+      if (Object.values(store.state.users).some((user) => String(user.phone || "").replace(/\s+/g, "") === String(body.phone).replace(/\s+/g, ""))) return send(res, 409, { error: "Phone already exists" });
       const userId = randomId("usr");
       const user = { id: userId, email: body.email, username: body.username, phone: String(body.phone).replace(/\s+/g, ""), passwordHash: hashPassword(body.password), role: "user", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.users[userId] = user; state.subscriptions[userId] = { plan: "free", expiresAt: null, updatedAt: new Date().toISOString() }; });
@@ -429,16 +450,36 @@ async function handleApi(req, res) {
       });
     }
 
+    // Allow a user to update capabilities for devices they own (owner-only, for testing/agent handshake flows)
+    if (req.method === "POST" && url.pathname.startsWith("/api/user/devices/") && url.pathname.endsWith("/capabilities")) {
+      const user = sessionUser(req);
+      if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
+      const parts = url.pathname.split("/");
+      const deviceId = parts[4];
+      if (!ownsDevice(user.id, deviceId)) return send(res, 403, { error: "Device not found or not owned by user" });
+      const body = await parseJsonBody(req);
+      const caps = body.capabilities || body;
+      store.transaction((state) => {
+        const d = state.devices[deviceId];
+        if (!d) throw new Error("Unknown device");
+        d.capabilities = { ...(d.capabilities || {}), ...(caps || {}) };
+        state.audit.push({ at: new Date().toISOString(), type: "user.update.device.capabilities", deviceId, userId: user.id, changes: Object.keys(caps || {}) });
+      });
+      await persistState("User update device capabilities");
+      return send(res, 200, { ok: true, device: store.state.devices[deviceId] });
+    }
+
     if (req.method === "POST" && url.pathname === "/api/user/commands") {
       const user = sessionUser(req);
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
       const featureType = body.type || "";
       const freeAllowed = new Set(["screen.control.request", "screen.share.request"]);
-      if (!hasPaidAccess(user.id) && !freeAllowed.has(featureType)) return send(res, 402, { error: "Subscription required", subscriptionRequired: true });
       const deviceIds = Array.isArray(body.deviceIds) ? body.deviceIds : [];
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
       const requestedDevices = deviceIds.map((deviceId) => store.state.devices[deviceId]);
+      const targetHasPaidAccess = requestedDevices.every((device) => devicePaidAccessAllowed(user.id, device));
+      if (!targetHasPaidAccess && !freeAllowed.has(featureType)) return send(res, 402, { error: "Subscription required", subscriptionRequired: true });
       for (const device of requestedDevices) {
         const capabilityError = assertCommandAllowed(device, featureType);
         if (capabilityError) return send(res, 400, { error: capabilityError });
@@ -575,6 +616,28 @@ async function handleApi(req, res) {
     if (!isAdminRequest(req)) return send(res, 401, { error: "Admin login required" });
 
     if (req.method === "GET" && url.pathname === "/api/state") return send(res, 200, store.state);
+
+    if (req.method === "POST" && url.pathname.startsWith("/api/devices/") && url.pathname.endsWith("/subscription-override")) {
+      const parts = url.pathname.split("/");
+      const deviceId = parts[3];
+      const device = store.state.devices[deviceId];
+      if (!device) return send(res, 404, { error: "Device not found" });
+      const body = await parseJsonBody(req);
+      const active = body.active === true;
+      store.transaction((state) => {
+        const d = state.devices[deviceId];
+        if (!d) throw new Error("Unknown device");
+        if (active) {
+          d.subscriptionOverride = { active: true, grantedBy: "admin", updatedAt: new Date().toISOString() };
+          state.audit.push({ at: new Date().toISOString(), type: "admin.device.subscription.override", deviceId, details: "enabled" });
+        } else {
+          delete d.subscriptionOverride;
+          state.audit.push({ at: new Date().toISOString(), type: "admin.device.subscription.override", deviceId, details: "disabled" });
+        }
+      });
+      await persistState("Update admin device subscription override");
+      return send(res, 200, { ok: true, device: store.state.devices[deviceId] });
+    }
 
     if (req.method === "DELETE" && url.pathname.startsWith("/api/devices/")) {
       const deviceId = url.pathname.split("/").pop();

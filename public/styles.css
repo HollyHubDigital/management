@@ -43,6 +43,9 @@ pre { white-space: pre-wrap; color: var(--muted); min-height: 88px; max-height: 
   .live { min-height: 520px; }
   .screen { min-height: 300px; }
   .terminal-row { grid-template-columns: 1fr; }
+  .device-card { flex-direction: column; align-items: stretch; padding: 8px; min-height: 0; }
+  .device-card .device-controls { justify-content: flex-start; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .device-card .device-controls button { flex: 1 1 auto; min-width: 0; padding: 6px 10px; font-size: 11px; }
 }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .badge { border: 1px solid var(--line); border-radius: 999px; color: var(--accent); padding: 5px 9px; font-size: 11px; background: #071426; }
@@ -71,6 +74,13 @@ pre { white-space: pre-wrap; color: var(--muted); min-height: 88px; max-height: 
 .file-list { display: grid; gap: 7px; max-height: 260px; overflow: auto; margin-top: 10px; }
 .file-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: #071426; }
 .file-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alert-item { display: grid; gap: 4px; padding: 12px; border: 1px solid rgba(94,234,212,0.16); border-radius: 14px; background: rgba(14,33,58,0.92); margin-bottom: 8px; }
+.alert-title { font-weight: 700; color: #e2f8ff; }
+.alert-detail { color: var(--muted); font-size: 12px; }
+.alert-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.alert-actions button { padding: 6px 10px; font-size: 11px; }
+.alert-link { color: var(--accent); font-size: 12px; text-decoration: none; }
+.device-badge { margin-left: 10px; padding: 4px 8px; border-radius: 999px; background: rgba(94,234,212,0.12); color: #8ef0e0; font-size: 11px; }
 .hidden { display: none !important; }
 .admin-gate { width: min(460px, 94vw); margin: 12vh auto 0; display: grid; gap: 12px; text-align: center; }
 .admin-gate .gate-copy { color: var(--muted); margin: 0; }

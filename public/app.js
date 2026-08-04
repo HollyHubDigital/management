@@ -246,7 +246,8 @@ function render() {
   for (const device of list) {
     const card = document.createElement("div");
     card.className = `device-card ${selectedDeviceIds.includes(device.id) ? "active" : ""}`;
-    card.innerHTML = `<div class="device-main"><span><strong>${escapeHtml(device.name)}</strong><br><small>${escapeHtml(device.platform)} � ${escapeHtml(device.serial)}</small></span><i class="status ${device.status}"></i></div>`;
+    const subtitle = formatDeviceDisplayVersion(device);
+    card.innerHTML = `<div class="device-main"><span><strong>${escapeHtml(formatDeviceDisplayName(device))}</strong>${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}</span><i class="status ${device.status}"></i></div>`;
     const controls = document.createElement("div");
     controls.className = "device-controls";
     const selectBtn = document.createElement("button");
@@ -256,6 +257,20 @@ function render() {
       const target = targetDevice();
       screenText.textContent = target ? `${target.name} selected. Remote desktop/camera/terminal commands will target this device.` : "Select one enrolled device for real-time control";
       render();
+    };
+    const overrideButton = document.createElement("button");
+    overrideButton.textContent = device.subscriptionOverride && device.subscriptionOverride.active ? "Unsubscribe Device" : "Subscribe Device";
+    overrideButton.title = device.subscriptionOverride && device.subscriptionOverride.active ? "Remove admin subscription override for this device" : "Grant paid-device access override";
+    overrideButton.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        const active = !(device.subscriptionOverride && device.subscriptionOverride.active);
+        await api(`/api/devices/${encodeURIComponent(device.id)}/subscription-override`, {
+          method: "POST",
+          body: JSON.stringify({ active })
+        });
+        await refresh();
+      } catch (err) { log.textContent = err.message; }
     };
     const del = document.createElement("button");
     del.className = "danger";
@@ -270,7 +285,14 @@ function render() {
       } catch (err) { log.textContent = err.message; }
     };
     controls.appendChild(selectBtn);
+    controls.appendChild(overrideButton);
     controls.appendChild(del);
+    if (device.subscriptionOverride && device.subscriptionOverride.active) {
+      const badge = document.createElement("span");
+      badge.className = "device-badge";
+      badge.textContent = "Admin override";
+      card.appendChild(badge);
+    }
     card.appendChild(controls);
     devices.appendChild(card);
   }
@@ -287,6 +309,71 @@ function escapeHtml(str) {
   return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+function formatDeviceDisplayName(device) {
+  const info = device.info || {};
+  const manufacturer = (info.manufacturer || "").trim();
+  const model = (info.model || "").trim();
+  const name = device.name || "";
+  const candidate = `${manufacturer} ${model}`.trim();
+  return candidate || name || device.serial || device.id;
+}
+
+function formatDeviceDisplayVersion(device) {
+  const info = device.info || {};
+  if (info.androidVersion) return `Android ${info.androidVersion}`;
+  if (info.iosVersion) return `iPhone ${info.iosVersion}`;
+  if (info.systemVersion) return info.systemVersion;
+  if (device.version) return device.version;
+  return device.platform ? device.platform.charAt(0).toUpperCase() + device.platform.slice(1) : "Device";
+}
+
+function friendlyCommandLabel(type) {
+  const map = {
+    "locate.device": "Locate device",
+    "file.list": "Browse files",
+    "file.pull": "Export file",
+    "screen.control.request": "Start remote screen",
+    "camera.stream.request": "Start live camera",
+    "lock.device": "Lock device",
+    "mobile.data.on": "Turn on mobile data",
+    "shell": "Execute shell command",
+    "app.install": "Install app",
+    "firmware.update": "Firmware update"
+  };
+  return map[type] || type.replace(/\./g, " ");
+}
+
+function renderCommandResultText(command, result) {
+  if (!result) return "Queued: waiting for device agent...";
+  if (result.error) return `Failed: ${String(result.error)}`;
+  if (command.type === "locate.device") {
+    const loc = typeof result.output === "object" ? result.output : null;
+    if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) return `Location found: ${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}${loc.accuracy ? ` (±${Math.round(loc.accuracy)}m)` : ""}`;
+  }
+  if (command.type === "file.list") {
+    if (result.files && Array.isArray(result.files)) return `Listed ${result.files.length} items.`;
+    const listed = typeof result.output === "object" ? result.output : null;
+    if (listed && Array.isArray(listed.files)) return `Listed ${listed.files.length} items.`;
+    return "File list available.";
+  }
+  if (command.type === "file.pull") {
+    if (result.files && Array.isArray(result.files)) return `Exported ${result.files.length} file(s).`;
+    if (result.output && typeof result.output === "string") return result.output;
+    return "File export completed.";
+  }
+  if (command.type === "screen.control.request" || command.type === "camera.stream.request") {
+    return result.ok ? "Live session started." : "Live session requested.";
+  }
+  if (command.type === "lock.device") return result.ok ? "Lock command sent." : "Lock command requested.";
+  if (command.type === "mobile.data.on") return result.ok ? "Mobile data toggle requested." : "Mobile data request queued.";
+  if (result.output && typeof result.output === "string") return result.output;
+  if (result.output && typeof result.output === "object") {
+    const keys = Object.keys(result.output);
+    if (keys.length) return `Result: ${keys.join(", ")}`;
+  }
+  return result.ok ? "Command completed." : "Command returned result.";
+}
+
 function openFilesForCommand(commandId, deviceId) {
   selectedDeviceIds = [deviceId];
   render();
@@ -298,40 +385,49 @@ function renderAlerts() {
   const commands = Object.values(state.commands || {});
   if (!commands.length) { log.innerHTML = '<p>No operations yet.</p>'; return; }
   const sorted = commands.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  let html = "";
+  log.innerHTML = "";
   for (const command of sorted) {
     for (const deviceId of command.deviceIds || []) {
       const device = state.devices[deviceId] || { id: deviceId, name: deviceId };
       const result = command.results && command.results[deviceId];
-      if (!result) continue;
-      html += '<div class="alert-item">';
-      html += `<strong>${escapeHtml(device.name)}</strong> — ${escapeHtml(command.type)}`;
-      if (command.type === "locate.device") {
-        try {
-          const payload = typeof result.output === 'string' ? JSON.parse(result.output) : result.output;
-          if (payload && typeof payload.lat === 'number' && typeof payload.lng === 'number') {
-            const mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(`${payload.lat},${payload.lng}`)}`;
-            html += `: <a href="${mapUrl}" target="_blank">View location</a> (${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)})`;
-          } else {
-            html += `: ${escapeHtml(String(result.output))}`;
-          }
-        } catch (e) {
-          html += `: ${escapeHtml(String(result.output))}`;
-        }
-      } else if (command.type === "file.list") {
-        // show browse button to reveal file browser for this device/command
-        html += `: <button onclick="openFilesForCommand('${command.id}','${deviceId}')">Browse files</button>`;
-      } else if (command.type === "file.pull") {
-        html += `: ${escapeHtml(String(result.output))}`;
-      } else if (command.type === "screen.control.request" || command.type === "camera.stream.request") {
-        html += `: ${escapeHtml(String(result.output))}`;
+      const item = document.createElement("div");
+      item.className = "alert-item";
+      const title = document.createElement("div");
+      title.className = "alert-title";
+      title.textContent = `${formatDeviceDisplayName(device)} — ${friendlyCommandLabel(command.type)}`;
+      item.appendChild(title);
+      const detail = document.createElement("div");
+      detail.className = "alert-detail";
+      if (!result) {
+        detail.textContent = "Queued: waiting for device agent...";
       } else {
-        html += `: ${escapeHtml(String(result.output || result.error || ''))}`;
+        detail.textContent = renderCommandResultText(command, result);
       }
-      html += '</div>';
+      item.appendChild(detail);
+      if (command.type === "file.list" && result) {
+        const actions = document.createElement("div");
+        actions.className = "alert-actions";
+        const browseBtn = document.createElement("button");
+        browseBtn.textContent = "Browse files";
+        browseBtn.onclick = () => openFilesForCommand(command.id, deviceId);
+        actions.appendChild(browseBtn);
+        item.appendChild(actions);
+      }
+      if (command.type === "locate.device" && result && result.output && typeof result.output === "object") {
+        const loc = result.output;
+        if (Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
+          const mapLink = document.createElement("a");
+          mapLink.href = `https://www.google.com/maps?q=${encodeURIComponent(`${loc.lat},${loc.lng}`)}`;
+          mapLink.target = "_blank";
+          mapLink.rel = "noopener";
+          mapLink.textContent = "View location";
+          mapLink.className = "alert-link";
+          item.appendChild(mapLink);
+        }
+      }
+      log.appendChild(item);
     }
   }
-  log.innerHTML = html || '<p>No operations yet.</p>';
 }
 
 // When admin closes the file modal, clear its content
