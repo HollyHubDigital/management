@@ -35,6 +35,15 @@
       "passwordHash": "fac8bdd373e58efb32d28192c7288a6e:b56543ca82715a483570c57cefea5856144bbc6653ef367e4db81bca2c277626",
       "role": "user",
       "createdAt": "2026-08-04T16:16:21.653Z"
+    },
+    "usr_168de1f1203fa3accb5453abadf105b4": {
+      "id": "usr_168de1f1203fa3accb5453abadf105b4",
+      "email": "areeks2024@gmail.com",
+      "username": "Areeks",
+      "phone": "+2348132685214",
+      "passwordHash": "7f6ca60af91c7ef4508d03d3db961467:cedf6ae8e498fcc58c73f6ee24439be5784692992a2b07ef01c26f25925b9a80",
+      "role": "user",
+      "createdAt": "2026-08-04T17:33:10.740Z"
     }
   },
   "devices": {
