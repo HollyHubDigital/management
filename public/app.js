@@ -6,10 +6,14 @@ const adminGate = document.getElementById("adminGate");
 const adminApp = document.getElementById("adminApp");
 const loginStatus = document.getElementById("loginStatus");
 const adminLogout = document.getElementById("adminLogout");
-const adminToken = document.getElementById("adminToken");
+const adminTokenInput = document.getElementById("adminToken");
 const adminLogin = document.getElementById("adminLogin");
 const adminPassword = document.getElementById("adminPassword");
 const adminLoginButton = document.getElementById("adminLoginButton");
+let adminToken = localStorage.getItem("cpAdminToken") || "";
+const adminAuthPage = window.location.pathname.endsWith("admin-auth.html");
+const adminDashboardPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
+if (adminTokenInput && adminToken) adminTokenInput.value = adminToken;
 const devices = document.getElementById("devices");
 const log = document.getElementById("log");
 const screen = document.getElementById("screen");
@@ -56,40 +60,76 @@ async function loginAdmin() {
   const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ login: adminLogin.value, password: adminPassword.value }) });
   const body = await readJsonResponse(response);
   if (!response.ok || !body.user || body.user.role !== "admin") throw new Error(body.error || "Admin login failed");
-  adminToken.value = body.token;
-  sessionStorage.setItem("cpAdminToken", body.token);
-  showAdminApp();
-  await refresh();
+  adminToken = body.token;
+  if (adminTokenInput) adminTokenInput.value = adminToken;
+  localStorage.setItem("cpAdminToken", adminToken);
+  redirectToAdminDashboard();
 }
+function redirectToAdminAuth() {
+  if (window.location.pathname.endsWith("admin-auth.html")) return;
+  window.location.href = "admin-auth.html";
+}
+
+function redirectToAdminDashboard() {
+  if (window.location.pathname.endsWith("index.html") || window.location.pathname === "/") return;
+  window.location.href = "index.html";
+}
+
 function showAdminGate(message = "") {
-  adminGate.classList.remove("hidden");
-  adminApp.classList.add("hidden");
-  loginStatus.textContent = message;
+  if (adminGate) adminGate.classList.remove("hidden");
+  if (adminApp) adminApp.classList.add("hidden");
+  if (loginStatus) loginStatus.textContent = message;
 }
 
 function showAdminApp() {
-  adminGate.classList.add("hidden");
-  adminApp.classList.remove("hidden");
-  loginStatus.textContent = "";
+  if (adminGate) adminGate.classList.add("hidden");
+  if (adminApp) adminApp.classList.remove("hidden");
+  if (loginStatus) loginStatus.textContent = "";
+}
+
+function setAdminAuthFlashMessage(message) {
+  localStorage.setItem("cpAdminAuthMessage", message);
+}
+
+function showAdminAuthFlashMessage() {
+  const message = localStorage.getItem("cpAdminAuthMessage");
+  if (!message) return;
+  showAdminGate(message);
+  localStorage.removeItem("cpAdminAuthMessage");
 }
 
 async function verifyAdminSession() {
-  if (!adminToken.value) return showAdminGate();
+  if (!adminToken) {
+    if (adminDashboardPage) {
+      setAdminAuthFlashMessage("Please login as admin.");
+      return redirectToAdminAuth();
+    }
+    return showAdminGate("Please login as admin.");
+  }
   try {
     const response = await api("/api/auth/me");
     if (!response.user || response.user.role !== "admin") throw new Error("Admin session required");
-    showAdminApp();
-    await refresh();
+    if (adminDashboardPage) {
+      showAdminApp();
+      await refresh();
+    } else {
+      redirectToAdminDashboard();
+    }
   } catch {
-    adminToken.value = "";
-    sessionStorage.removeItem("cpAdminToken");
-    showAdminGate("Please login as admin.");
+    adminToken = "";
+    localStorage.removeItem("cpAdminToken");
+    if (adminTokenInput) adminTokenInput.value = "";
+    if (adminDashboardPage) {
+      setAdminAuthFlashMessage("Session expired or invalid. Please login again.");
+      return redirectToAdminAuth();
+    }
+    showAdminGate("Session expired or invalid. Please login again.");
   }
 }
 async function api(path, options = {}) {
   const response = await fetch(path, {
     ...options,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken.value}`, ...(options.headers || {}) }
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}`, ...(options.headers || {}) }
   });
   const body = await readJsonResponse(response);
   if (!response.ok) throw new Error(body.error || "Request failed");
@@ -152,7 +192,7 @@ async function collectBrowserDeviceDetails() {
 }
 
 async function enrollCurrentDevice() {
-  if (!adminToken.value) throw new Error("Enter Admin Token first, then tap Enroll");
+  if (!adminToken) throw new Error("Enter Admin Token first, then tap Enroll");
   const details = await collectBrowserDeviceDetails();
   const enrollment = await api("/api/admin/enroll-browser", { method: "POST", body: JSON.stringify(details) });
   selectedDeviceIds = [enrollment.deviceId];
@@ -437,7 +477,7 @@ if (deviceFilesModal) deviceFilesModal.addEventListener('close', () => {
 });
 
 async function refresh() {
-  if (!adminToken.value) return;
+  if (!adminToken) return;
   state = await api("/api/state");
   render();
 }
@@ -445,7 +485,7 @@ async function refresh() {
 async function uploadFile(file) {
   const response = await fetch("/api/files", {
     method: "POST",
-    headers: { Authorization: `Bearer ${adminToken.value}`, "Content-Type": file.type || "application/octet-stream", "X-File-Name": file.name },
+    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": file.type || "application/octet-stream", "X-File-Name": file.name },
     body: await file.arrayBuffer()
   });
   const body = await readJsonResponse(response);
@@ -575,7 +615,7 @@ async function sendTerminalCommand(commandText) {
 
 async function fetchLiveFrame(deviceId) {
   const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`, {
-    headers: { Authorization: `Bearer ${adminToken.value}` },
+    headers: { Authorization: `Bearer ${adminToken}` },
     cache: "no-store"
   });
   if (!response.ok) throw new Error(response.status === 404 ? "No live frame yet. Start Live Screen in the Android agent, or Start Live Camera from the dashboard after camera permission is allowed." : "Live frame unavailable");
@@ -601,7 +641,7 @@ function openLiveViewer(deviceId) {
   if (livePollTimer) clearInterval(livePollTimer);
   startLivePolling(deviceId);
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken.value)}`);
+  liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
   liveSocket.binaryType = "blob";
   liveSocket.onmessage = (event) => {
     const previous = liveFrame.src;
@@ -650,7 +690,7 @@ browserEnrollOnly.addEventListener("click", () => {
 });
 
 downloadAgent.addEventListener("click", async () => {
-  if (!adminToken.value) {
+  if (!adminToken) {
     log.textContent = "Enter Admin Token first, then tap Enroll > Download";
     return;
   }
@@ -707,14 +747,18 @@ document.querySelectorAll("[data-live-command]").forEach((button) => {
   button.addEventListener("click", () => sendLiveControl(button.dataset.liveCommand).catch((error) => (log.textContent = error.message)));
 });
 
-adminLoginButton.addEventListener("click", () => loginAdmin().catch((error) => showAdminGate(error.message)));
-adminLogout.addEventListener("click", () => {
-  adminToken.value = "";
-  sessionStorage.removeItem("cpAdminToken");
-  state = { devices: {}, commands: {} };
-  showAdminGate("Logged out.");
-});
-adminToken.value = sessionStorage.getItem("cpAdminToken") || "";
+if (adminLoginButton) {
+  adminLoginButton.addEventListener("click", () => loginAdmin().catch((error) => showAdminGate(error.message)));
+}
+if (adminLogout) {
+  adminLogout.addEventListener("click", () => {
+    adminToken = "";
+    localStorage.removeItem("cpAdminToken");
+    state = { devices: {}, commands: {} };
+    showAdminGate("Logged out.");
+  });
+}
+showAdminAuthFlashMessage();
 verifyAdminSession();
 setInterval(() => refresh().catch(() => {}), 2000);
 
