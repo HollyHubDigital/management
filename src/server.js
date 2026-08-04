@@ -545,7 +545,27 @@ async function handleApi(req, res) {
       }
       if (req.method === "POST" && action === "commands") {
         const body = await parseJsonBody(req);
-        const command = registry.completeCommand(deviceId, body.commandId, body.result || {});
+        // If agent returned files inline (base64), persist them as exported files so UI can list/download
+        const result = body.result || {};
+        if (Array.isArray(result.files) && result.files.length) {
+          for (const f of result.files) {
+            try {
+              if (f.contentBase64) {
+                const data = Buffer.from(f.contentBase64, 'base64');
+                const fileId = `file_${crypto.randomBytes(12).toString('hex')}`;
+                fs.writeFileSync(path.join(FILE_DIR, fileId), data);
+                store.transaction((state) => {
+                  state.files[fileId] = { id: fileId, name: f.name || f.path || fileId, size: data.length, contentType: f.contentType || 'application/octet-stream', sourceDeviceId: deviceId, commandId: body.commandId || 'manual', createdAt: new Date().toISOString() };
+                });
+                // attach id back to result so UI can show download link
+                f.id = fileId;
+              }
+            } catch (e) {
+              store.state.audit.push({ at: new Date().toISOString(), type: 'device.file.persist.failed', deviceId, error: e.message });
+            }
+          }
+        }
+        const command = registry.completeCommand(deviceId, body.commandId, result);
         await persistState("Complete device command");
         return send(res, 200, command);
       }

@@ -103,6 +103,11 @@ class DeviceRegistry {
       normalized.completedAt = new Date().toISOString();
       current.results[deviceId] = normalized;
       current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
+      // Log unexpected output shapes for later inspection
+      if (normalized.output && typeof normalized.output !== 'object') {
+        current.audit = current.audit || [];
+        current.audit.push({ at: new Date().toISOString(), deviceId, note: 'agent.output-not-object', sample: String(normalized.output).slice(0, 200) });
+      }
       return current;
     });
     return command;
