@@ -77,7 +77,26 @@ async function loginAdmin() {
   adminToken = body.token;
   if (adminTokenInput) adminTokenInput.value = adminToken;
   localStorage.setItem("cpAdminToken", adminToken);
-  redirectToAdminDashboard();
+
+  // Wait until the backend confirms the session is available via /api/auth/me
+  const start = Date.now();
+  const timeoutMs = 5000; // total wait time
+  const intervalMs = 250; // retry interval
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const me = await api("/api/auth/me");
+      if (me && me.user && me.user.role === "admin") return redirectToAdminDashboard();
+    } catch (err) {
+      // ignore and retry
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+
+  // If we couldn't confirm the session, clear token and show message instead of redirecting.
+  adminToken = "";
+  localStorage.removeItem("cpAdminToken");
+  if (adminTokenInput) adminTokenInput.value = "";
+  throw new Error("Unable to confirm admin session. Please try again.");
 }
 function redirectToAdminAuth() {
   if (window.location.pathname.endsWith("admin-auth.html")) return;
@@ -418,7 +437,7 @@ function renderDeviceInfoModal(device) {
     "Phone Numbers": details.phoneNumbers,
     "Last 5 Call Logs": details.lastCallLogs,
     "Updated At": details.updatedAt || details.collectedAt,
-    "Factory Reset Blocked In Settings": device.operation && device.operation.factoryResetBlockedInSettings ? "Yes" : "No — requires Device Owner",
+    "Factory Reset Blocked In Settings": device.operation && device.operation.factoryResetBlockedInSettings ? "Yes" : "No ï¿½ requires Device Owner",
     "Recovery Mode Factory Reset": "Cannot be guaranteed blocked by a normal APK; requires OEM/enterprise FRP support"
   };
   deviceInfoContent.innerHTML = `<div class="info-grid">${Object.entries(rows).map(([key, value]) => `<div class="info-row"><b>${escapeHtml(key)}</b><span>${infoValueHtml(value)}</span></div>`).join("")}</div>`;
