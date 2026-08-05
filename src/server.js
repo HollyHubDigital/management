@@ -53,11 +53,13 @@ async function hydrateStore(force = false) {
 async function persistState(message) {
   store.save();
   try {
-    return await persistenceStore.pushState(store.state, message);
+    const result = await persistenceStore.pushState(store.state, message);
+    if (persistenceStore.enabled() && result && result.skipped) throw new Error(result.reason || "Persistence skipped");
+    return result;
   } catch (error) {
     store.state.audit.push({ at: new Date().toISOString(), type: "supabase.persist.failed", error: error.message, message });
     store.save();
-    return { skipped: true, reason: error.message };
+    throw new Error(`Persistent storage failed: ${error.message}`);
   }
 }
 
@@ -305,7 +307,7 @@ function serveStoredFile(res, fileId) {
 }
 function sendError(res, error) {
   const message = error && error.message ? error.message : "Server error";
-  const status = ["Invalid JSON body", "Request body too large"].includes(message) ? 400 : message.startsWith("GitHub persistence failed:") ? 503 : 500;
+  const status = ["Invalid JSON body", "Request body too large"].includes(message) ? 400 : message.startsWith("Persistent storage failed:") || message.startsWith("GitHub persistence failed:") ? 503 : 500;
   send(res, status, { error: message });
 }
 function send(res, status, body, headers = {}) {

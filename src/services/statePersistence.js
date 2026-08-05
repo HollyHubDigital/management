@@ -23,21 +23,14 @@ class StatePersistence {
 
   async pullState() {
     if (this.supabase.enabled()) {
-      try {
-        const state = await this.supabase.pullState();
-        if (state && !state.skipped && hasMeaningfulPersistedState(state)) {
-          return state;
-        }
-      } catch (error) {
-        // Fall through to GitHub fallback if available.
-      }
+      const state = await this.supabase.pullState();
+      if (state && !state.skipped) return state;
+      return { skipped: true, reason: "Supabase returned no state" };
     }
 
     if (this.github.enabled()) {
       const state = await this.github.pullState();
-      if (state && !state.skipped) {
-        return state;
-      }
+      if (state && !state.skipped) return state;
     }
 
     return { skipped: true, reason: "No persistence configured" };
@@ -51,33 +44,18 @@ class StatePersistence {
   }
 
   async pushState(state, message = "Update CP DEVICE state") {
-    let primaryResult = null;
-
     if (this.supabase.enabled()) {
-      try {
-        primaryResult = await this.supabase.pushState(state, message);
-      } catch (error) {
-        primaryResult = { skipped: true, reason: `Supabase persistence failed: ${error.message}` };
-      }
+      return this.supabase.pushState(state, message);
     }
 
     if (this.github.enabled()) {
-      const payload = this.supabase.enabled() ? this.githubPartialState(state) : state;
-      const json = JSON.stringify(payload, null, 2);
-      if (json !== this.lastGithubJson) {
-        try {
-          primaryResult = await this.github.pushState(payload, this.supabase.enabled() ? `GitHub backup: ${message}` : message);
-          this.lastGithubJson = json;
-        } catch (error) {
-          if (!primaryResult) primaryResult = { skipped: true, reason: `GitHub persistence failed: ${error.message}` };
-          else primaryResult.githubError = error.message;
-        }
-      } else if (!primaryResult) {
-        primaryResult = { ok: true, reason: "GitHub state unchanged" };
-      }
+      const json = JSON.stringify(state, null, 2);
+      if (json === this.lastGithubJson) return { ok: true, reason: "GitHub state unchanged" };
+      const result = await this.github.pushState(state, message);
+      this.lastGithubJson = json;
+      return result;
     }
 
-    if (primaryResult) return primaryResult;
     return { skipped: true, reason: "No persistence configured" };
   }
 }
