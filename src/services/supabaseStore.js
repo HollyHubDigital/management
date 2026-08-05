@@ -52,14 +52,24 @@ class SupabaseStore {
         message
       };
 
-      const { data, error } = await this.supabase
+      const { data: updated, error: updateError } = await this.supabase
         .from('app_state')
-        .upsert(payload, { onConflict: 'key' })
+        .update({ value: payload.value, updated_at: payload.updated_at, message: payload.message })
+        .eq('key', payload.key)
+        .select()
+        .maybeSingle();
+
+      if (updateError) throw updateError;
+      if (updated) return updated;
+
+      const { data: inserted, error: insertError } = await this.supabase
+        .from('app_state')
+        .insert(payload)
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (insertError) throw insertError;
+      return inserted;
     } catch (error) {
       if (String(error.message).includes('does not exist') || String(error.message).includes('relation')) {
         const deviceEntries = Object.values(state.devices || {});
