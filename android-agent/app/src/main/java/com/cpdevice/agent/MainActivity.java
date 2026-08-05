@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
+    public static final String ACTION_START_SCREEN = "com.cpdevice.agent.START_SCREEN";
     private static final int SCREEN_CAPTURE_REQUEST = 4401;
     private EditText serverUrl;
     private EditText deviceId;
@@ -59,10 +60,18 @@ public class MainActivity extends Activity {
         Button start = button("Start Agent", view -> startAgent());
         layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
         setContentView(layout);
-        applyEnrollmentIntent(getIntent());
+        handleIntent(getIntent());
     }
 
-    @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); applyEnrollmentIntent(intent); }
+    @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); handleIntent(intent); }
+
+    private void handleIntent(Intent intent) {
+        if (intent != null && ACTION_START_SCREEN.equals(intent.getAction())) {
+            requestScreenCapture();
+            return;
+        }
+        applyEnrollmentIntent(intent);
+    }
 
     private Button button(String text, android.view.View.OnClickListener listener) { Button b = new Button(this); b.setText(text); b.setOnClickListener(listener); return b; }
     private EditText input(String hint, String value) { EditText e = new EditText(this); e.setHint(hint); e.setText(value); e.setSingleLine(true); return e; }
