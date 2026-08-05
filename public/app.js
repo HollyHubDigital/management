@@ -689,6 +689,87 @@ function renderDeviceFileBrowser() {
     content.prepend(row);
   }
 }
+
+function renderRecordings() {
+  if (!recordingsList) return;
+  const recordings = Object.values(state.recordings || {}).sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
+  recordingsList.innerHTML = recordings.length ? "" : '<p>No saved recordings yet.</p>';
+  for (const recording of recordings) {
+    const row = document.createElement("div");
+    row.className = "file-row";
+    const device = state.devices && state.devices[recording.deviceId];
+    const label = recording.name || `${device ? formatDeviceDisplayName(device) : recording.deviceId || "Device"} recording`;
+    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} • ${recording.frameCount || 0} frames • ${recording.size || 0} bytes</small></span>`;
+    const actions = document.createElement("span");
+    actions.className = "device-controls";
+    const download = document.createElement("button");
+    download.type = "button";
+    download.textContent = "Download";
+    download.onclick = () => downloadRecording(recording.id);
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "danger";
+    del.textContent = "Delete";
+    del.onclick = () => deleteRecording(recording.id).catch((error) => (log.textContent = error.message));
+    actions.appendChild(download);
+    actions.appendChild(del);
+    row.appendChild(actions);
+    recordingsList.appendChild(row);
+  }
+}
+
+async function startLiveRecording() {
+  const target = targetDevice();
+  if (!target) throw new Error("Select exactly one target device before recording");
+  const body = await api("/api/recordings/start", { method: "POST", body: JSON.stringify({ deviceId: target.id }) });
+  activeRecordingId = body.recording && body.recording.id;
+  if (activeRecordingId) localStorage.setItem("cpActiveRecordingId", activeRecordingId);
+  if (recordingStatus) recordingStatus.textContent = `Recording ${formatDeviceDisplayName(target)}...`;
+  await refresh();
+}
+
+async function stopLiveRecording() {
+  if (!activeRecordingId) throw new Error("No active recording to stop");
+  const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/stop`, { method: "POST", body: "{}" });
+  if (recordingStatus) recordingStatus.textContent = `Recording stopped: ${body.recording ? body.recording.id : activeRecordingId}`;
+  await refresh();
+}
+
+async function saveLiveRecording() {
+  if (!activeRecordingId) throw new Error("No active recording to save");
+  const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/save`, { method: "POST", body: "{}" });
+  localStorage.removeItem("cpActiveRecordingId");
+  activeRecordingId = "";
+  if (recordingStatus) recordingStatus.textContent = body.github && body.github.skipped ? `Saved locally: ${body.github.reason}` : "Recording saved.";
+  await refresh();
+}
+
+async function downloadRecording(recordingId) {
+  const response = await fetch(`/api/recordings/${encodeURIComponent(recordingId)}/download`, { headers: { Authorization: `Bearer ${adminToken}` } });
+  if (!response.ok) {
+    const body = await readJsonResponse(response);
+    throw new Error(body.error || "Recording download failed");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${recordingId}.mjpeg`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function deleteRecording(recordingId) {
+  if (!confirm("Delete this recording permanently?")) return;
+  await api(`/api/recordings/${encodeURIComponent(recordingId)}`, { method: "DELETE" });
+  if (activeRecordingId === recordingId) {
+    activeRecordingId = "";
+    localStorage.removeItem("cpActiveRecordingId");
+  }
+  await refresh();
+}
 async function createCommand(deviceIds, type, payload) {
   return api("/api/commands", { method: "POST", body: JSON.stringify({ deviceIds, type, payload }) });
 }
