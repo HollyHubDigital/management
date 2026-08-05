@@ -139,16 +139,26 @@ async function verifyAdminSession() {
     }
     return showAdminGate("Please login as admin.");
   }
+
   try {
     const response = await api("/api/auth/me");
-    if (!response.user || response.user.role !== "admin") throw new Error("Admin session required");
+    if (!response.user || response.user.role !== "admin") {
+      throw new Error("Admin session required");
+    }
+
     if (adminDashboardPage) {
       showAdminApp();
-      await refresh();
+      // Do not let refresh errors log the user out
+      try {
+        await refresh();
+      } catch (refreshError) {
+        console.warn("Admin refresh failed:", refreshError);
+        if (log) log.textContent = refreshError.message || "Failed to load admin data";
+      }
     } else {
       redirectToAdminDashboard();
     }
-  } catch {
+  } catch (error) {
     adminToken = "";
     localStorage.removeItem("cpAdminToken");
     if (adminTokenInput) adminTokenInput.value = "";
