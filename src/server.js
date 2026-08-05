@@ -33,13 +33,26 @@ function hasMeaningfulPersistedState(state) {
   });
 }
 
+
+function mergeActiveLocalSessions(persistedState, localState) {
+  const now = Date.now();
+  const merged = { ...(persistedState || {}) };
+  const persistedSessions = merged.sessions || {};
+  const localSessions = localState.sessions || {};
+  merged.sessions = { ...persistedSessions };
+  for (const [token, session] of Object.entries(localSessions)) {
+    if (!session || Date.parse(session.expiresAt) < now) continue;
+    if (!merged.sessions[token]) merged.sessions[token] = session;
+  }
+  return merged;
+}
 async function hydrateStore(force = false) {
   if (!persistenceStore.enabled()) return;
   if (!force && hydratePromise && Date.now() - hydratedAt < 1500) return hydratePromise;
   hydratePromise = persistenceStore.pullState()
     .then((state) => {
       if (state && !state.skipped && hasMeaningfulPersistedState(state)) {
-        store.replaceState(state);
+        store.replaceState(mergeActiveLocalSessions(state, store.state));
       } else if (state && state.skipped) {
         store.save();
       }
