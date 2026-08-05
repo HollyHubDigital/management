@@ -11,7 +11,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.location.LocationManager;
+import android.location.LocationListener;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Looper;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.IBinder;
@@ -108,7 +111,7 @@ public class AgentService extends Service {
         if ("lock.device".equals(type)) { if (admin) { dpm.lockNow(); return "Device locked."; } return "Device Admin is required to lock device."; }
         if ("mobile.data.on".equals(type)) return owner ? "Device Owner active, but Android public APIs still do not expose mobile data toggle. Requires OEM/system API." : "Android does not allow normal or Device Admin apps to toggle mobile data. Requires OEM/system privileges.";
         if ("firmware.update".equals(type)) return "Firmware update queued URL received. Android firmware flashing requires Device Owner system update policy, OEM/system privileges, or vendor updater integration.";
-        if ("screen.control.request".equals(type)) return CpAccessibilityService.isReady() ? "Accessibility control is active. Live screen must be started from the device permission screen." : "Enable CP DEVICE Accessibility service on the device first.";
+        if ("screen.control.request".equals(type)) { openScreenCaptureConsent(); return "Screen capture permission opened on device. Approve it to start live remote desktop."; }
         if ("screen.tap".equals(type)) {
             int x = numberAfter(commandJson, "\\\"x\\\":", commandStart, 360);
             int y = numberAfter(commandJson, "\\\"y\\\":", commandStart, 640);
@@ -121,11 +124,26 @@ public class AgentService extends Service {
     private String locateDevice() {
         try {
             LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            try {
+                manager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
+                    @Override public void onLocationChanged(Location location) { }
+                    @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
+                    @Override public void onProviderEnabled(String provider) { }
+                    @Override public void onProviderDisabled(String provider) { }
+                }, Looper.getMainLooper());
+            } catch (Exception ignored) { }
             Location location = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (location == null) location = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (location == null) return "Location unavailable. Approve location permission and enable location services.";
-            return "{\\\"lat\\\":" + location.getLatitude() + ",\\\"lng\\\":" + location.getLongitude() + ",\\\"accuracy\\\":" + location.getAccuracy() + "}";
+            if (location == null) return "Location unavailable. Approve location permission and enable location services, then try Locate again.";
+            return "{\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + ",\"accuracy\":" + location.getAccuracy() + ",\"mapUrl\":\"https://www.google.com/maps?q=" + location.getLatitude() + "," + location.getLongitude() + "\"}";
         } catch (SecurityException error) { return "Location permission is required."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
+    }
+
+    private void openScreenCaptureConsent() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setAction(MainActivity.ACTION_START_SCREEN);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     private String installApk(String apkUrl) {

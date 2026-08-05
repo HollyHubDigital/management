@@ -535,7 +535,7 @@ function parseLocationOutput(output) {
 
 function showLocationModal(location, deviceName) {
   const link = `https://www.google.com/maps?q=${encodeURIComponent(`${location.lat},${location.lng}`)}`;
-  locationText.textContent = `${deviceName}: ${location.lat}, ${location.lng}${location.accuracy ? ` ? accuracy ${Math.round(location.accuracy)}m` : ""}`;
+  locationText.textContent = `${deviceName}: ${location.lat}, ${location.lng}${location.accuracy ? ` - accuracy ${Math.round(location.accuracy)}m` : ""}`;
   locationMapLink.href = link;
   locationMapLink.textContent = link;
   locationModal.showModal();
@@ -558,7 +558,7 @@ function renderDeviceFileBrowser() {
   const target = targetDevice();
   if (!target) return;
   const fileListCommands = Object.values(state.commands || {}).filter((command) => command.type === "file.list" && command.deviceIds.includes(target.id));
-  const latest = fileListCommands[fileListCommands.length - 1];
+  const latest = [...fileListCommands].reverse().find((command) => command.results && command.results[target.id]);
   const result = latest && latest.results && latest.results[target.id];
   if (!result) return;
   const listed = Array.isArray(result.files) ? result : (() => { try { return JSON.parse(result.output || "{}"); } catch { return {}; } })();
@@ -640,6 +640,7 @@ function openLiveViewer(deviceId) {
   if (liveSocket) liveSocket.close();
   if (livePollTimer) clearInterval(livePollTimer);
   startLivePolling(deviceId);
+  if (location.hostname.endsWith("vercel.app")) return;
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
   liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
   liveSocket.binaryType = "blob";

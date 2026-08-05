@@ -1,5 +1,22 @@
 const { createClient } = require('@supabase/supabase-js');
 
+function compactStateForPersistence(state) {
+  const latestCommands = Object.fromEntries(Object.entries(state.commands || {}).slice(-80));
+  const latestFiles = Object.fromEntries(Object.entries(state.files || {}).slice(-120).map(([id, file]) => [id, { ...file, contentBase64: undefined }]));
+  return {
+    devices: state.devices || {},
+    commands: latestCommands,
+    audit: (state.audit || []).slice(-80),
+    files: latestFiles,
+    apps: state.apps || {},
+    firmware: state.firmware || {},
+    users: state.users || {},
+    sessions: state.sessions || {},
+    payments: state.payments || {},
+    subscriptions: state.subscriptions || {}
+  };
+}
+
 class SupabaseStore {
   constructor(env = {}) {
     this.supabase = null;
@@ -47,7 +64,7 @@ class SupabaseStore {
     try {
       const payload = {
         key: 'state',
-        value: state,
+        value: compactStateForPersistence(state),
         updated_at: new Date().toISOString(),
         message
       };
