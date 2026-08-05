@@ -1,12 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
 function compactStateForPersistence(state) {
-  const latestCommands = Object.fromEntries(Object.entries(state.commands || {}).slice(-80));
-  const latestFiles = Object.fromEntries(Object.entries(state.files || {}).slice(-120).map(([id, file]) => [id, { ...file, contentBase64: undefined }]));
+  const latestCommands = Object.fromEntries(Object.entries(state.commands || {}).slice(-25));
+  const latestFiles = Object.fromEntries(Object.entries(state.files || {}).slice(-40).map(([id, file]) => [id, { ...file, contentBase64: undefined }]));
   return {
     devices: state.devices || {},
     commands: latestCommands,
-    audit: (state.audit || []).slice(-80),
+    audit: (state.audit || []).slice(-20),
     files: latestFiles,
     apps: state.apps || {},
     firmware: state.firmware || {},

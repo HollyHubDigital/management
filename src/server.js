@@ -50,6 +50,16 @@ async function hydrateStore(force = false) {
   await hydratePromise;
 }
 
+async function persistStateBestEffort(message) {
+  try {
+    return await persistState(message);
+  } catch (error) {
+    store.state.audit.push({ at: new Date().toISOString(), type: "persistence.best_effort.failed", error: error.message, message });
+    store.save();
+    return { skipped: true, reason: error.message };
+  }
+}
+
 async function persistState(message) {
   store.save();
   try {
@@ -502,7 +512,7 @@ async function handleApi(req, res) {
         if (capabilityError) return send(res, 400, { error: capabilityError });
       }
       const command = registry.createCommand(deviceIds, featureType, body.payload || {});
-      await persistState("Queue user device command");
+      await persistStateBestEffort("Queue user device command");
       return send(res, 201, command);
     }
 
@@ -713,7 +723,7 @@ async function handleApi(req, res) {
         if (capabilityError) return send(res, 400, { error: capabilityError });
       }
       const command = registry.createCommand(deviceIds, body.type, body.payload || {});
-      await persistState("Queue admin device command");
+      await persistStateBestEffort("Queue admin device command");
       return send(res, 201, command);
     }
 
