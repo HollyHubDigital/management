@@ -28,6 +28,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class AgentService extends Service {
     private volatile boolean running;
@@ -124,19 +126,23 @@ public class AgentService extends Service {
     private String locateDevice() {
         try {
             LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
-            try {
-                manager.requestSingleUpdate(LocationManager.GPS_PROVIDER, new LocationListener() {
-                    @Override public void onLocationChanged(Location location) { }
-                    @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
-                    @Override public void onProviderEnabled(String provider) { }
-                    @Override public void onProviderDisabled(String provider) { }
-                }, Looper.getMainLooper());
-            } catch (Exception ignored) { }
-            Location location = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            final Location[] fresh = new Location[1];
+            final CountDownLatch latch = new CountDownLatch(1);
+            LocationListener listener = new LocationListener() {
+                @Override public void onLocationChanged(Location location) { fresh[0] = location; latch.countDown(); }
+                @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
+                @Override public void onProviderEnabled(String provider) { }
+                @Override public void onProviderDisabled(String provider) { }
+            };
+            try { manager.requestSingleUpdate(LocationManager.GPS_PROVIDER, listener, Looper.getMainLooper()); } catch (Exception ignored) { }
+            try { manager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, listener, Looper.getMainLooper()); } catch (Exception ignored) { }
+            try { latch.await(8, TimeUnit.SECONDS); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+            Location location = fresh[0];
+            if (location == null) location = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (location == null) location = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (location == null) return "Location unavailable. Approve location permission and enable location services, then try Locate again.";
+            if (location == null) return "Location unavailable. Turn on Android Location services and set CP DEVICE Location permission to Allow all the time or Allow while using, then try Locate again.";
             return "{\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + ",\"accuracy\":" + location.getAccuracy() + ",\"mapUrl\":\"https://www.google.com/maps?q=" + location.getLatitude() + "," + location.getLongitude() + "\"}";
-        } catch (SecurityException error) { return "Location permission is required."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
+        } catch (SecurityException error) { return "Location permission is required. Enable Location permission for CP DEVICE."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
     }
 
     private void openScreenCaptureConsent() {

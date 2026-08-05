@@ -21,6 +21,7 @@ const screenText = document.getElementById("screenText");
 const liveFrame = document.getElementById("liveFrame");
 let liveSocket = null;
 let livePollTimer = null;
+let liveControlMode = "";
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
 const terminalCommand = document.getElementById("terminalCommand");
@@ -417,8 +418,9 @@ function renderCommandResultText(command, result) {
 function openFilesForCommand(commandId, deviceId) {
   selectedDeviceIds = [deviceId];
   render();
-  const df = document.getElementById("deviceFiles");
-  if (df) df.scrollIntoView({ behavior: "smooth", block: "center" });
+  renderDeviceFileBrowser();
+  const modal = document.getElementById("deviceFilesModal");
+  if (modal && typeof modal.showModal === "function" && !modal.open) modal.showModal();
 }
 
 function renderAlerts() {
@@ -470,11 +472,7 @@ function renderAlerts() {
   }
 }
 
-// When admin closes the file modal, clear its content
-const deviceFilesModal = document.getElementById('deviceFilesModal');
-if (deviceFilesModal) deviceFilesModal.addEventListener('close', () => {
-  const c = document.getElementById('deviceFilesContent'); if (c) c.innerHTML = '';
-});
+const deviceFilesModal = document.getElementById("deviceFilesModal");
 
 async function refresh() {
   if (!adminToken) return;
@@ -561,7 +559,7 @@ function renderDeviceFileBrowser() {
   const latest = [...fileListCommands].reverse().find((command) => command.results && command.results[target.id]);
   const result = latest && latest.results && latest.results[target.id];
   if (!result) return;
-  const listed = Array.isArray(result.files) ? result : (() => { try { return JSON.parse(result.output || "{}"); } catch { return {}; } })();
+  const listed = Array.isArray(result.files) ? result : (typeof result.output === "object" ? result.output : (() => { try { return JSON.parse(result.output || "{}"); } catch { return {}; } })());
   if (!Array.isArray(listed.files)) return;
   const content = document.getElementById('deviceFilesContent') || deviceFiles;
   content.innerHTML = "";
@@ -636,7 +634,8 @@ function startLivePolling(deviceId) {
   livePollTimer = setInterval(poll, 1200);
 }
 
-function openLiveViewer(deviceId) {
+function openLiveViewer(deviceId, mode = "screen") {
+  liveControlMode = mode;
   if (liveSocket) liveSocket.close();
   if (livePollTimer) clearInterval(livePollTimer);
   startLivePolling(deviceId);
@@ -658,7 +657,7 @@ function openLiveViewer(deviceId) {
 if (screen) {
   screen.addEventListener("click", (event) => {
     const target = targetDevice();
-    if (!target || !screen.classList.contains("streaming")) return;
+    if (!target || !screen.classList.contains("streaming") || liveControlMode !== "screen") return;
     const rect = screen.getBoundingClientRect();
     const x = Math.round(((event.clientX - rect.left) / rect.width) * 720);
     const y = Math.round(((event.clientY - rect.top) / rect.height) * 1280);
@@ -670,9 +669,9 @@ async function sendLiveControl(type) {
   if (!target) throw new Error("Select exactly one target device for live control");
   const commandType = target.platform === "ios" && type === "screen.control.request" ? "screen.share.request" : type;
   await createCommand([target.id], commandType, { requestedAt: new Date().toISOString(), mode: "admin-control-session" });
-  if (["screen.control.request", "camera.stream.request"].includes(commandType)) openLiveViewer(target.id);
+  if (["screen.control.request", "camera.stream.request"].includes(commandType)) openLiveViewer(target.id, commandType === "camera.stream.request" ? "camera" : "screen");
   if (screenText) {
-    screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Waiting for camera frames from the agent.`;
+    screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Camera view is read-only; screen taps are disabled in camera mode.`;
   }
   await refresh();
 }

@@ -49,6 +49,10 @@ public class MainActivity extends Activity {
         serverUrl = input("Control Server URL", "https://admin-device-management.vercel.app");
         deviceId = input("Device ID", "");
         deviceToken = input("Device Token", "");
+        android.content.SharedPreferences saved = getSharedPreferences("cp-device", Context.MODE_PRIVATE);
+        serverUrl.setText(saved.getString("serverUrl", serverUrl.getText().toString()));
+        deviceId.setText(saved.getString("deviceId", ""));
+        deviceToken.setText(saved.getString("deviceToken", ""));
         layout.addView(serverUrl); layout.addView(deviceId); layout.addView(deviceToken);
         Button admin = button("Enable Device Admin", view -> requestDeviceAdmin());
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
