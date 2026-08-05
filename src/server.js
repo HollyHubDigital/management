@@ -572,6 +572,7 @@ async function handleApi(req, res) {
       if (!registry.authenticate(deviceId, token)) return send(res, 401, { error: "Invalid device token" });
       if (req.method === "POST" && action === "heartbeat") {
         const device = registry.heartbeat(deviceId, await parseJsonBody(req));
+        await persistState("Update device heartbeat");
         return send(res, 200, device);
       }
       if (req.method === "POST" && action === "live-frame") {
