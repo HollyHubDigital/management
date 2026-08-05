@@ -232,13 +232,34 @@ function findUser(login) {
   });
 }
 
-function createSession(userId, role = "user") {
+async function createSession(userId, role = "user") {
   const token = randomId("sess");
+  const expiresAt = role === "admin"
+    ? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString()
+    : new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString();
+
   store.transaction((state) => {
-    // Admin sessions remain short-lived; user sessions are long-lived (persisted) so clients can "remember me".
-    const expiresAt = role === "admin" ? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString() : new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10).toISOString();
     state.sessions[token] = { token, userId, role, createdAt: new Date().toISOString(), expiresAt };
   });
+
+  // Also save to the dedicated Supabase sessions table
+  if (persistenceStore.supabase && persistenceStore.supabase.enabled()) {
+    try {
+      await persistenceStore.supabase.createSession({
+        token,
+        userId,
+        role,
+        expiresAt
+      });
+    } catch (error) {
+      store.state.audit.push({
+        at: new Date().toISOString(),
+        type: "session.supabase.create.failed",
+        error: error.message
+      });
+    }
+  }
+
   return token;
 }
 
@@ -438,13 +459,38 @@ async function handleApi(req, res) {
     return res.end();
   }
   await hydrateStore();
-    if (["POST", "PUT"].includes(req.method) && (url.pathname === "/api/mdm/checkin" || url.pathname === "/api/mdm/connect")) {
-      return send(res, 501, {
-        error: "Apple MDM is not configured",
-        requiredEnvironment: ["APPLE_MDM_APNS_TOPIC", "APPLE_MDM_PUSH_CERTIFICATE", "APPLE_MDM_PUSH_PRIVATE_KEY"],
-        nextStep: "Configure Apple Business/School Manager, APNs MDM certificate, signed enrollment profile, and MDM command processing before production iPhone remote management."
-      });
+
+// Load session from dedicated Supabase table if not present in memory
+const incomingToken = bearerToken(req);
+if (incomingToken && !store.state.sessions[incomingToken] && persistenceStore.supabase && persistenceStore.supabase.enabled()) {
+  try {
+    const row = await persistenceStore.supabase.getSession(incomingToken);
+    if (row) {
+      store.state.sessions[incomingToken] = {
+        token: row.token,
+        userId: row.user_id,
+        role: row.role,
+        createdAt: row.created_at,
+        expiresAt: row.expires_at
+      };
     }
+  } catch (error) {
+    store.state.audit.push({
+      at: new Date().toISOString(),
+      type: "session.supabase.load.failed",
+      error: error.message
+    });
+  }
+}
+
+if (["POST", "PUT"].includes(req.method) && (url.pathname === "/api/mdm/checkin" || url.pathname === "/api/mdm/connect")) {
+  return send(res, 501, {
+    error: "Apple MDM is not configured",
+    requiredEnvironment: ["APPLE_MDM_APNS_TOPIC", "APPLE_MDM_PUSH_CERTIFICATE", "APPLE_MDM_PUSH_PRIVATE_KEY"],
+    nextStep: "Configure Apple Business/School Manager, APNs MDM certificate, signed enrollment profile, and MDM command processing before production iPhone remote management."
+  });
+}
+  
     if (req.method === "GET" && url.pathname.startsWith("/api/live/") && url.pathname.endsWith("/frame")) {
       const deviceId = url.pathname.split("/")[3];
       if (!canViewLiveFrame(req, deviceId)) return send(res, 401, { error: "Live frame access denied" });
@@ -491,15 +537,15 @@ async function handleApi(req, res) {
         return send(res, 500, { error: "Admin password is not configured on the server." });
       }
       if (body.login === adminUsername && body.password === adminPassword) {
-        const token = createSession("admin", "admin");
-        await persistState("Create admin session");
-        return send(res, 200, { token, user: { id: "admin", role: "admin", username: "admin", email: "admin" } });
-      }
+  const token = await createSession("admin", "admin");
+  await persistStateBestEffort("Create admin session");
+  return send(res, 200, { token, user: { id: "admin", role: "admin", username: "admin", email: "admin" } });
+}
       const user = findUser(body.login);
       if (!user || !verifyPassword(body.password, user.passwordHash)) return send(res, 401, { error: "Invalid credentials" });
-      const token = createSession(user.id);
-      await persistState("Create user session");
-      return send(res, 200, { token, user: publicUser(user) });
+      const token = await createSession(user.id);
+await persistStateBestEffort("Create user session");
+return send(res, 200, { token, user: publicUser(user) });
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/reset-password") {
@@ -519,11 +565,18 @@ async function handleApi(req, res) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
-      const token = bearerToken(req);
-      store.transaction((state) => { if (state.sessions[token]) delete state.sessions[token]; });
-      await persistState("User logout");
-      return send(res, 200, { ok: true });
+  const token = bearerToken(req);
+  store.transaction((state) => { if (state.sessions[token]) delete state.sessions[token]; });
+  if (token && persistenceStore.supabase && persistenceStore.supabase.enabled()) {
+    try {
+      await persistenceStore.supabase.deleteSession(token);
+    } catch (error) {
+      store.state.audit.push({ at: new Date().toISOString(), type: "session.supabase.delete.failed", error: error.message });
     }
+  }
+  await persistStateBestEffort("User logout");
+  return send(res, 200, { ok: true });
+}
 
     if (req.method === "GET" && url.pathname === "/api/auth/me") {
       const user = sessionUser(req);

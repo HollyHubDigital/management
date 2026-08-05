@@ -11,6 +11,8 @@ function compactStateForPersistence(state) {
     apps: state.apps || {},
     firmware: state.firmware || {},
     users: state.users || {},
+    // sessions are now primarily stored in the dedicated "sessions" table
+    // we keep a small copy here only as backup
     sessions: state.sessions || {},
     payments: state.payments || {},
     subscriptions: state.subscriptions || {}
@@ -37,6 +39,10 @@ class SupabaseStore {
   enabled() {
     return Boolean(this.supabase);
   }
+
+  // ======================
+  // EXISTING STATE METHODS
+  // ======================
 
   async pullState() {
     if (!this.enabled()) return { skipped: true, reason: 'Supabase storage is not configured' };
@@ -94,7 +100,7 @@ class SupabaseStore {
           try {
             await this.upsertDevice(device);
           } catch (deviceError) {
-            // Ignore individual device persistence failures and keep the local JSON store authoritative.
+            // Ignore individual device persistence failures
           }
         }
         return { skipped: true, reason: error.message };
@@ -102,6 +108,10 @@ class SupabaseStore {
       throw error;
     }
   }
+
+  // ======================
+  // DEVICE METHODS (unchanged)
+  // ======================
 
   async getAllDevices() {
     if (!this.enabled()) return [];
@@ -177,6 +187,78 @@ class SupabaseStore {
 
     if (error) throw error;
     return data;
+  }
+
+  // ======================
+  // NEW SESSION METHODS
+  // ======================
+
+  async createSession({ token, userId, role = 'user', expiresAt }) {
+    if (!this.enabled()) return null;
+
+    const { data, error } = await this.supabase
+      .from('sessions')
+      .upsert(
+        {
+          token,
+          user_id: userId,
+          role,
+          created_at: new Date().toISOString(),
+          expires_at: expiresAt
+        },
+        { onConflict: 'token' }
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getSession(token) {
+    if (!this.enabled() || !token) return null;
+
+    const { data, error } = await this.supabase
+      .from('sessions')
+      .select('*')
+      .eq('token', token)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    if (!data) return null;
+
+    // Check if expired
+    if (data.expires_at && Date.parse(data.expires_at) < Date.now()) {
+      // Optionally clean up expired session
+      await this.deleteSession(token).catch(() => {});
+      return null;
+    }
+
+    return data;
+  }
+
+  async deleteSession(token) {
+    if (!this.enabled() || !token) return false;
+
+    const { error } = await this.supabase
+      .from('sessions')
+      .delete()
+      .eq('token', token);
+
+    if (error) throw error;
+    return true;
+  }
+
+  async deleteSessionsByUser(userId) {
+    if (!this.enabled() || !userId) return false;
+
+    const { error } = await this.supabase
+      .from('sessions')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return true;
   }
 }
 
