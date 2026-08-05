@@ -49,6 +49,11 @@ class GitHubStore {
     return `/repos/${this.owner}/${this.repo}/contents/${this.path}`;
   }
 
+  contentPathFor(filePath) {
+    const normalized = String(filePath || "").replace(/^\/+/, "");
+    return `/repos/${this.owner}/${this.repo}/contents/${normalized}`;
+  }
+
   async pullState() {
     if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
     try {
@@ -75,6 +80,35 @@ class GitHubStore {
     return requestJson(
       { hostname: "api.github.com", path: this.contentPath(), method: "PUT", headers: { ...headers, "Content-Type": "application/json" } },
       { message, content, branch: this.branch, sha }
+    );
+  }
+
+  async pushFile(filePath, data, message = "Store CP DEVICE file") {
+    if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
+    const headers = this.headers();
+    const apiPath = this.contentPathFor(filePath);
+    let sha;
+    try {
+      const existing = await requestJson({ hostname: "api.github.com", path: `${apiPath}?ref=${this.branch}`, method: "GET", headers });
+      sha = existing.sha;
+    } catch (error) {
+      if (!String(error.message).includes("Not Found")) throw error;
+    }
+    const content = Buffer.from(data).toString("base64");
+    return requestJson(
+      { hostname: "api.github.com", path: apiPath, method: "PUT", headers: { ...headers, "Content-Type": "application/json" } },
+      { message, content, branch: this.branch, sha }
+    );
+  }
+
+  async deleteFile(filePath, message = "Delete CP DEVICE file") {
+    if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
+    const headers = this.headers();
+    const apiPath = this.contentPathFor(filePath);
+    const existing = await requestJson({ hostname: "api.github.com", path: `${apiPath}?ref=${this.branch}`, method: "GET", headers });
+    return requestJson(
+      { hostname: "api.github.com", path: apiPath, method: "DELETE", headers: { ...headers, "Content-Type": "application/json" } },
+      { message, branch: this.branch, sha: existing.sha }
     );
   }
 }

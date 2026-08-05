@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 function defaultState() {
-  return { devices: {}, commands: {}, audit: [], files: {}, apps: {}, firmware: {}, users: {}, sessions: {}, payments: {}, subscriptions: {} };
+  return { devices: {}, commands: {}, audit: [], files: {}, apps: {}, firmware: {}, users: {}, sessions: {}, payments: {}, subscriptions: {}, recordings: {} };
 }
 
 class JsonStore {
@@ -23,6 +23,7 @@ class JsonStore {
     this.state.sessions ||= {};
     this.state.payments ||= {};
     this.state.subscriptions ||= {};
+    this.state.recordings ||= {};
     return this.state;
   }
 

@@ -46,6 +46,14 @@ const firmwareUpgrade = document.getElementById("firmwareUpgrade");
 const locationModal = document.getElementById("locationModal");
 const locationText = document.getElementById("locationText");
 const locationMapLink = document.getElementById("locationMapLink");
+const frontCamera = document.getElementById("frontCamera");
+const backCamera = document.getElementById("backCamera");
+const startRecording = document.getElementById("startRecording");
+const stopRecording = document.getElementById("stopRecording");
+const saveRecording = document.getElementById("saveRecording");
+const recordingStatus = document.getElementById("recordingStatus");
+const recordingsList = document.getElementById("recordingsList");
+let activeRecordingId = localStorage.getItem("cpActiveRecordingId") || "";
 let pendingEnrollmentLink = "";
 
 async function readJsonResponse(response) {
@@ -343,6 +351,7 @@ function render() {
   renderTerminalResults();
   renderDeviceFileBrowser();
   renderLocationResults();
+  renderRecordings();
   refreshCapabilityGates();
 }
 
@@ -375,6 +384,7 @@ function friendlyCommandLabel(type) {
     "file.pull": "Export file",
     "screen.control.request": "Start remote screen",
     "camera.stream.request": "Start live camera",
+    "camera.switch": "Switch camera",
     "lock.device": "Lock device",
     "mobile.data.on": "Turn on mobile data",
     "shell": "Execute shell command",
@@ -668,7 +678,9 @@ async function sendLiveControl(type) {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one target device for live control");
   const commandType = target.platform === "ios" && type === "screen.control.request" ? "screen.share.request" : type;
-  await createCommand([target.id], commandType, { requestedAt: new Date().toISOString(), mode: "admin-control-session" });
+  const payload = { requestedAt: new Date().toISOString(), mode: "admin-control-session" };
+  if (commandType === "camera.stream.request") payload.facing = "back";
+  await createCommand([target.id], commandType, payload);
   if (["screen.control.request", "camera.stream.request"].includes(commandType)) openLiveViewer(target.id, commandType === "camera.stream.request" ? "camera" : "screen");
   if (screenText) {
     screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Camera view is read-only; screen taps are disabled in camera mode.`;
@@ -753,6 +765,12 @@ if (lockDevice) {
     await refresh();
   });
 }
+if (frontCamera) frontCamera.addEventListener("click", () => switchCamera("front").catch((error) => (log.textContent = error.message)));
+if (backCamera) backCamera.addEventListener("click", () => switchCamera("back").catch((error) => (log.textContent = error.message)));
+if (startRecording) startRecording.addEventListener("click", () => startLiveRecording().catch((error) => (log.textContent = error.message)));
+if (stopRecording) stopRecording.addEventListener("click", () => stopLiveRecording().catch((error) => (log.textContent = error.message)));
+if (saveRecording) saveRecording.addEventListener("click", () => saveLiveRecording().catch((error) => (log.textContent = error.message)));
+
 if (mobileDataOn) {
   mobileDataOn.addEventListener("click", async () => {
     const target = targetDevice();

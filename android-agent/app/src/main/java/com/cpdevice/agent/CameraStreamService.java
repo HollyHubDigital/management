@@ -12,6 +12,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CameraCharacteristics;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
@@ -33,6 +34,7 @@ public class CameraStreamService extends Service {
     private CameraCaptureSession session;
     private SimpleWebSocketClient ws;
     private long lastFrameAt;
+    private String requestedFacing = "back";
 
     @Override public void onCreate() {
         super.onCreate();
@@ -43,7 +45,12 @@ public class CameraStreamService extends Service {
         handler = new Handler(thread.getLooper());
     }
 
-    @Override public int onStartCommand(Intent intent, int flags, int startId) { startCamera(); return START_STICKY; }
+    @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        requestedFacing = intent != null ? intent.getStringExtra("facing") : requestedFacing;
+        if (requestedFacing == null || requestedFacing.length() == 0) requestedFacing = "back";
+        restartCamera();
+        return START_STICKY;
+    }
     @Override public IBinder onBind(Intent intent) { return null; }
 
     @Override public void onDestroy() {
@@ -53,6 +60,14 @@ public class CameraStreamService extends Service {
         if (ws != null) ws.close();
         if (thread != null) thread.quitSafely();
         super.onDestroy();
+    }
+
+    private void restartCamera() {
+        try { if (session != null) session.close(); } catch (Exception ignored) { }
+        try { if (camera != null) camera.close(); } catch (Exception ignored) { }
+        try { if (reader != null) reader.close(); } catch (Exception ignored) { }
+        session = null; camera = null; reader = null;
+        startCamera();
     }
 
     private void startCamera() {
@@ -66,13 +81,24 @@ public class CameraStreamService extends Service {
             reader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 2);
             reader.setOnImageAvailableListener(this::onImage, handler);
             CameraManager manager = (CameraManager) getSystemService(CAMERA_SERVICE);
-            String cameraId = manager.getCameraIdList()[0];
+            String cameraId = chooseCameraId(manager, requestedFacing);
             manager.openCamera(cameraId, new CameraDevice.StateCallback() {
                 @Override public void onOpened(CameraDevice device) { camera = device; createSession(); }
                 @Override public void onDisconnected(CameraDevice device) { device.close(); }
                 @Override public void onError(CameraDevice device, int error) { device.close(); stopSelf(); }
             }, handler);
         } catch (Exception ignored) { stopSelf(); }
+    }
+
+    private String chooseCameraId(CameraManager manager, String facing) throws Exception {
+        int desired = "front".equalsIgnoreCase(facing) ? CameraCharacteristics.LENS_FACING_FRONT : CameraCharacteristics.LENS_FACING_BACK;
+        String fallback = manager.getCameraIdList().length > 0 ? manager.getCameraIdList()[0] : "0";
+        for (String id : manager.getCameraIdList()) {
+            CameraCharacteristics characteristics = manager.getCameraCharacteristics(id);
+            Integer lens = characteristics.get(CameraCharacteristics.LENS_FACING);
+            if (lens != null && lens == desired) return id;
+        }
+        return fallback;
     }
 
     private void createSession() {

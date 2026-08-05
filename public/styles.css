@@ -98,3 +98,10 @@ img:not([src]), img[src=""] {
 
 .remove-device { margin-left: auto; padding: 5px 8px; font-size: 10px; background: #6f1d1d; }
 .device-card { gap: 8px; }
+
+.record-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.record-actions button { width: 36px; min-width: 36px; height: 34px; padding: 0; font-size: 17px; line-height: 1; }
+.record-start { background: linear-gradient(135deg, #16a34a, #22c55e); }
+.record-stop { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+.record-save { background: linear-gradient(135deg, #7c3aed, #2563eb); }
+.recording-status { color: var(--muted); font-size: 12px; }

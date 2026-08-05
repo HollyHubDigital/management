@@ -37,8 +37,16 @@
             </div>
             <div class="actions">
               <button data-live-command="screen.control.request">Start Remote Desktop</button>
-              <button data-live-command="camera.stream.request">Start Live Camera</button>
+              <button data-live-command="camera.stream.request" data-camera-facing="back">Start Back Camera</button>
+              <button id="frontCamera" type="button">Front Camera</button>
+              <button id="backCamera" type="button">Back Camera</button>
               <button id="focusTerminal">Focus Terminal</button>
+            </div>
+            <div class="record-actions" aria-label="Live recording controls">
+              <button id="startRecording" class="record-start" title="Start recording" type="button">?</button>
+              <button id="stopRecording" class="record-stop" title="Stop recording" type="button">?</button>
+              <button id="saveRecording" class="record-save" title="Save recording" type="button">?</button>
+              <span id="recordingStatus" class="recording-status">Recording idle</span>
             </div>
             <form id="terminalForm" class="terminal-form">
               <label for="terminalCommand">Remote Terminal Command</label>
@@ -74,6 +82,11 @@
             <label class="field-label">Firmware URL <input id="firmwareUrl" type="url" placeholder="OEM update URL" /></label>
             <button id="firmwareUpgrade">Firmware Upgrade</button>
           </section>
+        </section>
+
+        <section class="panel">
+          <h2>Saved Recordings</h2>
+          <div id="recordingsList" class="file-list"></div>
         </section>
 
         <section class="panel">

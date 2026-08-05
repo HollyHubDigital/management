@@ -13,7 +13,9 @@ const PORT = Number(process.env.PORT || 8080);
 const DATA_DIR = process.env.DATA_DIR || (process.env.VERCEL ? "/tmp/cp-device-data" : ".cp-device-data");
 const DATA_ROOT = path.isAbsolute(DATA_DIR) ? DATA_DIR : path.join(process.env.VERCEL ? "/tmp" : process.cwd(), DATA_DIR);
 const FILE_DIR = path.join(DATA_ROOT, "files");
+const RECORDING_DIR = path.join(DATA_ROOT, "recordings");
 fs.mkdirSync(FILE_DIR, { recursive: true });
+fs.mkdirSync(RECORDING_DIR, { recursive: true });
 const store = new JsonStore(path.join(DATA_ROOT, "state.json"));
 store.load();
 
@@ -78,6 +80,7 @@ new RealtimeHub(registry).startOfflineSweep();
 
 const liveViewers = new Map();
 const liveFrames = new Map();
+const activeRecordings = new Map();
 
 function websocketAccept(key) {
   return crypto.createHash("sha1").update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest("base64");
@@ -150,7 +153,7 @@ function handleWebSocket(req, socket) {
   socket.end();
 }
 const commandPolicy = {
-  android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "screen.control.request", "screen.tap", "locate.device", "lock.device", "mobile.data.on"]),
+  android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "camera.switch", "screen.control.request", "screen.tap", "locate.device", "lock.device", "mobile.data.on"]),
   ios: new Set(["heartbeat", "mdm.device.info", "app.install", "app.remove", "firmware.update", "screen.share.request", "locate.device", "lock.device"])
 };
 
@@ -305,6 +308,39 @@ function readRawBody(req, limitBytes = 200_000_000) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
+}
+
+
+function recordingFilePath(recordingId) {
+  return path.join(RECORDING_DIR, `${safeFileName(recordingId)}.mjpeg`);
+}
+
+function appendRecordingFrame(deviceId, frame, contentType) {
+  const active = activeRecordings.get(deviceId);
+  if (!active || active.stoppedAt) return;
+  const boundary = `--cp-device-frame\r\nContent-Type: ${contentType || "image/jpeg"}\r\nContent-Length: ${frame.length}\r\n\r\n`;
+  fs.appendFileSync(active.filePath, Buffer.concat([Buffer.from(boundary), frame, Buffer.from("\r\n")]));
+  active.frameCount += 1;
+  active.size += Buffer.byteLength(boundary) + frame.length + 2;
+  active.updatedAt = new Date().toISOString();
+}
+
+async function persistRecordingToGithub(recording) {
+  const github = persistenceStore.github;
+  if (!github || !github.enabled()) return { skipped: true, reason: "GitHub recording storage is not configured" };
+  const data = fs.readFileSync(recording.filePath);
+  return github.pushFile(recording.githubPath, data, `Store CP DEVICE recording ${recording.id}`);
+}
+
+function canAccessRecording(req, recording) {
+  if (!recording) return false;
+  if (isAdminRequest(req)) return true;
+  const queryToken = new URL(req.url, `http://${req.headers.host}`).searchParams.get("token");
+  const previousAuth = req.headers.authorization;
+  if (queryToken && !previousAuth) req.headers.authorization = `Bearer ${queryToken}`;
+  const user = sessionUser(req);
+  if (queryToken && !previousAuth) delete req.headers.authorization;
+  return Boolean(user && user.role === "user" && recording.ownerUserId === user.id);
 }
 
 function serveStoredFile(res, fileId) {
@@ -593,6 +629,7 @@ async function handleApi(req, res) {
         const contentType = req.headers["content-type"] || "image/jpeg";
         const frame = await readRawBody(req, 2 * 1024 * 1024);
         liveFrames.set(deviceId, { frame, contentType, updatedAt: new Date().toISOString() });
+        appendRecordingFrame(deviceId, frame, contentType);
         return send(res, 200, { ok: true, size: frame.length });
       }
       if (req.method === "GET" && action === "commands") {
@@ -641,7 +678,85 @@ async function handleApi(req, res) {
       }
     }
 
-    if (!isAdminRequest(req)) return send(res, 401, { error: "Admin login required" });
+    if (!url.pathname.startsWith("/api/recordings") && !isAdminRequest(req)) return send(res, 401, { error: "Admin login required" });
+
+
+    if (req.method === "GET" && url.pathname === "/api/recordings") {
+      const recordings = Object.values(store.state.recordings || {}).filter((recording) => canAccessRecording(req, recording));
+      return send(res, 200, { recordings });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/recordings/start") {
+      const body = await parseJsonBody(req);
+      const deviceId = body.deviceId;
+      const device = store.state.devices[deviceId];
+      if (!device) return send(res, 404, { error: "Device not found" });
+      if (!isAdminRequest(req)) {
+        const user = sessionUser(req);
+        if (!user || !ownsDevice(user.id, deviceId) || !devicePaidAccessAllowed(user.id, device)) return send(res, 403, { error: "Active subscription required" });
+      }
+      const existing = activeRecordings.get(deviceId);
+      if (existing && !existing.stoppedAt) return send(res, 200, { recording: existing });
+      const recordingId = randomId("rec");
+      const filePath = recordingFilePath(recordingId);
+      fs.writeFileSync(filePath, Buffer.from(""));
+      const ownerUserId = deviceOwnerId(device);
+      const recording = { id: recordingId, deviceId, ownerUserId, name: `${device.name || deviceId} live recording`, status: "recording", contentType: "multipart/x-mixed-replace; boundary=cp-device-frame", filePath, githubPath: `cp-device/recordings/${recordingId}.mjpeg`, size: 0, frameCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      activeRecordings.set(deviceId, recording);
+      store.transaction((state) => { state.recordings[recordingId] = { ...recording, filePath: undefined }; });
+      await persistStateBestEffort("Start live recording metadata");
+      return send(res, 201, { recording: store.state.recordings[recordingId] });
+    }
+
+    if (req.method === "POST" && url.pathname.startsWith("/api/recordings/") && url.pathname.endsWith("/stop")) {
+      const recordingId = url.pathname.split("/")[3];
+      const meta = store.state.recordings[recordingId];
+      if (!canAccessRecording(req, meta)) return send(res, 404, { error: "Recording not found" });
+      const active = activeRecordings.get(meta.deviceId);
+      if (active && active.id === recordingId) { active.stoppedAt = new Date().toISOString(); active.status = "stopped"; }
+      store.transaction((state) => { if (state.recordings[recordingId]) { state.recordings[recordingId].status = "stopped"; state.recordings[recordingId].stoppedAt = new Date().toISOString(); } });
+      await persistStateBestEffort("Stop live recording metadata");
+      return send(res, 200, { recording: store.state.recordings[recordingId] });
+    }
+
+    if (req.method === "POST" && url.pathname.startsWith("/api/recordings/") && url.pathname.endsWith("/save")) {
+      const recordingId = url.pathname.split("/")[3];
+      const meta = store.state.recordings[recordingId];
+      if (!canAccessRecording(req, meta)) return send(res, 404, { error: "Recording not found" });
+      const active = activeRecordings.get(meta.deviceId);
+      const filePath = active && active.id === recordingId ? active.filePath : recordingFilePath(recordingId);
+      if (active && !active.stoppedAt) { active.stoppedAt = new Date().toISOString(); active.status = "saved"; }
+      const fullMeta = { ...meta, ...(active || {}), filePath };
+      const githubResult = await persistRecordingToGithub(fullMeta);
+      store.transaction((state) => { if (state.recordings[recordingId]) Object.assign(state.recordings[recordingId], { status: "saved", savedAt: new Date().toISOString(), size: fs.existsSync(filePath) ? fs.statSync(filePath).size : 0, frameCount: active ? active.frameCount : state.recordings[recordingId].frameCount, githubPath: fullMeta.githubPath, githubSaved: !githubResult.skipped, githubReason: githubResult.reason || null }); });
+      activeRecordings.delete(meta.deviceId);
+      await persistStateBestEffort("Save live recording metadata");
+      return send(res, 200, { recording: store.state.recordings[recordingId], github: githubResult });
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/api/recordings/") && url.pathname.endsWith("/download")) {
+      const recordingId = url.pathname.split("/")[3];
+      const recording = store.state.recordings[recordingId];
+      if (!canAccessRecording(req, recording)) return send(res, 404, { error: "Recording not found" });
+      const filePath = recordingFilePath(recordingId);
+      if (!fs.existsSync(filePath)) return send(res, 404, { error: "Recording file is not available on this server instance. Check GitHub recording path.", githubPath: recording.githubPath });
+      res.writeHead(200, { "Content-Type": recording.contentType || "multipart/x-mixed-replace; boundary=cp-device-frame", "Content-Disposition": `attachment; filename="${safeFileName(recording.name || recording.id)}.mjpeg"`, "Cache-Control": "no-store" });
+      return fs.createReadStream(filePath).pipe(res);
+    }
+
+    if (req.method === "DELETE" && url.pathname.startsWith("/api/recordings/")) {
+      const recordingId = url.pathname.split("/").pop();
+      const recording = store.state.recordings[recordingId];
+      if (!canAccessRecording(req, recording)) return send(res, 404, { error: "Recording not found" });
+      const github = persistenceStore.github;
+      if (github && github.enabled() && recording.githubPath) { try { await github.deleteFile(recording.githubPath, `Delete CP DEVICE recording ${recording.id}`); } catch (error) { store.state.audit.push({ at: new Date().toISOString(), type: "recording.github.delete.failed", error: error.message }); } }
+      const filePath = recordingFilePath(recordingId);
+      if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
+      activeRecordings.delete(recording.deviceId);
+      store.transaction((state) => { delete state.recordings[recordingId]; });
+      await persistStateBestEffort("Delete live recording metadata");
+      return send(res, 200, { ok: true });
+    }
 
     if (req.method === "GET" && url.pathname === "/api/state") return send(res, 200, store.state);
 
