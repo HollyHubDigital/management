@@ -526,19 +526,8 @@ async function handleApi(req, res) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/auth/me") {
-      let user = sessionUser(req);
-      if (!user) {
-        try {
-          await hydrateStore(true);
-        } catch (e) {
-          // hydrateStore already records failures; continue to check session anyway
-        }
-        user = sessionUser(req);
-      }
-      if (!user) {
-        if (verifyAdmin(req)) return send(res, 200, { user: { id: "admin", role: "admin", username: "admin", email: "admin", phone: "" } });
-        return send(res, 401, { error: "Login required" });
-      }
+      const user = sessionUser(req);
+      if (!user) return send(res, 401, { error: "Login required" });
       return send(res, 200, { user: publicUser(user) || user });
     }
     if (req.method === "POST" && url.pathname === "/api/user/enroll-browser") {
