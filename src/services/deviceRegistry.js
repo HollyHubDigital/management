@@ -52,6 +52,7 @@ class DeviceRegistry {
       current.lastSeenAt = now;
       current.status = "online";
       current.info = { ...current.info, ...(telemetry.info || {}) };
+      if (telemetry.deviceDetails && typeof telemetry.deviceDetails === "object") current.deviceDetails = { ...(current.deviceDetails || {}), ...telemetry.deviceDetails, updatedAt: now };
       current.ownerUserId ||= current.userId || current.user_id || current.ownerId;
       current.userId ||= current.ownerUserId;
       current.user_id ||= current.ownerUserId;
@@ -128,6 +129,10 @@ class DeviceRegistry {
       }
 
       normalized.completedAt = new Date().toISOString();
+      if (current.type === "device.info.refresh" && normalized.output && typeof normalized.output === "object") {
+        const device = state.devices[deviceId];
+        if (device) device.deviceDetails = { ...(device.deviceDetails || {}), ...normalized.output, updatedAt: new Date().toISOString() };
+      }
       current.results[deviceId] = normalized;
       current.status = current.deviceIds.every((id) => current.results[id]) ? "completed" : "running";
       // Log unexpected output shapes for later inspection

@@ -153,7 +153,7 @@ function handleWebSocket(req, socket) {
   socket.end();
 }
 const commandPolicy = {
-  android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "camera.switch", "screen.control.request", "screen.tap", "locate.device", "lock.device", "mobile.data.on"]),
+  android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "camera.switch", "screen.control.request", "screen.tap", "locate.device", "lock.device", "mobile.data.on", "device.info.refresh", "agent.unenroll"]),
   ios: new Set(["heartbeat", "mdm.device.info", "app.install", "app.remove", "firmware.update", "screen.share.request", "locate.device", "lock.device"])
 };
 
@@ -246,6 +246,31 @@ function deviceOwnerId(device) {
 
 function ownsDevice(userId, deviceId) {
   return Boolean(store.state.devices[deviceId] && deviceOwnerId(store.state.devices[deviceId]) === userId);
+}
+
+function removeDeviceFromState(state, deviceId, audit = {}) {
+  delete state.devices[deviceId];
+  for (const command of Object.values(state.commands)) command.deviceIds = command.deviceIds.filter((id) => id !== deviceId);
+  state.audit.push({ at: new Date().toISOString(), ...audit, deviceId });
+}
+
+function queueDeviceRemoval(deviceId, actor) {
+  const device = store.state.devices[deviceId];
+  if (!device) return { removed: false, queued: false };
+  const hasNativeAgent = Boolean(device.capabilities && device.capabilities.nativeAgent);
+  if (!hasNativeAgent) {
+    store.transaction((state) => removeDeviceFromState(state, deviceId, { type: `${actor}.device.removed` }));
+    return { removed: true, queued: false };
+  }
+  const command = registry.createCommand([deviceId], "agent.unenroll", { requestedAt: new Date().toISOString(), actor });
+  store.transaction((state) => {
+    if (state.devices[deviceId]) {
+      state.devices[deviceId].pendingRemoval = true;
+      state.devices[deviceId].pendingRemovalCommandId = command.id;
+      state.audit.push({ at: new Date().toISOString(), type: `${actor}.device.unenroll.queued`, deviceId, commandId: command.id });
+    }
+  });
+  return { removed: false, queued: true, command };
 }
 
 function canViewLiveFrame(req, deviceId) {
@@ -507,7 +532,7 @@ async function handleApi(req, res) {
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const ownedDeviceIds = new Set(Object.values(store.state.devices).filter((device) => deviceOwnerId(device) === user.id).map((device) => device.id));
       return send(res, 200, {
-        devices: Object.values(store.state.devices).filter((device) => deviceOwnerId(device) === user.id),
+        devices: Object.values(store.state.devices).filter((device) => deviceOwnerId(device) === user.id && !device.pendingRemoval),
         files: Object.values(store.state.files).filter((file) => ownsDevice(user.id, file.sourceDeviceId)),
         commands: Object.values(store.state.commands).filter((command) => command.deviceIds.some((deviceId) => ownedDeviceIds.has(deviceId)))
       });
@@ -537,7 +562,7 @@ async function handleApi(req, res) {
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
       const featureType = body.type || "";
-      const freeAllowed = new Set(["screen.control.request", "screen.share.request"]);
+      const freeAllowed = new Set(["screen.control.request", "screen.share.request", "device.info.refresh"]);
       const deviceIds = Array.isArray(body.deviceIds) ? body.deviceIds : [];
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
       const requestedDevices = deviceIds.map((deviceId) => store.state.devices[deviceId]);
@@ -557,13 +582,9 @@ async function handleApi(req, res) {
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const deviceId = url.pathname.split("/").pop();
       if (!ownsDevice(user.id, deviceId)) return send(res, 404, { error: "Device not found" });
-      store.transaction((state) => {
-        delete state.devices[deviceId];
-        for (const command of Object.values(state.commands)) command.deviceIds = command.deviceIds.filter((id) => id !== deviceId);
-        state.audit.push({ at: new Date().toISOString(), type: "device.removed", deviceId, userId: user.id });
-      });
-      await persistState("Remove user device");
-      return send(res, 200, { ok: true });
+      const removal = queueDeviceRemoval(deviceId, `user.${user.id}`);
+      await persistStateBestEffort(removal.queued ? "Queue user device unenroll" : "Remove user device");
+      return send(res, 200, { ok: true, ...removal, message: removal.queued ? "Authorized unenroll queued. The agent will release Device Owner/Admin restrictions, then the dashboard record will be removed." : "Device removed." });
     }
 
     if (req.method === "GET" && url.pathname.startsWith("/api/user/files/")) {
@@ -673,6 +694,11 @@ async function handleApi(req, res) {
           }
         }
         const command = registry.completeCommand(deviceId, body.commandId, result);
+        if (command && command.type === "agent.unenroll" && result && result.ok !== false) {
+          store.transaction((state) => removeDeviceFromState(state, deviceId, { type: "device.unenrolled", commandId: body.commandId }));
+          await persistState("Complete device unenroll");
+          return send(res, 200, { ...command, deviceRemoved: true });
+        }
         await persistState("Complete device command");
         return send(res, 200, command);
       }
@@ -785,13 +811,9 @@ async function handleApi(req, res) {
     if (req.method === "DELETE" && url.pathname.startsWith("/api/devices/")) {
       const deviceId = url.pathname.split("/").pop();
       if (!store.state.devices[deviceId]) return send(res, 404, { error: "Device not found" });
-      store.transaction((state) => {
-        delete state.devices[deviceId];
-        for (const command of Object.values(state.commands)) command.deviceIds = command.deviceIds.filter((id) => id !== deviceId);
-        state.audit.push({ at: new Date().toISOString(), type: "admin.device.removed", deviceId });
-      });
-      await persistState("Remove admin device");
-      return send(res, 200, { ok: true });
+      const removal = queueDeviceRemoval(deviceId, "admin");
+      await persistStateBestEffort(removal.queued ? "Queue admin device unenroll" : "Remove admin device");
+      return send(res, 200, { ok: true, ...removal, message: removal.queued ? "Authorized unenroll queued. The agent will release Device Owner/Admin restrictions, then the dashboard record will be removed." : "Device removed." });
     }
 
     if (req.method === "POST" && url.pathname === "/api/files") {

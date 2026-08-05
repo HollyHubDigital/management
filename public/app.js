@@ -43,6 +43,11 @@ const mobileDataOn = document.getElementById("mobileDataOn");
 const deviceFiles = document.getElementById("deviceFiles");
 const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
+const deviceInfoModal = document.getElementById("deviceInfoModal");
+const deviceInfoTitle = document.getElementById("deviceInfoTitle");
+const deviceInfoContent = document.getElementById("deviceInfoContent");
+const refreshDeviceInfo = document.getElementById("refreshDeviceInfo");
+let deviceInfoDeviceId = "";
 const locationModal = document.getElementById("locationModal");
 const locationText = document.getElementById("locationText");
 const locationMapLink = document.getElementById("locationMapLink");
@@ -301,7 +306,8 @@ function render() {
     controls.className = "device-controls";
     const selectBtn = document.createElement("button");
     selectBtn.textContent = selectedDeviceIds.includes(device.id) ? "Deselect" : "Select";
-    selectBtn.onclick = () => {
+    selectBtn.onclick = (e) => {
+      e.stopPropagation();
       selectedDeviceIds = selectedDeviceIds.includes(device.id) ? selectedDeviceIds.filter((id) => id !== device.id) : [device.id];
       const target = targetDevice();
       screenText.textContent = target ? `${target.name} selected. Remote desktop/camera/terminal commands will target this device.` : "Select one enrolled device for real-time control";
@@ -343,6 +349,7 @@ function render() {
       card.appendChild(badge);
     }
     card.appendChild(controls);
+    card.onclick = () => openDeviceInfoModal(device.id);
     devices.appendChild(card);
   }
   const target = targetDevice();
@@ -377,6 +384,62 @@ function formatDeviceDisplayVersion(device) {
   return device.platform ? device.platform.charAt(0).toUpperCase() + device.platform.slice(1) : "Device";
 }
 
+
+function latestDeviceInfo(device) {
+  const refreshCommand = Object.values(state.commands || {})
+    .filter((command) => command.type === "device.info.refresh" && command.deviceIds.includes(device.id) && command.results && command.results[device.id])
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  const output = refreshCommand && refreshCommand.results[device.id] && refreshCommand.results[device.id].output;
+  return { ...(device.deviceDetails || {}), ...(output && typeof output === "object" ? output : {}) };
+}
+
+function infoValueHtml(value) {
+  if (Array.isArray(value)) {
+    if (!value.length) return '<span class="muted">Unavailable</span>';
+    return `<ul class="info-list">${value.map((item) => `<li>${infoValueHtml(item)}</li>`).join("")}</ul>`;
+  }
+  if (value && typeof value === "object") {
+    return `<div class="info-grid">${Object.entries(value).map(([key, inner]) => `<div class="info-row"><b>${escapeHtml(labelize(key))}</b><span>${infoValueHtml(inner)}</span></div>`).join("")}</div>`;
+  }
+  return escapeHtml(value || "Unavailable");
+}
+
+function labelize(key) {
+  return String(key || "").replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
+}
+
+function renderDeviceInfoModal(device) {
+  if (!deviceInfoContent) return;
+  const details = latestDeviceInfo(device);
+  const rows = {
+    "IMEI": details.imei,
+    "MAC Addresses": details.macAddresses,
+    "SIM Cards": details.simCards,
+    "Phone Numbers": details.phoneNumbers,
+    "Last 5 Call Logs": details.lastCallLogs,
+    "Updated At": details.updatedAt || details.collectedAt,
+    "Factory Reset Blocked In Settings": device.operation && device.operation.factoryResetBlockedInSettings ? "Yes" : "No — requires Device Owner",
+    "Recovery Mode Factory Reset": "Cannot be guaranteed blocked by a normal APK; requires OEM/enterprise FRP support"
+  };
+  deviceInfoContent.innerHTML = `<div class="info-grid">${Object.entries(rows).map(([key, value]) => `<div class="info-row"><b>${escapeHtml(key)}</b><span>${infoValueHtml(value)}</span></div>`).join("")}</div>`;
+}
+
+function openDeviceInfoModal(deviceId) {
+  const device = state.devices[deviceId];
+  if (!device || !deviceInfoModal) return;
+  deviceInfoDeviceId = deviceId;
+  if (deviceInfoTitle) deviceInfoTitle.textContent = `${formatDeviceDisplayName(device)} Info`;
+  renderDeviceInfoModal(device);
+  if (typeof deviceInfoModal.showModal === "function" && !deviceInfoModal.open) deviceInfoModal.showModal();
+}
+
+async function refreshSelectedDeviceInfo() {
+  const device = state.devices[deviceInfoDeviceId];
+  if (!device) throw new Error("Select a device first");
+  await createCommand([device.id], "device.info.refresh", { requestedAt: new Date().toISOString() });
+  if (deviceInfoContent) deviceInfoContent.innerHTML = '<p class="modal-note">Refresh queued. Waiting for the enrolled device agent...</p>';
+  setTimeout(refresh, 1200);
+}
 function friendlyCommandLabel(type) {
   const map = {
     "locate.device": "Locate device",
@@ -387,6 +450,7 @@ function friendlyCommandLabel(type) {
     "camera.switch": "Switch camera",
     "lock.device": "Lock device",
     "mobile.data.on": "Turn on mobile data",
+    "device.info.refresh": "Refresh device info",
     "shell": "Execute shell command",
     "app.install": "Install app",
     "firmware.update": "Firmware update"
@@ -702,7 +766,7 @@ if (focusTerminal && terminalCommand) {
 if (enrollDevice) {
   enrollDevice.addEventListener("click", () => {
     if (enrollInstructions) {
-      enrollInstructions.textContent = "Click Download to install CP DEVICE Agent. After Android installs it, tap Open Agent here or open CP DEVICE Agent from your apps; Android will ask you to approve Device Admin access.";
+      enrollInstructions.textContent = "Click Download to install CP DEVICE Agent. After Android installs it, provision CP DEVICE as Android Device Owner for theft-resistant protection, then open the agent to finish permissions.";
     }
     if (enrollModal) enrollModal.showModal();
   });
@@ -731,7 +795,7 @@ if (downloadAgent) {
     link.remove();
     if (enrollInstructions) {
       enrollInstructions.textContent = details.platform === "android"
-        ? "After Android installs CP DEVICE Agent, tap Open Agent. The app will auto-fill enrollment and Android will ask for Device Admin permission."
+        ? "After Android installs CP DEVICE Agent, provision it as Android Device Owner for theft-resistant protection, then tap Open Agent to finish enrollment and permissions."
         : "Install the downloaded iOS profile in Settings to complete MDM enrollment.";
     }
   });
@@ -819,3 +883,7 @@ setInterval(() => refresh().catch(() => {}), 2000);
 
 
 
+
+if (refreshDeviceInfo) {
+  refreshDeviceInfo.addEventListener("click", () => refreshSelectedDeviceInfo().catch((error) => { if (log) log.textContent = error.message; }));
+}

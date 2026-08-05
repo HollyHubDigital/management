@@ -43,9 +43,9 @@
               <button id="focusTerminal">Focus Terminal</button>
             </div>
             <div class="record-actions" aria-label="Live recording controls">
-              <button id="startRecording" class="record-start" title="Start recording" type="button">?</button>
-              <button id="stopRecording" class="record-stop" title="Stop recording" type="button">?</button>
-              <button id="saveRecording" class="record-save" title="Save recording" type="button">?</button>
+              <button id="startRecording" class="record-start" title="Start recording" type="button">🟢</button>
+              <button id="stopRecording" class="record-stop" title="Stop recording" type="button">🔴</button>
+              <button id="saveRecording" class="record-save" title="Save recording" type="button">📁</button>
               <span id="recordingStatus" class="recording-status">Recording idle</span>
             </div>
             <form id="terminalForm" class="terminal-form">
@@ -99,7 +99,7 @@
     <dialog id="enrollModal" class="enroll-modal">
       <form method="dialog" class="modal-card">
         <h2>Install CP DEVICE Agent</h2>
-        <p>Click Download to install the authorized CP DEVICE agent/profile on this device. Android requires user installation plus Device Owner/Admin provisioning. iPhone requires an Apple MDM enrollment profile.</p>
+        <p>Click Download to install the authorized CP DEVICE agent/profile on this device. Android requires user installation plus Device Owner provisioning for theft-resistant uninstall/permission protection. iPhone requires an Apple MDM enrollment profile.</p>
         <p class="modal-note" id="enrollInstructions">The agent will receive commands from the Control interface only after the OS-approved enrollment steps are completed.</p>
         <div class="modal-actions">
           <button id="downloadAgent" type="button">Download</button>
@@ -120,6 +120,17 @@
       </form>
     </dialog>
 
+
+    <dialog id="deviceInfoModal" class="enroll-modal device-info-modal">
+      <form method="dialog" class="modal-card">
+        <h2 id="deviceInfoTitle">Device Info</h2>
+        <div id="deviceInfoContent" class="device-info-content">Select a device to view details.</div>
+        <div class="modal-actions">
+          <button id="refreshDeviceInfo" type="button">Refresh</button>
+          <button type="submit" class="secondary">Cancel</button>
+        </div>
+      </form>
+    </dialog>
     <script src="/app.js"></script>
   </body>
 </html>

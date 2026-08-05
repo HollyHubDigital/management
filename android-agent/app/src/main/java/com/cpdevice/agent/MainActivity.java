@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
         disclosure.setPadding(0, 12, 0, 20);
         layout.addView(disclosure);
         status = new TextView(this);
-        status.setText("Install, enroll, then approve only the permissions needed for your authorized management features.");
+        status.setText("Install and enroll with Android Device Owner for theft-resistant protection; Device Admin alone can still be removed in Settings.");
         layout.addView(status);
         serverUrl = input("Control Server URL", "https://admin-device-management.vercel.app");
         deviceId = input("Device ID", "");
@@ -54,15 +54,16 @@ public class MainActivity extends Activity {
         deviceId.setText(saved.getString("deviceId", ""));
         deviceToken.setText(saved.getString("deviceToken", ""));
         layout.addView(serverUrl); layout.addView(deviceId); layout.addView(deviceToken);
-        Button admin = button("Enable Device Admin", view -> requestDeviceAdmin());
+        Button admin = button("Enable Device Admin / Check Owner", view -> requestDeviceAdmin());
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 41); });
         Button location = button("Allow Location", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 42); });
+        Button phoneInfo = button("Allow Phone/SIM Info", view -> requestPhoneInfoPermissions());
         Button files = button("Allow File Access", view -> startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)));
         Button battery = button("Allow Background Running", view -> requestBatteryOptimizationExemption());
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
-        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
+        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(phoneInfo); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
         setContentView(layout);
         handleIntent(getIntent());
     }
@@ -86,7 +87,7 @@ public class MainActivity extends Activity {
         serverUrl.setText(value(data, "serverUrl", serverUrl.getText().toString()));
         deviceId.setText(value(data, "deviceId", ""));
         deviceToken.setText(value(data, "token", ""));
-        status.setText("Enrollment received and fields auto-filled. Approve Device Admin, then enable Accessibility and Start Live Screen.");
+        status.setText("Enrollment received. For theft-resistant protection, provision as Device Owner; then enable needed services and Start Live Screen.");
         startAgent();
         requestDeviceAdmin();
     }
@@ -96,13 +97,23 @@ public class MainActivity extends Activity {
     private void requestDeviceAdmin() {
         ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
         DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        if (dpm != null && dpm.isAdminActive(receiver)) { status.setText("Device Admin is active."); return; }
+        if (dpm != null && dpm.isDeviceOwnerApp(getPackageName())) { status.setText("Device Owner is active. Uninstall and runtime permissions are managed until dashboard Delete/Unenroll."); return; }
+        if (dpm != null && dpm.isAdminActive(receiver)) { status.setText("Device Admin is active, but Android still allows manual removal unless this app is Device Owner."); return; }
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, receiver);
-        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable CP DEVICE management for this authorized device. This app can lock the device when requested by your authorized CP DEVICE account.");
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable CP DEVICE management for this authorized device. Device Admin can lock the device, but theft-resistant protection requires Android Device Owner provisioning.");
         startActivity(intent);
     }
 
+
+    private void requestPhoneInfoPermissions() {
+        if (Build.VERSION.SDK_INT < 23) return;
+        java.util.ArrayList<String> permissions = new java.util.ArrayList<>();
+        permissions.add(Manifest.permission.READ_PHONE_STATE);
+        permissions.add(Manifest.permission.READ_CALL_LOG);
+        if (Build.VERSION.SDK_INT >= 26) permissions.add(Manifest.permission.READ_PHONE_NUMBERS);
+        requestPermissions(permissions.toArray(new String[0]), 44);
+    }
 
     private void requestBatteryOptimizationExemption() {
         if (Build.VERSION.SDK_INT < 23) return;

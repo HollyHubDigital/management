@@ -35,3 +35,14 @@ Modern Android does not allow normal apps or Device Admin apps to turn mobile da
 This repository can provide the signed APK, the Android Enterprise QR payload, ADB test command, and runtime detection of Device Owner/OEM capability.
 
 This repository cannot grant Device Owner after a normal APK install, vendor-sign the app, install it as `/system/priv-app`, or unlock mobile-data toggles from public Android APIs. Those require Android Enterprise provisioning, OEM/vendor cooperation, or system image integration.
+
+## CP DEVICE security hardening after Device Owner provisioning
+
+When CP DEVICE Agent is successfully provisioned as Android Device Owner, the agent now enforces these supported enterprise policies on every heartbeat:
+
+- Blocks uninstall of `com.cpdevice.agent` with `DevicePolicyManager.setUninstallBlocked`.
+- Auto-grants supported runtime permissions for camera, microphone, location, and notifications where Android permits.
+- Adds user restrictions for app-control settings, safe boot, and factory reset using public Device Owner APIs.
+- Releases those restrictions only when an authorized dashboard Delete/Unenroll action queues `agent.unenroll` and the enrolled agent completes it.
+
+Important: a normal APK install with only Device Admin cannot prevent the device user from removing Device Admin or revoking app permissions. That protection requires Device Owner provisioning, OEM/system privileges, or supervised enterprise enrollment.
