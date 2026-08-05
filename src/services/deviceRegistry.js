@@ -52,6 +52,9 @@ class DeviceRegistry {
       current.lastSeenAt = now;
       current.status = "online";
       current.info = { ...current.info, ...(telemetry.info || {}) };
+      current.ownerUserId ||= current.userId || current.user_id || current.ownerId;
+      current.userId ||= current.ownerUserId;
+      current.user_id ||= current.ownerUserId;
       const manufacturer = current.info.manufacturer || "";
       const model = current.info.model || "";
       if (manufacturer || model) current.name = `${manufacturer} ${model}`.trim();

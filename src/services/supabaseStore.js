@@ -146,7 +146,7 @@ class SupabaseStore {
           info: device.info || {},
           capabilities: device.capabilities || {},
           alerts: device.alerts || [],
-          user_id: device.user_id || null,
+          user_id: device.user_id || device.userId || device.ownerUserId || null,
           updated_at: new Date().toISOString()
         },
         { onConflict: 'device_id' }

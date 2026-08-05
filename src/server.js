@@ -115,7 +115,7 @@ function handleWebSocket(req, socket) {
     const session = store.state.sessions[adminToken];
     const sessionUserId = session && Date.parse(session.expiresAt) > Date.now() ? session.userId : null;
     const device = store.state.devices[deviceId];
-    const allowed = device && (adminToken === process.env.CP_DEVICE_ADMIN_TOKEN || (session && session.role === "admin") || (sessionUserId && device.ownerUserId === sessionUserId));
+    const allowed = device && (adminToken === process.env.CP_DEVICE_ADMIN_TOKEN || (session && session.role === "admin") || (sessionUserId && deviceOwnerId(device) === sessionUserId));
     if (!allowed) return socket.end();
     if (!liveViewers.has(deviceId)) liveViewers.set(deviceId, new Set());
     liveViewers.get(deviceId).add(socket);
@@ -227,8 +227,12 @@ function isAdminRequest(req) {
   return verifyAdmin(req) || (user && user.role === "admin");
 }
 
+function deviceOwnerId(device) {
+  return device && (device.ownerUserId || device.userId || device.user_id || device.ownerId || "");
+}
+
 function ownsDevice(userId, deviceId) {
-  return Boolean(store.state.devices[deviceId] && store.state.devices[deviceId].ownerUserId === userId);
+  return Boolean(store.state.devices[deviceId] && deviceOwnerId(store.state.devices[deviceId]) === userId);
 }
 
 function canViewLiveFrame(req, deviceId) {
@@ -447,7 +451,7 @@ async function handleApi(req, res) {
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
       const enrollment = registry.enroll({ platform: body.platform, name: body.name, serial: body.serial, ownerConsent: true, capabilities: body.capabilities || {}, info: body.info || {} });
-      store.transaction((state) => { state.devices[enrollment.deviceId].ownerUserId = user.id; });
+      store.transaction((state) => { state.devices[enrollment.deviceId].ownerUserId = user.id; state.devices[enrollment.deviceId].userId = user.id; state.devices[enrollment.deviceId].user_id = user.id; });
       await persistState("Assign device owner");
       return send(res, 201, enrollment);
     }
@@ -455,9 +459,9 @@ async function handleApi(req, res) {
     if (req.method === "GET" && url.pathname === "/api/user/devices") {
       const user = sessionUser(req);
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
-      const ownedDeviceIds = new Set(Object.values(store.state.devices).filter((device) => device.ownerUserId === user.id).map((device) => device.id));
+      const ownedDeviceIds = new Set(Object.values(store.state.devices).filter((device) => deviceOwnerId(device) === user.id).map((device) => device.id));
       return send(res, 200, {
-        devices: Object.values(store.state.devices).filter((device) => device.ownerUserId === user.id),
+        devices: Object.values(store.state.devices).filter((device) => deviceOwnerId(device) === user.id),
         files: Object.values(store.state.files).filter((file) => ownsDevice(user.id, file.sourceDeviceId)),
         commands: Object.values(store.state.commands).filter((command) => command.deviceIds.some((deviceId) => ownedDeviceIds.has(deviceId)))
       });
