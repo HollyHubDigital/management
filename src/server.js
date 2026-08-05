@@ -579,7 +579,32 @@ return send(res, 200, { token, user: publicUser(user) });
 }
 
     if (req.method === "GET" && url.pathname === "/api/auth/me") {
-      const user = sessionUser(req);
+      const token = bearerToken(req);
+      let user = sessionUser(req);
+
+      // Extra fallback: load directly from Supabase sessions table
+      if (!user && token && persistenceStore.supabase && persistenceStore.supabase.enabled()) {
+        try {
+          const row = await persistenceStore.supabase.getSession(token);
+          if (row) {
+            store.state.sessions[token] = {
+              token: row.token,
+              userId: row.user_id,
+              role: row.role,
+              createdAt: row.created_at,
+              expiresAt: row.expires_at
+            };
+            user = sessionUser(req);
+          }
+        } catch (error) {
+          store.state.audit.push({
+            at: new Date().toISOString(),
+            type: "session.supabase.me.failed",
+            error: error.message
+          });
+        }
+      }
+
       if (!user) return send(res, 401, { error: "Login required" });
       return send(res, 200, { user: publicUser(user) || user });
     }

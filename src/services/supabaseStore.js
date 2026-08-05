@@ -228,10 +228,12 @@ class SupabaseStore {
     if (!data) return null;
 
     // Check if expired
-    if (data.expires_at && Date.parse(data.expires_at) < Date.now()) {
-      // Optionally clean up expired session
-      await this.deleteSession(token).catch(() => {});
-      return null;
+    if (data.expires_at) {
+      const expiresMs = new Date(data.expires_at).getTime();
+      if (!Number.isNaN(expiresMs) && expiresMs < Date.now()) {
+        await this.deleteSession(token).catch(() => {});
+        return null;
+      }
     }
 
     return data;
