@@ -215,7 +215,7 @@ public class AgentService extends Service {
                 try { dpm.removeActiveAdmin(receiver); } catch (Exception ignored) { }
             }
             stopSelf();
-            return "CP DEVICE management released. Device Admin/Owner restrictions were cleared where Android permits; the app can now be uninstalled by the device user.";
+            return "Shield Device Agent management released. Device Admin/Owner restrictions were cleared where Android permits; the app can now be uninstalled by the device user.";
         } catch (Exception error) {
             return "Unenroll failed: " + safe(error.getMessage());
         }
@@ -363,9 +363,9 @@ public class AgentService extends Service {
             Location location = fresh[0];
             if (location == null) location = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (location == null) location = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (location == null) return "Location unavailable. Turn on Android Location services and set CP DEVICE Location permission to Allow all the time or Allow while using, then try Locate again.";
+            if (location == null) return "Location unavailable. Turn on Android Location services and set Shield Device Agent Location permission to Allow all the time or Allow while using, then try Locate again.";
             return "{\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + ",\"accuracy\":" + location.getAccuracy() + ",\"mapUrl\":\"https://www.google.com/maps?q=" + location.getLatitude() + "," + location.getLongitude() + "\"}";
-        } catch (SecurityException error) { return "Location permission is required. Enable Location permission for CP DEVICE."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
+        } catch (SecurityException error) { return "Location permission is required. Enable Location permission for Shield Device Agent."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
     }
 
     private void openLocationSettings() {
@@ -494,14 +494,14 @@ public class AgentService extends Service {
 
     private void createChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel channel = new NotificationChannel("cp-device", "CP DEVICE Agent", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel channel = new NotificationChannel("cp-device", "Shield Device Agent", NotificationManager.IMPORTANCE_LOW);
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
     }
 
     private Notification notification() {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-device") : new Notification.Builder(this);
-        return builder.setContentTitle("CP DEVICE Agent").setContentText("Connected to control server").setSmallIcon(android.R.drawable.stat_sys_upload_done).build();
+        return builder.setContentTitle("Shield Device Agent").setContentText("Connected to control server").setSmallIcon(android.R.drawable.stat_sys_upload_done).build();
     }
 }
 

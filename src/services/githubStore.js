@@ -66,7 +66,7 @@ class GitHubStore {
     }
   }
 
-  async pushState(state, message = "Update CP DEVICE state") {
+  async pushState(state, message = "Update Shield Device Agent state") {
     if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
     const headers = this.headers();
     let sha;
@@ -83,7 +83,7 @@ class GitHubStore {
     );
   }
 
-  async pushFile(filePath, data, message = "Store CP DEVICE file") {
+  async pushFile(filePath, data, message = "Store Shield Device Agent file") {
     if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
     const headers = this.headers();
     const apiPath = this.contentPathFor(filePath);
@@ -101,7 +101,7 @@ class GitHubStore {
     );
   }
 
-  async deleteFile(filePath, message = "Delete CP DEVICE file") {
+  async deleteFile(filePath, message = "Delete Shield Device Agent file") {
     if (!this.enabled()) return { skipped: true, reason: "GitHub storage is not configured" };
     const headers = this.headers();
     const apiPath = this.contentPathFor(filePath);

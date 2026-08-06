@@ -1,7 +1,7 @@
 {
   "name": "cp-device-mdm",
   "version": "1.0.0",
-  "description": "CP DEVICE production MDM control plane for consent-enrolled Android and iOS devices.",
+  "description": "Shield Device Agent production MDM control plane for consent-enrolled Android and iOS devices.",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

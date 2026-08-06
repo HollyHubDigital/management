@@ -80,7 +80,7 @@ public class LiveStreamService extends Service {
             reader.setOnImageAvailableListener(this::onImage, new Handler(thread.getLooper()));
             MediaProjectionManager manager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
             projection = manager.getMediaProjection(resultCode, data);
-            display = projection.createVirtualDisplay("CP DEVICE Live", width, height, density, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, null);
+            display = projection.createVirtualDisplay("Shield Device Live", width, height, density, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, null);
         } catch (Exception ignored) { stopSelf(); }
     }
 
@@ -140,11 +140,11 @@ public class LiveStreamService extends Service {
     }
 
     private void createChannel() {
-        if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "CP DEVICE Live", NotificationManager.IMPORTANCE_LOW));
+        if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "Shield Device Live", NotificationManager.IMPORTANCE_LOW));
     }
 
     private Notification notification() {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-live") : new Notification.Builder(this);
-        return builder.setContentTitle("CP DEVICE Live Control").setContentText("Screen streaming is active").setSmallIcon(android.R.drawable.presence_video_online).build();
+        return builder.setContentTitle("Shield Device Live Control").setContentText("Screen streaming is active").setSmallIcon(android.R.drawable.presence_video_online).build();
     }
 }

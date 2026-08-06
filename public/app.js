@@ -241,7 +241,7 @@ async function enrollCurrentDevice() {
   selectedDeviceIds = [enrollment.deviceId];
   pendingEnrollmentLink = buildAgentEnrollmentLink(enrollment);
   await refresh();
-  screenText.textContent = `${details.name} enrolled. Install CP DEVICE Agent, then tap Open Agent to approve Device Admin.`;
+  screenText.textContent = `${details.name} enrolled. Install Shield Device Agent, then tap Open Agent to approve Device Admin.`;
   return { details, enrollment, enrollmentLink: pendingEnrollmentLink };
 }
 
@@ -266,7 +266,7 @@ function commandGateMessage(device, type) {
   if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment first.";
   if (device.platform === "android") {
     if (type === "shell" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Android Device Owner or OEM/system privileges.";
-    if (type === "screen.tap" && !capabilities.accessibility) return "Requires CP DEVICE Accessibility service.";
+    if (type === "screen.tap" && !capabilities.accessibility) return "Requires Shield Device Agent Accessibility service.";
     if (type === "camera.stream.request" && !capabilities.camera) return "Requires camera permission in the Android agent.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Android Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
@@ -324,7 +324,8 @@ function renderTerminalResults() {
 }
 
 function render() {
-  const list = Object.values(state.devices);
+  const list = Object.values(state.devices).filter((device) => !device.pendingRemoval);
+  selectedDeviceIds = selectedDeviceIds.filter((id) => state.devices[id] && !state.devices[id].pendingRemoval);
   devices.innerHTML = list.length ? "" : "<p>No enrolled devices yet.</p>";
   for (const device of list) {
     const card = document.createElement("div");
@@ -365,6 +366,8 @@ function render() {
       if (!confirm(`Delete device ${device.name}? This cannot be undone.`)) return;
       try {
         await api(`/api/devices/${encodeURIComponent(device.id)}`, { method: "DELETE" });
+        selectedDeviceIds = selectedDeviceIds.filter((id) => id !== device.id);
+        if (screenText) screenText.textContent = "Device deletion queued. It is hidden from the dashboard while the enrolled agent releases management.";
         await refresh();
       } catch (err) { log.textContent = err.message; }
     };
@@ -699,7 +702,7 @@ function renderRecordings() {
     row.className = "file-row";
     const device = state.devices && state.devices[recording.deviceId];
     const label = recording.name || `${device ? formatDeviceDisplayName(device) : recording.deviceId || "Device"} recording`;
-    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} • ${recording.frameCount || 0} frames • ${recording.size || 0} bytes</small></span>`;
+    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} ï¿½ ${recording.frameCount || 0} frames ï¿½ ${recording.size || 0} bytes</small></span>`;
     const actions = document.createElement("span");
     actions.className = "device-controls";
     const download = document.createElement("button");
@@ -876,7 +879,7 @@ if (focusTerminal && terminalCommand) {
 if (enrollDevice) {
   enrollDevice.addEventListener("click", () => {
     if (enrollInstructions) {
-      enrollInstructions.textContent = "Click Download to install CP DEVICE Agent. After Android installs it, provision CP DEVICE as Android Device Owner for theft-resistant protection, then open the agent to finish permissions.";
+      enrollInstructions.textContent = "Click Download to install Shield Device Agent. After Android installs it, provision Shield Device Agent as Android Device Owner for theft-resistant protection, then open the agent to finish permissions.";
     }
     if (enrollModal) enrollModal.showModal();
   });
@@ -905,7 +908,7 @@ if (downloadAgent) {
     link.remove();
     if (enrollInstructions) {
       enrollInstructions.textContent = details.platform === "android"
-        ? "After Android installs CP DEVICE Agent, provision it as Android Device Owner for theft-resistant protection, then tap Open Agent to finish enrollment and permissions."
+        ? "After Android installs Shield Device Agent, provision it as Android Device Owner for theft-resistant protection, then tap Open Agent to finish enrollment and permissions."
         : "Install the downloaded iOS profile in Settings to complete MDM enrollment.";
     }
   });
@@ -974,11 +977,16 @@ if (adminLoginButton) {
   adminLoginButton.addEventListener("click", () => loginAdmin().catch((error) => showAdminGate(error.message)));
 }
 if (adminLogout) {
-  adminLogout.addEventListener("click", () => {
+  adminLogout.addEventListener("click", async () => {
+    const token = adminToken;
     adminToken = "";
     localStorage.removeItem("cpAdminToken");
     state = { devices: {}, commands: {} };
-    showAdminGate("Logged out.");
+    try {
+      await fetch("/api/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    } catch { }
+    setAdminAuthFlashMessage("Logged out.");
+    redirectToAdminAuth();
   });
 }
 showAdminAuthFlashMessage();

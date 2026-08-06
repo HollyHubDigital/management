@@ -160,6 +160,6 @@ public class CameraStreamService extends Service {
         }
     }
 
-    private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "CP DEVICE Camera", NotificationManager.IMPORTANCE_LOW)); }
-    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("CP DEVICE Camera").setContentText("Camera streaming is active").setSmallIcon(android.R.drawable.presence_video_online).build(); }
+    private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Shield Device Camera", NotificationManager.IMPORTANCE_LOW)); }
+    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera streaming is active").setSmallIcon(android.R.drawable.presence_video_online).build(); }
 }

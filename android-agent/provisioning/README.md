@@ -15,7 +15,7 @@ ADB test command after installing the APK on a fresh device:
 adb shell dpm set-device-owner com.cpdevice.agent/.CpDeviceAdminReceiver
 ```
 
-If successful, CP DEVICE Agent can detect `DevicePolicyManager.isDeviceOwnerApp()` and use supported enterprise policies such as lock, app policy management, and system update policy where Android/OEM allows.
+If successful, Shield Device Agent can detect `DevicePolicyManager.isDeviceOwnerApp()` and use supported enterprise policies such as lock, app policy management, and system update policy where Android/OEM allows.
 
 ## OEM/System privileges
 
@@ -28,7 +28,7 @@ OEM/system privileges cannot be added from Java/Kotlin application code. They re
 
 ## Mobile data toggle
 
-Modern Android does not allow normal apps or Device Admin apps to turn mobile data on/off. This requires OEM/system-level privileges. CP DEVICE reports this limitation instead of pretending it succeeded.
+Modern Android does not allow normal apps or Device Admin apps to turn mobile data on/off. This requires OEM/system-level privileges. Shield Device Agent reports this limitation instead of pretending it succeeded.
 
 ## What can be automated in this repo
 
@@ -36,9 +36,9 @@ This repository can provide the signed APK, the Android Enterprise QR payload, A
 
 This repository cannot grant Device Owner after a normal APK install, vendor-sign the app, install it as `/system/priv-app`, or unlock mobile-data toggles from public Android APIs. Those require Android Enterprise provisioning, OEM/vendor cooperation, or system image integration.
 
-## CP DEVICE security hardening after Device Owner provisioning
+## Shield Device Agent security hardening after Device Owner provisioning
 
-When CP DEVICE Agent is successfully provisioned as Android Device Owner, the agent now enforces these supported enterprise policies on every heartbeat:
+When Shield Device Agent is successfully provisioned as Android Device Owner, the agent now enforces these supported enterprise policies on every heartbeat:
 
 - Blocks uninstall of `com.cpdevice.agent` with `DevicePolicyManager.setUninstallBlocked`.
 - Auto-grants supported runtime permissions for camera, microphone, location, and notifications where Android permits.

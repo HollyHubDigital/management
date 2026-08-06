@@ -64,7 +64,7 @@ class SupabaseStore {
     }
   }
 
-  async pushState(state, message = 'Update CP DEVICE state') {
+  async pushState(state, message = 'Update Shield Device Agent state') {
     if (!this.enabled()) return { skipped: true, reason: 'Supabase storage is not configured' };
 
     try {

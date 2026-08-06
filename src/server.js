@@ -175,7 +175,7 @@ function commandCapabilityError(device, type) {
   if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment before using this command.";
   if (device.platform === "android") {
     if (["shell"].includes(type) && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Android shell/admin commands require Device Owner or OEM/system privileges.";
-    if (type === "screen.tap" && !capabilities.accessibility) return "Android remote touch control requires the CP DEVICE Accessibility service.";
+    if (type === "screen.tap" && !capabilities.accessibility) return "Android remote touch control requires the Shield Device Agent Accessibility service.";
     if (type === "camera.stream.request" && !capabilities.camera) return "Android camera streaming requires camera permission in the agent.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Android lock requires Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Mobile data toggle requires OEM/system privileges.";
@@ -342,7 +342,7 @@ function devicePaidAccessAllowed(userId, device) {
 
 async function submitWeb3Forms(user) {
   if (!process.env.WEB3FORMS_ACCESS_KEY) return { skipped: true, reason: "WEB3FORMS_ACCESS_KEY not configured" };
-  const body = JSON.stringify({ access_key: process.env.WEB3FORMS_ACCESS_KEY, subject: "CP DEVICE Signup", email: user.email, username: user.username, phone: user.phone });
+  const body = JSON.stringify({ access_key: process.env.WEB3FORMS_ACCESS_KEY, subject: "Shield Device Agent Signup", email: user.email, username: user.username, phone: user.phone });
   return new Promise((resolve) => {
     const request = https.request({ hostname: "api.web3forms.com", path: "/submit", method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body) } }, (response) => {
       let data = ""; response.on("data", (chunk) => data += chunk); response.on("end", () => resolve({ status: response.statusCode, data }));
@@ -388,7 +388,7 @@ async function persistRecordingToGithub(recording) {
   const github = persistenceStore.github;
   if (!github || !github.enabled()) return { skipped: true, reason: "GitHub recording storage is not configured" };
   const data = fs.readFileSync(recording.filePath);
-  return github.pushFile(recording.githubPath, data, `Store CP DEVICE recording ${recording.id}`);
+  return github.pushFile(recording.githubPath, data, `Store Shield Device Agent recording ${recording.id}`);
 }
 
 function canAccessRecording(req, recording) {
@@ -524,7 +524,7 @@ if (["POST", "PUT"].includes(req.method) && (url.pathname === "/api/mdm/checkin"
       const userId = randomId("usr");
       const user = { id: userId, email: body.email, username: body.username, phone: String(body.phone).replace(/\s+/g, ""), passwordHash: hashPassword(body.password), role: "user", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.users[userId] = user; state.subscriptions[userId] = { plan: "free", expiresAt: null, updatedAt: new Date().toISOString() }; });
-      await persistState("Create CP DEVICE user");
+      await persistState("Create Shield Device Agent user");
       submitWeb3Forms(user).catch(() => {});
       return send(res, 201, { ok: true, user: publicUser(user) });
     }
@@ -560,7 +560,7 @@ return send(res, 200, { token, user: publicUser(user) });
           if (session && session.userId === user.id) delete state.sessions[token];
         }
       });
-      await persistState("Reset CP DEVICE user password and invalidate sessions");
+      await persistState("Reset Shield Device Agent user password and invalidate sessions");
       return send(res, 200, { ok: true });
     }
 
@@ -698,7 +698,7 @@ return send(res, 200, { token, user: publicUser(user) });
       if (existing) return send(res, 409, { error: "Payment id already belongs to another user" });
       const payment = { id: paymentId, userId: user.id, plan: body.plan, amount: subscriptionPlans[body.plan].amount, provider: body.provider, status: "pending", createdAt: new Date().toISOString() };
       store.transaction((state) => { state.payments[paymentId] = payment; });
-      await persistState("Initialize CP DEVICE payment");
+      await persistState("Initialize Shield Device Agent payment");
       return send(res, 200, { payment, checkout: { configured: false, reason: "Provider secret keys/webhook verification must be configured in Vercel env before real charges are accepted." } });
     }
 
@@ -709,7 +709,7 @@ return send(res, 200, { token, user: publicUser(user) });
       if (!payment) return send(res, 404, { error: "Payment not found" });
       if (payment.status === "successful") return send(res, 200, { payment, subscription: store.state.subscriptions[payment.userId], idempotent: true });
       const subscription = activateSubscription(payment.userId, payment.plan, payment.id);
-      await persistState("Activate CP DEVICE subscription");
+      await persistState("Activate Shield Device Agent subscription");
       return send(res, 200, { payment: store.state.payments[payment.id], subscription });
     }
   try {
@@ -866,7 +866,7 @@ return send(res, 200, { token, user: publicUser(user) });
       const recording = store.state.recordings[recordingId];
       if (!canAccessRecording(req, recording)) return send(res, 404, { error: "Recording not found" });
       const github = persistenceStore.github;
-      if (github && github.enabled() && recording.githubPath) { try { await github.deleteFile(recording.githubPath, `Delete CP DEVICE recording ${recording.id}`); } catch (error) { store.state.audit.push({ at: new Date().toISOString(), type: "recording.github.delete.failed", error: error.message }); } }
+      if (github && github.enabled() && recording.githubPath) { try { await github.deleteFile(recording.githubPath, `Delete Shield Device Agent recording ${recording.id}`); } catch (error) { store.state.audit.push({ at: new Date().toISOString(), type: "recording.github.delete.failed", error: error.message }); } }
       const filePath = recordingFilePath(recordingId);
       if (fs.existsSync(filePath)) fs.rmSync(filePath, { force: true });
       activeRecordings.delete(recording.deviceId);
@@ -956,7 +956,7 @@ return send(res, 200, { token, user: publicUser(user) });
     }
 
     if (req.method === "POST" && url.pathname === "/api/sync/github") {
-      return send(res, 200, await registry.sync("Manual CP DEVICE sync"));
+      return send(res, 200, await registry.sync("Manual Shield Device Agent sync"));
     }
 
     send(res, 404, { error: "Not found" });
@@ -985,7 +985,7 @@ server.on("upgrade", (req, socket) => {
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`CP DEVICE MDM listening on port ${PORT}`);
+    console.log(`Shield Device Agent MDM listening on port ${PORT}`);
   });
 }
 

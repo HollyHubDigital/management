@@ -1,6 +1,6 @@
 # Managed Google Play / Android Enterprise Deployment
 
-CP DEVICE Agent should be distributed as an enterprise-managed app, not as an anonymous browser sideload, because it requests high-risk management permissions for authorized device administration.
+Shield Device Agent should be distributed as an enterprise-managed app, not as an anonymous browser sideload, because it requests high-risk management permissions for authorized device administration.
 
 ## Recommended production path
 
@@ -17,7 +17,7 @@ CP DEVICE Agent should be distributed as an enterprise-managed app, not as an an
    - QR provisioning for Device Owner during setup.
    - Zero-touch enrollment through a reseller for fleet deployment.
    - ADB `dpm set-device-owner` only for lab/test devices before user setup.
-5. Configure your EMM/MDM policy to install CP DEVICE Agent from Managed Google Play.
+5. Configure your EMM/MDM policy to install Shield Device Agent from Managed Google Play.
 6. Keep the backend URL on HTTPS only: `https://admin-device-management.vercel.app`.
 
 ## What this does not do
@@ -30,10 +30,10 @@ The app declares only:
 
 - `force-lock`
 
-Unused high-risk policies such as wipe, reset password, disable camera, and encrypted-storage are intentionally not declared because current CP DEVICE logic does not use them.
+Unused high-risk policies such as wipe, reset password, disable camera, and encrypted-storage are intentionally not declared because current Shield Device Agent logic does not use them.
 
 ## Privacy policy starter text
 
 Use this as a starting point for your public privacy policy page and adapt it to your company/legal requirements:
 
-CP DEVICE Agent is an enterprise device management app used only on devices owned by the user or organization and enrolled with consent. The app may collect device identifiers, model/version information, online status, operational telemetry, location when requested, files selected/requested for transfer, camera stream data during active sessions, and screen capture data during active sessions. Data is sent securely to the configured CP DEVICE management server for authorized dashboard access. Remote control features require explicit Android permissions such as Device Admin, Accessibility, Camera, Files, Location, and MediaProjection screen-capture consent. Users or administrators can remove the app/enrollment according to the organization's device policy.
+Shield Device Agent is an enterprise device management app used only on devices owned by the user or organization and enrolled with consent. The app may collect device identifiers, model/version information, online status, operational telemetry, location when requested, files selected/requested for transfer, camera stream data during active sessions, and screen capture data during active sessions. Data is sent securely to the configured Shield Device Agent management server for authorized dashboard access. Remote control features require explicit Android permissions such as Device Admin, Accessibility, Camera, Files, Location, and MediaProjection screen-capture consent. Users or administrators can remove the app/enrollment according to the organization's device policy.

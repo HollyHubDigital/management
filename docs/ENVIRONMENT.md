@@ -1,4 +1,4 @@
-# CP DEVICE Environment Variables
+# Shield Device Agent Environment Variables
 
 ## Admin + Backend Vercel Project
 

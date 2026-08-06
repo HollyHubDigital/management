@@ -43,7 +43,7 @@ class StatePersistence {
     };
   }
 
-  async pushState(state, message = "Update CP DEVICE state") {
+  async pushState(state, message = "Update Shield Device Agent state") {
     if (this.supabase.enabled()) {
       return this.supabase.pushState(state, message);
     }

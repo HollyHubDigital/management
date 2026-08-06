@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CP DEVICE Control</title>
+    <title>Shield Device Agent Control</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -11,7 +11,7 @@
       <section id="adminApp" class="desktop-app hidden">
         <header class="topbar">
           <div>
-            <p class="eyebrow">CP DEVICE</p>
+            <p class="eyebrow">Shield Device Agent</p>
             <h1>Machine Control MDM</h1>
           </div>
           <div class="top-actions">
@@ -46,7 +46,7 @@
               <button id="startRecording" class="record-start" title="Start recording" type="button">🟢</button>
               <button id="stopRecording" class="record-stop" title="Stop recording" type="button">🔴</button>
               <button id="saveRecording" class="record-save" title="Save recording" type="button">📁</button>
-              <span id="recordingStatus" class="recording-status">Recording idle</span>
+              <span id="recordingStatus" class="recording-status">Recording Tools</span>
             </div>
             <form id="terminalForm" class="terminal-form">
               <label for="terminalCommand">Remote Terminal Command</label>
@@ -98,8 +98,8 @@
 
     <dialog id="enrollModal" class="enroll-modal">
       <form method="dialog" class="modal-card">
-        <h2>Install CP DEVICE Agent</h2>
-        <p>Click Download to install the authorized CP DEVICE agent/profile on this device. Android requires user installation plus Device Owner provisioning for theft-resistant uninstall/permission protection. iPhone requires an Apple MDM enrollment profile.</p>
+        <h2>Install Shield Device Agent</h2>
+        <p>Click Download to install the authorized Shield Device Agent/profile on this device. Android requires user installation plus Device Owner provisioning for theft-resistant uninstall/permission protection. iPhone requires an Apple MDM enrollment profile.</p>
         <p class="modal-note" id="enrollInstructions">The agent will receive commands from the Control interface only after the OS-approved enrollment steps are completed.</p>
         <div class="modal-actions">
           <button id="downloadAgent" type="button">Download</button>

@@ -16,7 +16,7 @@ if (-not (Test-Path $keytool)) { throw "keytool not found at $keytool" }
 
 $keystore = Join-Path $repo "android-agent\app\release.keystore"
 if (-not (Test-Path $keystore)) {
-  & $keytool -genkeypair -v -keystore $keystore -alias "cp-device" -keyalg RSA -keysize 4096 -validity 10000 -storepass "changeit" -keypass "changeit" -dname "CN=CP DEVICE, OU=MDM, O=CP DEVICE, L=Lagos, ST=Lagos, C=NG"
+  & $keytool -genkeypair -v -keystore $keystore -alias "cp-device" -keyalg RSA -keysize 4096 -validity 10000 -storepass "changeit" -keypass "changeit" -dname "CN=Shield Device Agent, OU=MDM, O=Shield Device Agent, L=Lagos, ST=Lagos, C=NG"
 }
 
 Push-Location (Join-Path $repo "android-agent")

@@ -1,6 +1,6 @@
 # Android Agent Build
 
-This directory contains the native CP DEVICE Android agent project.
+This directory contains the native Shield Device Agent Android agent project.
 
 ## Build a signed APK
 
@@ -25,4 +25,4 @@ The script:
 
 ## Current limits
 
-The app is a real Android APK project with Device Admin enrollment and polling against the CP DEVICE control server. Android does not allow a normal APK to silently install itself, silently become Device Owner/Admin, or gain root shell. Device Owner provisioning must be completed through Android Enterprise, QR/zero-touch, ADB provisioning, OEM enrollment, or user-approved Device Admin activation.
+The app is a real Android APK project with Device Admin enrollment and polling against the Shield Device Agent control server. Android does not allow a normal APK to silently install itself, silently become Device Owner/Admin, or gain root shell. Device Owner provisioning must be completed through Android Enterprise, QR/zero-touch, ADB provisioning, OEM enrollment, or user-approved Device Admin activation.

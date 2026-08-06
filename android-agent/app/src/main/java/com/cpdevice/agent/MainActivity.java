@@ -32,7 +32,7 @@ public class MainActivity extends Activity {
         layout.setPadding(32, 32, 32, 32);
         layout.setGravity(Gravity.CENTER_HORIZONTAL);
         TextView title = new TextView(this);
-        title.setText("CP DEVICE Agent Enrollment");
+        title.setText("Shield Device Agent Enrollment");
         title.setTextSize(22);
         layout.addView(title);
         TextView disclosureTitle = new TextView(this);
@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
         if (dpm != null && dpm.isAdminActive(receiver)) { status.setText("Device Admin is active, but Android still allows manual removal unless this app is Device Owner."); return; }
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, receiver);
-        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable CP DEVICE management for this authorized device. Device Admin can lock the device, but theft-resistant protection requires Android Device Owner provisioning.");
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable Shield Device Agent management for this authorized device. Device Admin can lock the device, but theft-resistant protection requires Android Device Owner provisioning.");
         startActivity(intent);
     }
 

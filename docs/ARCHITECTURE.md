@@ -1,6 +1,6 @@
-# CP DEVICE Production Architecture
+# Shield Device Agent Production Architecture
 
-CP DEVICE is a consent-based MDM control plane for enrolled Android and iOS devices.
+Shield Device Agent is a consent-based MDM control plane for enrolled Android and iOS devices.
 
 ## Security boundaries
 
@@ -67,4 +67,4 @@ A web page cannot silently install software, grant Device Admin, become Device O
 - Android Enterprise QR enrollment, zero-touch enrollment, OEMConfig, managed Google Play, ADB provisioning, or user-approved APK install plus Device Admin where applicable.
 - iOS/iPadOS Apple MDM enrollment using a signed `.mobileconfig`, Apple Business Manager/School Manager, APNs MDM certificate, and supervised-device enrollment for advanced controls.
 
-The CP DEVICE web flow records browser-visible details immediately, then the downloaded signed agent/profile completes privileged enrollment after the user/organization approves it.
+The Shield Device Agent web flow records browser-visible details immediately, then the downloaded signed agent/profile completes privileged enrollment after the user/organization approves it.
