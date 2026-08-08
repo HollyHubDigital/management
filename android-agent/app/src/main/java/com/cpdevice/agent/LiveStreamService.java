@@ -24,6 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.nio.ByteBuffer;
 
 public class LiveStreamService extends Service {
@@ -32,6 +34,8 @@ public class LiveStreamService extends Service {
     private ImageReader reader;
     private HandlerThread thread;
     private SimpleWebSocketClient ws;
+    private final ExecutorService uploadExecutor = Executors.newSingleThreadExecutor();
+    private volatile boolean uploadBusy;
     private long lastFrameAt;
 
     @Override public void onCreate() {
@@ -56,6 +60,7 @@ public class LiveStreamService extends Service {
         if (reader != null) reader.close();
         if (projection != null) projection.stop();
         if (ws != null) ws.close();
+        uploadExecutor.shutdownNow();
         if (thread != null) thread.quitSafely();
         super.onDestroy();
     }
@@ -89,7 +94,7 @@ public class LiveStreamService extends Service {
         try {
             long now = System.currentTimeMillis();
             image = imageReader.acquireLatestImage();
-            if (image == null || now - lastFrameAt < 350) return;
+            if (image == null || now - lastFrameAt < 150) return;
             lastFrameAt = now;
             Image.Plane plane = image.getPlanes()[0];
             ByteBuffer buffer = plane.getBuffer();
@@ -102,14 +107,34 @@ public class LiveStreamService extends Service {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             cropped.compress(Bitmap.CompressFormat.JPEG, 55, out);
             byte[] frame = out.toByteArray();
-            try { if (ws != null) ws.sendBinary(frame); } catch (Exception ignored) { }
-            postFrame(frame);
+            boolean sent = false;
+            try {
+                if (ws != null) {
+                    ws.sendBinary(frame);
+                    sent = true;
+                }
+            } catch (Exception ignored) {
+                ws = null;
+            }
+            if (!sent) postFrameAsync(frame);
             bitmap.recycle();
             cropped.recycle();
         } catch (Exception ignored) {
         } finally {
             if (image != null) image.close();
         }
+    }
+
+    private void postFrameAsync(byte[] frame) {
+        if (uploadBusy) return;
+        uploadBusy = true;
+        uploadExecutor.execute(() -> {
+            try {
+                postFrame(frame);
+            } finally {
+                uploadBusy = false;
+            }
+        });
     }
 
     private void postFrame(byte[] frame) {
@@ -140,11 +165,11 @@ public class LiveStreamService extends Service {
     }
 
     private void createChannel() {
-        if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "Shield Device Live", NotificationManager.IMPORTANCE_LOW));
+        if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "Shield Device Live", NotificationManager.IMPORTANCE_DEFAULT));
     }
 
     private Notification notification() {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-live") : new Notification.Builder(this);
-        return builder.setContentTitle("Shield Device Live Control").setContentText("Screen streaming is active").setSmallIcon(android.R.drawable.presence_video_online).build();
+        return builder.setContentTitle("Shield Device Live Control").setContentText("Screen streaming is active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build();
     }
 }

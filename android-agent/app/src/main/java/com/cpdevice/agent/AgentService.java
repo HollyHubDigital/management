@@ -12,6 +12,7 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
@@ -29,6 +30,10 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.UserManager;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.util.DisplayMetrics;
+import android.view.WindowManager;
 import androidx.core.content.FileProvider;
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +43,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +57,7 @@ public class AgentService extends Service {
         super.onCreate();
         prefs = getSharedPreferences("cp-device", Context.MODE_PRIVATE);
         createChannel();
-        startForeground(10, notification());
+        startForeground(10, notification("Shield Device Agent", "Connected to control server"));
         running = true;
         new Thread(this::loop).start();
     }
@@ -73,14 +79,19 @@ public class AgentService extends Service {
     }
 
     private void loop() {
+        long lastHeartbeatAt = 0;
         while (running) {
             try {
-                heartbeat();
+                long now = System.currentTimeMillis();
+                if (now - lastHeartbeatAt > 10000) {
+                    heartbeat();
+                    lastHeartbeatAt = now;
+                }
                 String commandsJson = request("GET", "/api/device/" + deviceId() + "/commands", null);
                 processCommands(commandsJson);
-                Thread.sleep(2000);
+                Thread.sleep(250);
             } catch (Exception error) {
-                try { Thread.sleep(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+                try { Thread.sleep(1000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
             }
         }
     }
@@ -126,21 +137,47 @@ public class AgentService extends Service {
         if ("device.info.refresh".equals(type)) return collectDeviceDetails();
         if ("shell".equals(type)) return owner ? "Device Owner active. Root shell still requires OEM/system/root integration." : (admin ? "Device Admin active. Android does not expose arbitrary root shell to normal APKs." : "Device Admin is not active.");
         if ("app.install".equals(type)) return installApk(textValue(commandJson, "apkUrl", commandStart, ""));
-        if ("file.list".equals(type)) return listFiles(textValue(commandJson, "path", commandStart, "/sdcard"));
-        if ("file.pull".equals(type)) return exportFile(textValue(commandJson, "path", commandStart, ""), textValue(commandJson, "id", commandStart, "manual"));
+        if ("file.list".equals(type)) { showLiveActionNotification("Device file browse active", "Shield Device Agent is listing device files."); return listFiles(textValue(commandJson, "path", commandStart, "/sdcard")); }
+        if ("file.pull".equals(type)) { showLiveActionNotification("Device file export active", "Shield Device Agent is exporting a selected file."); return exportFile(textValue(commandJson, "path", commandStart, ""), textValue(commandJson, "id", commandStart, "manual")); }
         if ("locate.device".equals(type)) return locateDevice();
-        if ("lock.device".equals(type)) { if (admin) { dpm.lockNow(); return "Device locked."; } return "Device Admin is required to lock device."; }
+        if ("lock.device".equals(type)) { if (admin) { showLiveActionNotification("Lost Mode lock requested", "This enrolled device is being locked from the dashboard."); dpm.lockNow(); return "Device locked."; } return "Device Admin is required to lock device."; }
+        if ("lost.ring".equals(type)) return lostRing();
+        if ("lost.message".equals(type)) return lostMessage(textValue(commandJson, "message", commandStart, "This device is lost. Please contact the owner."));
+        if ("lost.disable".equals(type)) return lostDisable(dpm, admin);
         if ("mobile.data.on".equals(type)) return owner ? "Device Owner active, but Android public APIs still do not expose mobile data toggle. Requires OEM/system API." : "Android does not allow normal or Device Admin apps to toggle mobile data. Requires OEM/system privileges.";
         if ("firmware.update".equals(type)) return "Firmware update queued URL received. Android firmware flashing requires Device Owner system update policy, OEM/system privileges, or vendor updater integration.";
-        if ("screen.control.request".equals(type)) { openScreenCaptureConsent(); return "Screen capture permission opened on device. Approve it to start live remote desktop."; }
+        if ("screen.control.request".equals(type)) { showLiveActionNotification("Live screen requested", "Screen sharing requires Android capture approval on this device."); openScreenCaptureConsent(); return "Screen capture permission opened on device. Approve it to start live remote desktop."; }
         if ("screen.tap".equals(type)) {
-            int x = numberAfter(commandJson, "\\\"x\\\":", commandStart, 360);
-            int y = numberAfter(commandJson, "\\\"y\\\":", commandStart, 640);
+            int[] tap = tapCoordinates(commandJson, commandStart);
+            int x = tap[0];
+            int y = tap[1];
             return CpAccessibilityService.tap(x, y) ? "Tap dispatched at " + x + "," + y : "Accessibility service is not enabled.";
         }
-        if ("camera.stream.request".equals(type)) { Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "back")); startForegroundService(intent); return "Camera stream requested. Android camera and microphone permissions must be approved on the device."; }
-        if ("camera.switch".equals(type)) { Intent stop = new Intent(this, CameraStreamService.class); stopService(stop); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "front")); startForegroundService(intent); return "Camera switched to " + textValue(commandJson, "facing", commandStart, "front") + "."; }
+        if ("camera.stream.request".equals(type)) { showLiveActionNotification("Live camera active", "Camera streaming is visible while active."); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "back")); startForegroundService(intent); return "Camera stream requested. Android camera and microphone permissions must be approved on the device."; }
+        if ("camera.switch".equals(type)) { showLiveActionNotification("Live camera active", "Camera streaming is visible while active."); Intent stop = new Intent(this, CameraStreamService.class); stopService(stop); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "front")); startForegroundService(intent); return "Camera switched to " + textValue(commandJson, "facing", commandStart, "front") + "."; }
         return "Command received: " + type;
+    }
+
+    private int[] tapCoordinates(String commandJson, int commandStart) {
+        DisplayMetrics metrics = new DisplayMetrics();
+        WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        if (windowManager != null) windowManager.getDefaultDisplay().getRealMetrics(metrics);
+        int width = metrics.widthPixels > 0 ? metrics.widthPixels : 720;
+        int height = metrics.heightPixels > 0 ? metrics.heightPixels : 1280;
+        double xRatio = decimalAfter(commandJson, "\\\"xRatio\\\":", commandStart, -1);
+        double yRatio = decimalAfter(commandJson, "\\\"yRatio\\\":", commandStart, -1);
+        if (xRatio >= 0 && yRatio >= 0) {
+            int x = Math.round((float) (clamp(xRatio, 0, 1) * (width - 1)));
+            int y = Math.round((float) (clamp(yRatio, 0, 1) * (height - 1)));
+            return new int[] { x, y };
+        }
+        int x = numberAfter(commandJson, "\\\"x\\\":", commandStart, width / 2);
+        int y = numberAfter(commandJson, "\\\"y\\\":", commandStart, height / 2);
+        return new int[] { Math.max(0, Math.min(width - 1, x)), Math.max(0, Math.min(height - 1, y)) };
+    }
+
+    private double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private void enforceOwnerSecurity(DevicePolicyManager dpm, ComponentName receiver) {
@@ -348,7 +385,7 @@ public class AgentService extends Service {
             boolean networkEnabled = false;
             try { gpsEnabled = manager.isProviderEnabled(LocationManager.GPS_PROVIDER); } catch (Exception ignored) { }
             try { networkEnabled = manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER); } catch (Exception ignored) { }
-            if (!gpsEnabled && !networkEnabled) { openLocationSettings(); return "Android Location is OFF. Location settings opened on the device; approve/turn it on once, then click Locate again."; }
+            if (!gpsEnabled && !networkEnabled) return "Android Location is OFF. Turn it on once on the enrolled device, then click Locate again.";
             final Location[] fresh = new Location[1];
             final CountDownLatch latch = new CountDownLatch(1);
             LocationListener listener = new LocationListener() {
@@ -372,6 +409,39 @@ public class AgentService extends Service {
         Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
+    }
+
+    private String lostRing() {
+        showLiveActionNotification("Lost Mode ring", "This enrolled device is ringing from the dashboard.");
+        try {
+            Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null) {
+                long[] pattern = new long[] { 0, 700, 250, 700, 250, 700 };
+                if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1)); else vibrator.vibrate(pattern, -1);
+            }
+        } catch (Exception ignored) { }
+        return "Lost Mode ring/vibration requested.";
+    }
+
+    private String lostMessage(String message) {
+        String body = message == null || message.trim().length() == 0 ? "This device is lost. Please contact the owner." : message.trim();
+        showLiveActionNotification("Lost device owner message", body);
+        return "Owner message shown in device notification.";
+    }
+
+    private String lostDisable(DevicePolicyManager dpm, boolean admin) {
+        try { stopService(new Intent(this, CameraStreamService.class)); } catch (Exception ignored) { }
+        try { stopService(new Intent(this, LiveStreamService.class)); } catch (Exception ignored) { }
+        showLiveActionNotification("Lost Mode active", "Live camera and screen services were stopped from the dashboard.");
+        if (admin && dpm != null) { try { dpm.lockNow(); } catch (Exception ignored) { } }
+        return admin ? "Live sessions disabled and device lock requested." : "Live sessions disabled. Device Admin is required to lock the device.";
+    }
+
+    private void showLiveActionNotification(String title, String text) {
+        Notification notification = notification(title, text);
+        startForeground(10, notification);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) manager.notify(10, notification);
     }
 
     private void openScreenCaptureConsent() {
@@ -405,7 +475,8 @@ public class AgentService extends Service {
                 int count = 0;
                 for (File file : files) {
                     if (count++ > 0) json.append(",");
-                    json.append("{\\\"name\\\":\\\"").append(safe(file.getName())).append("\\\",\\\"path\\\":\\\"").append(safe(file.getAbsolutePath())).append("\\\",\\\"directory\\\":").append(file.isDirectory()).append(",\\\"size\\\":").append(file.isDirectory() ? 0 : file.length()).append("}");
+                    String contentType = file.isDirectory() ? "inode/directory" : guessContentType(file);
+                    json.append("{\\\"name\\\":\\\"").append(safe(file.getName())).append("\\\",\\\"path\\\":\\\"").append(safe(file.getAbsolutePath())).append("\\\",\\\"directory\\\":").append(file.isDirectory()).append(",\\\"size\\\":").append(file.isDirectory() ? 0 : file.length()).append(",\\\"contentType\\\":\\\"").append(safe(contentType)).append("\\\"}");
                     if (count >= 200) break;
                 }
             }
@@ -436,12 +507,17 @@ public class AgentService extends Service {
         }
     }
 
+    private String guessContentType(File file) {
+        String type = URLConnection.guessContentTypeFromName(file.getName());
+        return type == null || type.length() == 0 ? "application/octet-stream" : type;
+    }
+
     private void uploadFile(File file, String commandId) throws Exception {
         URL url = new URL(serverUrl() + "/api/device/" + deviceId() + "/files");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Authorization", "Bearer " + token());
-        conn.setRequestProperty("Content-Type", "application/octet-stream");
+        conn.setRequestProperty("Content-Type", guessContentType(file));
         conn.setRequestProperty("X-File-Name", file.getName());
         conn.setRequestProperty("X-Command-Id", commandId);
         conn.setDoOutput(true);
@@ -470,6 +546,19 @@ public class AgentService extends Service {
         try { return Integer.parseInt(text.substring(start, end)); } catch (Exception ignored) { return fallback; }
     }
 
+    private double decimalAfter(String text, String marker, int from, double fallback) {
+        int index = text.indexOf(marker, from);
+        if (index < 0) return fallback;
+        int start = index + marker.length();
+        int end = start;
+        while (end < text.length()) {
+            char value = text.charAt(end);
+            if (!Character.isDigit(value) && value != '.' && value != '-') break;
+            end++;
+        }
+        try { return Double.parseDouble(text.substring(start, end)); } catch (Exception ignored) { return fallback; }
+    }
+
     private String request(String method, String path, String body) throws Exception {
         URL url = new URL(serverUrl() + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -494,14 +583,16 @@ public class AgentService extends Service {
 
     private void createChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel channel = new NotificationChannel("cp-device", "Shield Device Agent", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel channel = new NotificationChannel("cp-device", "Shield Device Agent", NotificationManager.IMPORTANCE_DEFAULT);
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
     }
 
-    private Notification notification() {
+    private Notification notification(String title, String text) {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-device") : new Notification.Builder(this);
-        return builder.setContentTitle("Shield Device Agent").setContentText("Connected to control server").setSmallIcon(android.R.drawable.stat_sys_upload_done).build();
+        Intent launch = new Intent(this, MainActivity.class);
+        PendingIntent pending = PendingIntent.getActivity(this, 0, launch, Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
+        return builder.setContentTitle(title).setContentText(text).setSmallIcon(android.R.drawable.stat_sys_upload_done).setOngoing(true).setContentIntent(pending).build();
     }
 }
 

@@ -21,6 +21,8 @@ const screenText = document.getElementById("screenText");
 const liveFrame = document.getElementById("liveFrame");
 let liveSocket = null;
 let livePollTimer = null;
+let liveSocketFallbackTimer = null;
+let lastLiveSocketFrameAt = 0;
 let liveControlMode = "";
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
@@ -40,6 +42,12 @@ const browseFiles = document.getElementById("browseFiles");
 const locateDevice = document.getElementById("locateDevice");
 const lockDevice = document.getElementById("lockDevice");
 const mobileDataOn = document.getElementById("mobileDataOn");
+const lostLocate = document.getElementById("lostLocate");
+const lostLock = document.getElementById("lostLock");
+const lostRing = document.getElementById("lostRing");
+const lostDisable = document.getElementById("lostDisable");
+const lostMessageForm = document.getElementById("lostMessageForm");
+const lostMessage = document.getElementById("lostMessage");
 const deviceFiles = document.getElementById("deviceFiles");
 const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
@@ -267,7 +275,7 @@ function commandGateMessage(device, type) {
   if (device.platform === "android") {
     if (type === "shell" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Android Device Owner or OEM/system privileges.";
     if (type === "screen.tap" && !capabilities.accessibility) return "Requires Shield Device Agent Accessibility service.";
-    if (type === "camera.stream.request" && !capabilities.camera) return "Requires camera permission in the Android agent.";
+    if (["camera.stream.request", "camera.switch"].includes(type) && !capabilities.camera) return "Requires camera permission in the Android agent.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Android Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
     if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Device Owner system-update policy or OEM/system updater integration.";
@@ -276,7 +284,7 @@ function commandGateMessage(device, type) {
     if (!capabilities.appleMdm) return "Requires completed Apple MDM/APNs enrollment.";
     if (type === "locate.device" && !capabilities.supervised) return "Requires supervised iPhone Lost Mode support.";
     if (["firmware.update", "app.install", "app.remove"].includes(type) && !capabilities.supervised) return "Requires a supervised Apple MDM device.";
-    if (["shell", "screen.control.request", "camera.stream.request", "file.list", "file.pull", "mobile.data.on"].includes(type)) return "Not supported by public Apple MDM APIs.";
+    if (["shell", "screen.control.request", "camera.stream.request", "camera.switch", "file.list", "file.pull", "mobile.data.on"].includes(type)) return "Not supported by public Apple MDM APIs.";
   }
   return "";
 }
@@ -292,6 +300,8 @@ function refreshCapabilityGates() {
     const type = target && target.platform === "ios" && button.dataset.liveCommand === "screen.control.request" ? "screen.share.request" : button.dataset.liveCommand;
     setButtonGate(button, commandGateMessage(target, type));
   });
+  setButtonGate(frontCamera, commandGateMessage(target, "camera.switch"));
+  setButtonGate(backCamera, commandGateMessage(target, "camera.switch"));
   setButtonGate(focusTerminal, commandGateMessage(target, "shell"));
   setButtonGate(browseFiles, commandGateMessage(target, "file.list"));
   setButtonGate(installApp, commandGateMessage(target, "app.install"));
@@ -299,6 +309,14 @@ function refreshCapabilityGates() {
   setButtonGate(locateDevice, commandGateMessage(target, "locate.device"));
   setButtonGate(lockDevice, commandGateMessage(target, "lock.device"));
   setButtonGate(mobileDataOn, commandGateMessage(target, "mobile.data.on"));
+  setButtonGate(lostLocate, commandGateMessage(target, "locate.device"));
+  setButtonGate(lostLock, commandGateMessage(target, "lock.device"));
+  setButtonGate(lostRing, commandGateMessage(target, "lost.ring"));
+  setButtonGate(lostDisable, commandGateMessage(target, "lost.disable"));
+  if (lostMessageForm) {
+    const submit = lostMessageForm.querySelector('button[type="submit"]');
+    if (submit) setButtonGate(submit, commandGateMessage(target, "lost.message"));
+  }
 }
 function appendTerminal(message) {
   const current = terminalOutput.textContent.includes("Terminal output will appear") ? "" : terminalOutput.textContent;
@@ -481,6 +499,9 @@ function friendlyCommandLabel(type) {
     "camera.stream.request": "Start live camera",
     "camera.switch": "Switch camera",
     "lock.device": "Lock device",
+    "lost.ring": "Lost Mode ring",
+    "lost.message": "Lost Mode message",
+    "lost.disable": "Disable live sessions",
     "mobile.data.on": "Turn on mobile data",
     "device.info.refresh": "Refresh device info",
     "shell": "Execute shell command",
@@ -512,6 +533,7 @@ function renderCommandResultText(command, result) {
     return result.ok ? "Live session started." : "Live session requested.";
   }
   if (command.type === "lock.device") return result.ok ? "Lock command sent." : "Lock command requested.";
+  if (["lost.ring", "lost.message", "lost.disable"].includes(command.type)) return result.output && typeof result.output === "string" ? result.output : "Lost Mode command completed.";
   if (command.type === "mobile.data.on") return result.ok ? "Mobile data toggle requested." : "Mobile data request queued.";
   if (result.output && typeof result.output === "string") return result.output;
   if (result.output && typeof result.output === "object") {
@@ -524,7 +546,7 @@ function renderCommandResultText(command, result) {
 function openFilesForCommand(commandId, deviceId) {
   selectedDeviceIds = [deviceId];
   render();
-  renderDeviceFileBrowser();
+  renderDeviceFileBrowser(commandId);
   const modal = document.getElementById("deviceFilesModal");
   if (modal && typeof modal.showModal === "function" && !modal.open) modal.showModal();
 }
@@ -579,6 +601,7 @@ function renderAlerts() {
 }
 
 const deviceFilesModal = document.getElementById("deviceFilesModal");
+const deviceFilesContent = document.getElementById("deviceFilesContent");
 
 async function refresh() {
   if (!adminToken) return;
@@ -619,15 +642,14 @@ async function browseDeviceFiles() {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one Android device");
   const command = await createCommand([target.id], "file.list", { path: "/sdcard", requestedAt: new Date().toISOString() });
-  const modal = document.getElementById('deviceFilesModal');
-  const content = document.getElementById('deviceFilesContent');
-  if (content) content.innerHTML = `<p>Browse requested. Waiting for ${escapeHtml(target.name)}...</p>`;
-  if (modal && typeof modal.showModal === 'function') modal.showModal();
-  await refresh();
-  setTimeout(refresh, 2500);
+  const modal = deviceFilesModal || document.getElementById("deviceFilesModal");
+  const content = deviceFilesContent || document.getElementById("deviceFilesContent");
+  if (content) content.innerHTML = `<p>Browse requested. Waiting for ${escapeHtml(formatDeviceDisplayName(target))}...</p>`;
+  if (modal && typeof modal.showModal === "function" && !modal.open) modal.showModal();
+  await pollAdminFileCommand(command.id, target.id, `Browsing /sdcard on ${formatDeviceDisplayName(target)}...`);
+  renderDeviceFileBrowser(command.id);
   return command;
 }
-
 
 function parseLocationOutput(output) {
   try {
@@ -658,39 +680,82 @@ function renderLocationResults() {
   }
 }
 
-function renderDeviceFileBrowser() {
-  const target = targetDevice();
-  if (!target) return;
-  const fileListCommands = Object.values(state.commands || {}).filter((command) => command.type === "file.list" && command.deviceIds.includes(target.id));
-  const latest = [...fileListCommands].reverse().find((command) => command.results && command.results[target.id]);
-  const result = latest && latest.results && latest.results[target.id];
-  if (!result) return;
-  const listed = Array.isArray(result.files) ? result : (typeof result.output === "object" ? result.output : (() => { try { return JSON.parse(result.output || "{}"); } catch { return {}; } })());
-  if (!Array.isArray(listed.files)) return;
-  const content = document.getElementById('deviceFilesContent') || deviceFiles;
-  content.innerHTML = "";
-  for (const file of listed.files) {
-    const row = document.createElement("div");
-    row.className = "file-row";
-    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(file.path)} � ${file.directory ? "folder" : (file.size + " bytes")}</small></span>`;
-    const button = document.createElement("button");
-    button.textContent = file.directory ? "Open" : "Export";
-    button.onclick = async () => {
-      const commandType = file.directory ? "file.list" : "file.pull";
-      await createCommand([target.id], commandType, { path: file.path, requestedAt: new Date().toISOString() });
-      await refresh();
-      setTimeout(refresh, 2500);
-    };
-    row.appendChild(button);
-    content.appendChild(row);
+function parseFileListResult(result) {
+  if (!result) return null;
+  if (Array.isArray(result.files)) return result;
+  if (result.output && typeof result.output === "object") return result.output;
+  if (typeof result.output === "string") {
+    try { return JSON.parse(result.output); } catch { return null; }
   }
+  return null;
+}
+
+function renderExportedFiles(target, content) {
   const exported = Object.values(state.files || {}).filter((file) => file.sourceDeviceId === target.id);
   for (const file of exported) {
     const row = document.createElement("div");
     row.className = "file-row";
-    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported � ${file.size} bytes</small></span><a href="/api/files/${file.id}" target="_blank">Download</a>`;
-    content.prepend(row);
+    const type = file.contentType || "application/octet-stream";
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="/api/files/${encodeURIComponent(file.id)}" target="_blank" rel="noopener">View / Download</a>`;
+    content.appendChild(row);
   }
+}
+
+async function pollAdminFileCommand(commandId, deviceId, statusText) {
+  const content = deviceFilesContent || deviceFiles;
+  if (content && statusText) content.innerHTML = `<p>${escapeHtml(statusText)}</p>`;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    await refresh();
+    const command = state.commands && state.commands[commandId];
+    const result = command && command.results && command.results[deviceId];
+    if (result) return result;
+  }
+  if (content) content.innerHTML = "<p>Still waiting for the enrolled device agent. Try again if the device is offline.</p>";
+  return null;
+}
+
+function renderDeviceFileBrowser(commandId = "") {
+  const target = targetDevice();
+  const content = deviceFilesContent || deviceFiles;
+  if (!target || !content) return;
+  let command = commandId && state.commands ? state.commands[commandId] : null;
+  if (!command) {
+    const fileListCommands = Object.values(state.commands || {}).filter((item) => item.type === "file.list" && item.deviceIds.includes(target.id));
+    command = [...fileListCommands].reverse().find((item) => item.results && item.results[target.id]);
+  }
+  const result = command && command.results && command.results[target.id];
+  const listed = parseFileListResult(result);
+  content.innerHTML = "";
+  if (!listed || !Array.isArray(listed.files)) {
+    content.innerHTML = "<p>No file list is ready yet. Waiting for the enrolled device agent...</p>";
+    renderExportedFiles(target, content);
+    return;
+  }
+  const currentPath = command && command.payload && command.payload.path ? command.payload.path : "/sdcard";
+  const heading = document.createElement("p");
+  heading.className = "modal-note";
+  heading.textContent = `Browsing ${currentPath} on ${formatDeviceDisplayName(target)}`;
+  content.appendChild(heading);
+  for (const file of listed.files) {
+    const row = document.createElement("div");
+    row.className = "file-row";
+    const type = file.directory ? "folder" : (file.contentType || "file");
+    row.innerHTML = `<span><strong>${escapeHtml(file.name || file.path || "Item")}</strong><small>${escapeHtml(file.path || "")} - ${escapeHtml(type)}${file.directory ? "" : ` - ${file.size || 0} bytes`}</small></span>`;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = file.directory ? "Open" : "Export";
+    button.onclick = async () => {
+      const commandType = file.directory ? "file.list" : "file.pull";
+      const queued = await createCommand([target.id], commandType, { path: file.path, requestedAt: new Date().toISOString() });
+      const result = await pollAdminFileCommand(queued.id, target.id, file.directory ? `Opening ${file.path}...` : `Exporting ${file.path}...`);
+      if (commandType === "file.list" && result) renderDeviceFileBrowser(queued.id);
+      if (commandType === "file.pull") { await refresh(); renderDeviceFileBrowser(command && command.id); }
+    };
+    row.appendChild(button);
+    content.appendChild(row);
+  }
+  renderExportedFiles(target, content);
 }
 
 function renderRecordings() {
@@ -777,6 +842,16 @@ async function createCommand(deviceIds, type, payload) {
   return api("/api/commands", { method: "POST", body: JSON.stringify({ deviceIds, type, payload }) });
 }
 
+async function sendLostModeCommand(type, payload = {}) {
+  const target = targetDevice();
+  if (!target) throw new Error("Select exactly one target device for Lost Mode");
+  const body = { requestedAt: new Date().toISOString(), mode: "lost-mode", ...payload };
+  const command = await createCommand([target.id], type, body);
+  if (log) log.textContent = friendlyCommandLabel(type) + " queued for " + formatDeviceDisplayName(target) + ".";
+  await refresh();
+  return command;
+}
+
 async function sendCommand(type) {
   if (!selectedDeviceIds.length) throw new Error("Select at least one device");
   const payloadText = document.getElementById("payload").value.trim();
@@ -812,56 +887,105 @@ async function fetchLiveFrame(deviceId) {
   if (previous.startsWith("blob:")) URL.revokeObjectURL(previous);
 }
 
-function startLivePolling(deviceId) {
+function liveTapPayload(event, imageElement) {
+  if (!imageElement || !imageElement.naturalWidth || !imageElement.naturalHeight) return null;
+  const rect = imageElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  const xRatio = (event.clientX - rect.left) / rect.width;
+  const yRatio = (event.clientY - rect.top) / rect.height;
+  if (xRatio < 0 || xRatio > 1 || yRatio < 0 || yRatio > 1) return null;
+  return {
+    x: Math.round(xRatio * imageElement.naturalWidth),
+    y: Math.round(yRatio * imageElement.naturalHeight),
+    xRatio: Number(xRatio.toFixed(6)),
+    yRatio: Number(yRatio.toFixed(6)),
+    frameWidth: imageElement.naturalWidth,
+    frameHeight: imageElement.naturalHeight,
+    requestedAt: new Date().toISOString()
+  };
+}
+
+function startLivePolling(deviceId, intervalMs = 350) {
   if (livePollTimer) clearInterval(livePollTimer);
   const poll = () => fetchLiveFrame(deviceId).catch((error) => {
     if (!screen.classList.contains("streaming")) screenText.textContent = error.message;
   });
   poll();
-  livePollTimer = setInterval(poll, 1200);
+  livePollTimer = setInterval(poll, intervalMs);
+}
+
+function startLiveFallbackPolling(deviceId) {
+  if (!livePollTimer) startLivePolling(deviceId, 350);
 }
 
 function openLiveViewer(deviceId, mode = "screen") {
   liveControlMode = mode;
   if (liveSocket) liveSocket.close();
   if (livePollTimer) clearInterval(livePollTimer);
-  startLivePolling(deviceId);
-  if (location.hostname.endsWith("vercel.app")) return;
+  if (liveSocketFallbackTimer) clearTimeout(liveSocketFallbackTimer);
+  livePollTimer = null;
+  liveSocketFallbackTimer = null;
+  lastLiveSocketFrameAt = 0;
+  if (location.hostname.endsWith("vercel.app")) {
+    startLivePolling(deviceId, 350);
+    return;
+  }
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
   liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
   liveSocket.binaryType = "blob";
+  liveSocket.onopen = () => {
+    if (livePollTimer) clearInterval(livePollTimer);
+    livePollTimer = null;
+  };
   liveSocket.onmessage = (event) => {
+    lastLiveSocketFrameAt = Date.now();
     const previous = liveFrame.src;
     liveFrame.src = URL.createObjectURL(event.data);
     screen.classList.add("streaming");
-    screenText.textContent = "";
+    screenText.textContent = mode === "camera" ? "Live camera stream active." : "Live screen stream active. Click on the preview to send taps.";
     if (previous.startsWith("blob:")) URL.revokeObjectURL(previous);
   };
-  liveSocket.onclose = () => {};
-  liveSocket.onerror = () => {};
+  liveSocket.onerror = () => {
+    startLiveFallbackPolling(deviceId);
+    if (screenText) screenText.textContent = "Live websocket unavailable; retrying with frame polling.";
+  };
+  liveSocket.onclose = () => startLiveFallbackPolling(deviceId);
+  liveSocketFallbackTimer = setTimeout(() => {
+    if (!lastLiveSocketFrameAt) startLiveFallbackPolling(deviceId);
+  }, 1200);
 }
 
 if (screen) {
-  screen.addEventListener("click", (event) => {
+  screen.addEventListener("pointerdown", (event) => {
     const target = targetDevice();
     if (!target || !screen.classList.contains("streaming") || liveControlMode !== "screen") return;
-    const rect = screen.getBoundingClientRect();
-    const x = Math.round(((event.clientX - rect.left) / rect.width) * 720);
-    const y = Math.round(((event.clientY - rect.top) / rect.height) * 1280);
-    createCommand([target.id], "screen.tap", { x, y }).catch((error) => (log.textContent = error.message));
+    const payload = liveTapPayload(event, liveFrame);
+    if (!payload) return;
+    event.preventDefault();
+    createCommand([target.id], "screen.tap", payload).catch((error) => (log.textContent = error.message));
   });
 }
-async function sendLiveControl(type) {
+async function sendLiveControl(type, options = {}) {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one target device for live control");
   const commandType = target.platform === "ios" && type === "screen.control.request" ? "screen.share.request" : type;
   const payload = { requestedAt: new Date().toISOString(), mode: "admin-control-session" };
-  if (commandType === "camera.stream.request") payload.facing = "back";
+  if (commandType === "camera.stream.request") payload.facing = options.facing || "back";
   await createCommand([target.id], commandType, payload);
   if (["screen.control.request", "camera.stream.request"].includes(commandType)) openLiveViewer(target.id, commandType === "camera.stream.request" ? "camera" : "screen");
   if (screenText) {
-    screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `Camera stream requested for ${target.name}. Camera view is read-only; screen taps are disabled in camera mode.`;
+    screenText.textContent = commandType === "screen.control.request" ? `Live viewer opened for ${target.name}. If no frame appears, tap Start Live Screen inside the Android agent to approve screen capture.` : `${payload.facing === "front" ? "Front" : "Back"} camera stream requested for ${target.name}. Camera view is read-only; screen taps are disabled in camera mode.`;
   }
+  await refresh();
+}
+
+async function switchCamera(facing) {
+  const target = targetDevice();
+  if (!target) throw new Error("Select exactly one target device for camera switching");
+  const normalizedFacing = facing === "front" ? "front" : "back";
+  await createCommand([target.id], "camera.switch", { facing: normalizedFacing, requestedAt: new Date().toISOString(), mode: "admin-control-session" });
+  openLiveViewer(target.id, "camera");
+  if (screenText) screenText.textContent = `${normalizedFacing === "front" ? "Front" : "Back"} camera switch requested for ${target.name}.`;
   await refresh();
 }
 
@@ -942,6 +1066,17 @@ if (lockDevice) {
     await refresh();
   });
 }
+if (lostLocate) lostLocate.addEventListener("click", () => sendLostModeCommand("locate.device").catch((error) => (log.textContent = error.message)));
+if (lostLock) lostLock.addEventListener("click", () => sendLostModeCommand("lock.device").catch((error) => (log.textContent = error.message)));
+if (lostRing) lostRing.addEventListener("click", () => sendLostModeCommand("lost.ring").catch((error) => (log.textContent = error.message)));
+if (lostDisable) lostDisable.addEventListener("click", () => sendLostModeCommand("lost.disable").catch((error) => (log.textContent = error.message)));
+if (lostMessageForm) {
+  lostMessageForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const message = lostMessage && lostMessage.value.trim() ? lostMessage.value.trim() : "This device is lost. Please contact the owner.";
+    sendLostModeCommand("lost.message", { message }).catch((error) => (log.textContent = error.message));
+  });
+}
 if (frontCamera) frontCamera.addEventListener("click", () => switchCamera("front").catch((error) => (log.textContent = error.message)));
 if (backCamera) backCamera.addEventListener("click", () => switchCamera("back").catch((error) => (log.textContent = error.message)));
 if (startRecording) startRecording.addEventListener("click", () => startLiveRecording().catch((error) => (log.textContent = error.message)));
@@ -969,7 +1104,7 @@ if (firmwareUpgrade) {
 const liveCommandButtons = document.querySelectorAll("[data-live-command]");
 if (liveCommandButtons.length) {
   liveCommandButtons.forEach((button) => {
-    button.addEventListener("click", () => sendLiveControl(button.dataset.liveCommand).catch((error) => (log.textContent = error.message)));
+    button.addEventListener("click", () => sendLiveControl(button.dataset.liveCommand, { facing: button.dataset.cameraFacing }).catch((error) => (log.textContent = error.message)));
   });
 }
 

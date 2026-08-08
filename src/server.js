@@ -110,24 +110,35 @@ function wsFrame(payload, opcode = 2) {
 }
 
 function readWsFrames(socket, chunk, onMessage) {
+  socket._wsBuffer = socket._wsBuffer ? Buffer.concat([socket._wsBuffer, chunk]) : Buffer.from(chunk);
   let offset = 0;
-  while (offset + 2 <= chunk.length) {
-    const first = chunk[offset++];
-    const second = chunk[offset++];
+  const buffer = socket._wsBuffer;
+  while (offset + 2 <= buffer.length) {
+    const frameStart = offset;
+    const first = buffer[offset++];
+    const second = buffer[offset++];
     const opcode = first & 0x0f;
     let length = second & 0x7f;
-    if (length === 126) { if (offset + 2 > chunk.length) return; length = chunk.readUInt16BE(offset); offset += 2; }
-    if (length === 127) { if (offset + 8 > chunk.length) return; length = Number(chunk.readBigUInt64BE(offset)); offset += 8; }
+    if (length === 126) {
+      if (offset + 2 > buffer.length) { offset = frameStart; break; }
+      length = buffer.readUInt16BE(offset); offset += 2;
+    }
+    if (length === 127) {
+      if (offset + 8 > buffer.length) { offset = frameStart; break; }
+      length = Number(buffer.readBigUInt64BE(offset)); offset += 8;
+    }
     const masked = Boolean(second & 0x80);
-    const mask = masked ? chunk.subarray(offset, offset + 4) : null;
+    if (masked && offset + 4 > buffer.length) { offset = frameStart; break; }
+    const mask = masked ? buffer.subarray(offset, offset + 4) : null;
     if (masked) offset += 4;
-    if (offset + length > chunk.length) return;
-    const payload = Buffer.from(chunk.subarray(offset, offset + length));
+    if (offset + length > buffer.length) { offset = frameStart; break; }
+    const payload = Buffer.from(buffer.subarray(offset, offset + length));
     offset += length;
     if (mask) for (let index = 0; index < payload.length; index++) payload[index] ^= mask[index % 4];
     if (opcode === 8) socket.end();
     if (opcode === 1 || opcode === 2) onMessage(payload, opcode);
   }
+  socket._wsBuffer = offset < buffer.length ? buffer.subarray(offset) : null;
 }
 
 function handleWebSocket(req, socket) {
@@ -156,6 +167,7 @@ function handleWebSocket(req, socket) {
     if (!registry.authenticate(deviceId, token)) return socket.end();
     socket.on("data", (chunk) => readWsFrames(socket, chunk, (payload) => {
       liveFrames.set(deviceId, { frame: Buffer.from(payload), contentType: "image/jpeg", updatedAt: new Date().toISOString() });
+      appendRecordingFrame(deviceId, payload, "image/jpeg");
       const viewers = liveViewers.get(deviceId) || new Set();
       const frame = wsFrame(payload, 2);
       for (const viewer of viewers) if (!viewer.destroyed) viewer.write(frame);
@@ -166,7 +178,7 @@ function handleWebSocket(req, socket) {
   socket.end();
 }
 const commandPolicy = {
-  android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "camera.switch", "screen.control.request", "screen.tap", "locate.device", "lock.device", "mobile.data.on", "device.info.refresh", "agent.unenroll"]),
+  android: new Set(["heartbeat", "shell", "file.list", "file.pull", "file.push", "app.install", "app.remove", "firmware.update", "camera.stream.request", "camera.switch", "screen.control.request", "screen.tap", "locate.device", "lock.device", "lost.ring", "lost.message", "lost.disable", "mobile.data.on", "device.info.refresh", "agent.unenroll"]),
   ios: new Set(["heartbeat", "mdm.device.info", "app.install", "app.remove", "firmware.update", "screen.share.request", "locate.device", "lock.device"])
 };
 
@@ -176,7 +188,7 @@ function commandCapabilityError(device, type) {
   if (device.platform === "android") {
     if (["shell"].includes(type) && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Android shell/admin commands require Device Owner or OEM/system privileges.";
     if (type === "screen.tap" && !capabilities.accessibility) return "Android remote touch control requires the Shield Device Agent Accessibility service.";
-    if (type === "camera.stream.request" && !capabilities.camera) return "Android camera streaming requires camera permission in the agent.";
+    if (["camera.stream.request", "camera.switch"].includes(type) && !capabilities.camera) return "Android camera streaming requires camera permission in the agent.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Android lock requires Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Mobile data toggle requires OEM/system privileges.";
     if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Firmware update requires Device Owner system-update policy or OEM/system updater integration.";
@@ -653,7 +665,7 @@ return send(res, 200, { token, user: publicUser(user) });
       if (!user || user.role !== "user") return send(res, 401, { error: "User login required" });
       const body = await parseJsonBody(req);
       const featureType = body.type || "";
-      const freeAllowed = new Set(["screen.control.request", "screen.share.request", "device.info.refresh"]);
+      const freeAllowed = new Set(["screen.control.request", "screen.share.request", "device.info.refresh", "locate.device", "file.list", "file.pull", "lock.device", "lost.ring", "lost.message", "lost.disable"]);
       const deviceIds = Array.isArray(body.deviceIds) ? body.deviceIds : [];
       if (!deviceIds.length || deviceIds.some((deviceId) => !ownsDevice(user.id, deviceId))) return send(res, 403, { error: "Device is not owned by this user" });
       const requestedDevices = deviceIds.map((deviceId) => store.state.devices[deviceId]);

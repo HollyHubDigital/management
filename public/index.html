@@ -78,6 +78,26 @@
             <button id="lockDevice">Lock Device</button>
             <button id="mobileDataOn">Turn ON Mobile Data</button>
             <hr class="soft-line" />
+            <section class="lost-mode-card" aria-label="Lost Mode controls">
+              <div>
+                <p class="eyebrow">Recovery</p>
+                <h2>Lost Mode</h2>
+                <p class="modal-note">Use only for an enrolled device you own or administer. Locate runs without popup; live actions keep visible device notifications and OS-required consent.</p>
+              </div>
+              <div class="lost-mode-actions">
+                <button id="lostLocate" type="button">Locate Now</button>
+                <button id="lostLock" type="button">Lock</button>
+                <button id="lostRing" type="button">Ring</button>
+                <button id="lostDisable" type="button" class="danger">Disable Live</button>
+              </div>
+              <form id="lostMessageForm" class="lost-message-form">
+                <label class="field-label">Owner Message
+                  <textarea id="lostMessage" maxlength="240" placeholder="This device is lost. Please contact the owner."></textarea>
+                </label>
+                <button type="submit">Show Owner Message</button>
+              </form>
+            </section>
+            <hr class="soft-line" />
             <h2>Firmware</h2>
             <label class="field-label">Firmware URL <input id="firmwareUrl" type="url" placeholder="OEM update URL" /></label>
             <button id="firmwareUpgrade">Firmware Upgrade</button>

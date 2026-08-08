@@ -66,7 +66,7 @@ pre { white-space: pre-wrap; color: var(--text); background: var(--support); bor
 @media (max-width: 560px) {
   .modal-actions { grid-template-columns: 1fr; }
 }
-.live-frame { display: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; }
+.live-frame { display: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; touch-action: none; user-select: none; cursor: crosshair; }
 .screen.streaming .live-frame { display: block; }
 .screen.streaming #screenText { display: none; }
 .field-label { display: grid; gap: 8px; color: var(--text); margin-top: 12px; font-weight: 700; }
@@ -120,3 +120,10 @@ button + button { margin-left: 6px; }
 .device-controls button { margin: 2px; }
 .modal-actions button, .actions button, .alert-actions button, .record-actions button { margin: 2px; }
 .file-row a { display: inline-block; margin-left: 8px; padding: 6px 8px; background: var(--red); color: var(--text); border: 2px solid var(--line); border-radius: 8px; text-decoration: none; }
+.lost-mode-card { display: grid; gap: 12px; border: 2px solid var(--line); border-radius: 16px; padding: 12px; background: var(--support); color: var(--text); }
+.lost-mode-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.lost-mode-actions button, .lost-message-form button { margin: 0; width: 100%; }
+.lost-message-form { display: grid; gap: 10px; }
+.lost-message-form textarea { min-height: 84px; max-height: 140px; margin: 0; }
+.danger { background: #6f1d1d; color: var(--text); }
+@media (max-width: 899px) { .lost-mode-actions { grid-template-columns: 1fr; } }

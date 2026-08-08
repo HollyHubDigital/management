@@ -23,6 +23,8 @@ import android.content.Intent;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 
@@ -33,6 +35,8 @@ public class CameraStreamService extends Service {
     private CameraDevice camera;
     private CameraCaptureSession session;
     private SimpleWebSocketClient ws;
+    private final ExecutorService uploadExecutor = Executors.newSingleThreadExecutor();
+    private volatile boolean uploadBusy;
     private long lastFrameAt;
     private String requestedFacing = "back";
 
@@ -58,6 +62,7 @@ public class CameraStreamService extends Service {
         try { if (camera != null) camera.close(); } catch (Exception ignored) { }
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
         if (ws != null) ws.close();
+        uploadExecutor.shutdownNow();
         if (thread != null) thread.quitSafely();
         super.onDestroy();
     }
@@ -66,7 +71,8 @@ public class CameraStreamService extends Service {
         try { if (session != null) session.close(); } catch (Exception ignored) { }
         try { if (camera != null) camera.close(); } catch (Exception ignored) { }
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
-        session = null; camera = null; reader = null;
+        if (ws != null) ws.close();
+        session = null; camera = null; reader = null; ws = null; lastFrameAt = 0;
         startCamera();
     }
 
@@ -122,15 +128,35 @@ public class CameraStreamService extends Service {
         try {
             long now = System.currentTimeMillis();
             image = imageReader.acquireLatestImage();
-            if (image == null || now - lastFrameAt < 350) return;
+            if (image == null || now - lastFrameAt < 150) return;
             lastFrameAt = now;
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] jpeg = new byte[buffer.remaining()];
             buffer.get(jpeg);
-            try { if (ws != null) ws.sendBinary(jpeg); } catch (Exception ignored) { }
-            postFrame(jpeg);
+            boolean sent = false;
+            try {
+                if (ws != null) {
+                    ws.sendBinary(jpeg);
+                    sent = true;
+                }
+            } catch (Exception ignored) {
+                ws = null;
+            }
+            if (!sent) postFrameAsync(jpeg);
         } catch (Exception ignored) {
         } finally { if (image != null) image.close(); }
+    }
+
+    private void postFrameAsync(byte[] frame) {
+        if (uploadBusy) return;
+        uploadBusy = true;
+        uploadExecutor.execute(() -> {
+            try {
+                postFrame(frame);
+            } finally {
+                uploadBusy = false;
+            }
+        });
     }
 
     private void postFrame(byte[] frame) {
@@ -160,6 +186,6 @@ public class CameraStreamService extends Service {
         }
     }
 
-    private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Shield Device Camera", NotificationManager.IMPORTANCE_LOW)); }
-    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera streaming is active").setSmallIcon(android.R.drawable.presence_video_online).build(); }
+    private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Shield Device Camera", NotificationManager.IMPORTANCE_DEFAULT)); }
+    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera streaming is active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build(); }
 }
