@@ -8,7 +8,7 @@ import android.widget.Toast;
 public class CpDeviceAdminReceiver extends DeviceAdminReceiver {
     @Override
     public CharSequence onDisableRequested(Context context, Intent intent) {
-        return "Removing Shield Device Admin disables dashboard-managed protection. For theft-resistant enrollment, provision Shield Device Agent as Android Device Owner; only dashboard Delete/Unenroll should release management.";
+        return "Removing Shield Device Admin disables dashboard-managed protection. For theft-resistant enrollment, provision Shield Device as Android Device Owner; only dashboard Delete/Unenroll should release management.";
     }
 
     @Override
