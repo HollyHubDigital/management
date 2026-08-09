@@ -20,10 +20,21 @@ const screen = document.getElementById("screen");
 const screenText = document.getElementById("screenText");
 const liveFrame = document.getElementById("liveFrame");
 let liveSocket = null;
+let liveAudioSocket = null;
 let livePollTimer = null;
+let liveAudioPollTimer = null;
 let liveSocketFallbackTimer = null;
+let liveFetchController = null;
+let liveAudioFetchController = null;
 let lastLiveSocketFrameAt = 0;
 let liveControlMode = "";
+let liveFrameSequence = 0;
+let liveRenderedFrameSequence = 0;
+let liveFrameUrl = "";
+let lastLiveFrameUpdatedAt = "";
+let liveAudioContext = null;
+let liveAudioNextTime = 0;
+let lastLiveAudioUpdatedAt = "";
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
 const terminalCommand = document.getElementById("terminalCommand");
@@ -680,14 +691,29 @@ function renderLocationResults() {
   }
 }
 
+function parsePossiblyEscapedJson(value) {
+  if (value && typeof value === "object") return value;
+  if (typeof value !== "string") return null;
+  let candidate = value.trim();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (typeof parsed !== "string") return parsed;
+      candidate = parsed.trim();
+      continue;
+    } catch { }
+    const unescaped = candidate.replace(/\\"/g, '"').replace(/\\\//g, '/');
+    if (unescaped === candidate) break;
+    candidate = unescaped;
+  }
+  return null;
+}
+
 function parseFileListResult(result) {
   if (!result) return null;
   if (Array.isArray(result.files)) return result;
   if (result.output && typeof result.output === "object") return result.output;
-  if (typeof result.output === "string") {
-    try { return JSON.parse(result.output); } catch { return null; }
-  }
-  return null;
+  return parsePossiblyEscapedJson(result.output);
 }
 
 function renderExportedFiles(target, content) {
@@ -696,7 +722,7 @@ function renderExportedFiles(target, content) {
     const row = document.createElement("div");
     row.className = "file-row";
     const type = file.contentType || "application/octet-stream";
-    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="/api/files/${encodeURIComponent(file.id)}" target="_blank" rel="noopener">View / Download</a>`;
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="/api/files/${encodeURIComponent(file.id)}?inline=1" target="_blank" rel="noopener">View / Download</a>`;
     content.appendChild(row);
   }
 }
@@ -767,18 +793,23 @@ function renderRecordings() {
     row.className = "file-row";
     const device = state.devices && state.devices[recording.deviceId];
     const label = recording.name || `${device ? formatDeviceDisplayName(device) : recording.deviceId || "Device"} recording`;
-    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} ï¿½ ${recording.frameCount || 0} frames ï¿½ ${recording.size || 0} bytes</small></span>`;
+    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} • ${recording.frameCount || 0} frames • ${recording.size || 0} bytes</small></span>`;
     const actions = document.createElement("span");
     actions.className = "device-controls";
+    const view = document.createElement("button");
+    view.type = "button";
+    view.textContent = "View";
+    view.onclick = () => viewRecording(recording.id);
     const download = document.createElement("button");
     download.type = "button";
     download.textContent = "Download";
-    download.onclick = () => downloadRecording(recording.id);
+    download.onclick = () => downloadRecording(recording.id).catch((error) => (log.textContent = error.message));
     const del = document.createElement("button");
     del.type = "button";
     del.className = "danger";
     del.textContent = "Delete";
     del.onclick = () => deleteRecording(recording.id).catch((error) => (log.textContent = error.message));
+    actions.appendChild(view);
     actions.appendChild(download);
     actions.appendChild(del);
     row.appendChild(actions);
@@ -812,6 +843,9 @@ async function saveLiveRecording() {
   await refresh();
 }
 
+function viewRecording(recordingId) {
+  window.open(`/api/recordings/${encodeURIComponent(recordingId)}/download?inline=1&token=${encodeURIComponent(adminToken)}`, "_blank", "noopener");
+}
 async function downloadRecording(recordingId) {
   const response = await fetch(`/api/recordings/${encodeURIComponent(recordingId)}/download`, { headers: { Authorization: `Bearer ${adminToken}` } });
   if (!response.ok) {
@@ -873,20 +907,134 @@ async function sendTerminalCommand(commandText) {
 }
 
 
-async function fetchLiveFrame(deviceId) {
-  const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`, {
-    headers: { Authorization: `Bearer ${adminToken}` },
-    cache: "no-store"
-  });
-  if (!response.ok) throw new Error(response.status === 404 ? "No live frame yet. Start Live Screen in the Android agent, or Start Live Camera from the dashboard after camera permission is allowed." : "Live frame unavailable");
-  const blob = await response.blob();
-  const previous = liveFrame.src;
-  liveFrame.src = URL.createObjectURL(blob);
-  screen.classList.add("streaming");
-  screenText.textContent = "";
-  if (previous.startsWith("blob:")) URL.revokeObjectURL(previous);
+function resetLiveFrameState() {
+  liveFrameSequence += 1;
+  liveRenderedFrameSequence = liveFrameSequence;
+  lastLiveFrameUpdatedAt = "";
+  if (liveFetchController) liveFetchController.abort();
+  liveFetchController = null;
+  if (liveFrameUrl) URL.revokeObjectURL(liveFrameUrl);
+  liveFrameUrl = "";
 }
 
+function renderLiveBlob(blob, message = "") {
+  if (!liveFrame) return;
+  const sequence = ++liveFrameSequence;
+  const url = URL.createObjectURL(blob);
+  const probe = new Image();
+  probe.onload = () => {
+    if (sequence < liveRenderedFrameSequence) {
+      URL.revokeObjectURL(url);
+      return;
+    }
+    const previous = liveFrameUrl;
+    liveRenderedFrameSequence = sequence;
+    liveFrameUrl = url;
+    liveFrame.src = url;
+    screen.classList.add("streaming");
+    screenText.textContent = message;
+    if (previous && previous !== url) URL.revokeObjectURL(previous);
+  };
+  probe.onerror = () => URL.revokeObjectURL(url);
+  probe.src = url;
+}
+
+async function fetchLiveFrame(deviceId) {
+  if (liveFetchController) liveFetchController.abort();
+  const controller = new AbortController();
+  liveFetchController = controller;
+  const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    cache: "no-store",
+    signal: controller.signal
+  });
+  if (!response.ok) throw new Error(response.status === 404 ? "No live frame yet. Start Live Screen in the Android agent, or Start Live Camera from the dashboard after camera permission is allowed." : "Live frame unavailable");
+  const updatedAt = response.headers.get("X-Frame-Updated-At") || "";
+  if (updatedAt && lastLiveFrameUpdatedAt && Date.parse(updatedAt) < Date.parse(lastLiveFrameUpdatedAt)) return;
+  const blob = await response.blob();
+  if (controller.signal.aborted) return;
+  if (updatedAt) lastLiveFrameUpdatedAt = updatedAt;
+  renderLiveBlob(blob, "");
+}
+
+function stopLiveAudio() {
+  if (liveAudioSocket) liveAudioSocket.close();
+  if (liveAudioPollTimer) clearTimeout(liveAudioPollTimer);
+  if (liveAudioFetchController) liveAudioFetchController.abort();
+  liveAudioSocket = null;
+  liveAudioPollTimer = null;
+  liveAudioFetchController = null;
+  liveAudioNextTime = 0;
+  lastLiveAudioUpdatedAt = "";
+}
+
+async function ensureLiveAudioContext() {
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return null;
+  if (!liveAudioContext) liveAudioContext = new AudioCtor({ sampleRate: 16000 });
+  if (liveAudioContext.state === "suspended") await liveAudioContext.resume();
+  return liveAudioContext;
+}
+
+function playLivePcmChunk(arrayBuffer, sampleRate = 16000) {
+  if (!liveAudioContext || !arrayBuffer || arrayBuffer.byteLength < 2) return;
+  const samples = new Int16Array(arrayBuffer);
+  const audioBuffer = liveAudioContext.createBuffer(1, samples.length, sampleRate);
+  const channel = audioBuffer.getChannelData(0);
+  for (let index = 0; index < samples.length; index += 1) channel[index] = Math.max(-1, Math.min(1, samples[index] / 32768));
+  const source = liveAudioContext.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(liveAudioContext.destination);
+  const now = liveAudioContext.currentTime;
+  if (!liveAudioNextTime || liveAudioNextTime < now || liveAudioNextTime - now > 0.45) liveAudioNextTime = now + 0.04;
+  source.start(liveAudioNextTime);
+  liveAudioNextTime += audioBuffer.duration;
+}
+
+async function fetchLiveAudio(deviceId) {
+  if (liveAudioFetchController) liveAudioFetchController.abort();
+  const controller = new AbortController();
+  liveAudioFetchController = controller;
+  const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/audio?t=${Date.now()}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+    cache: "no-store",
+    signal: controller.signal
+  });
+  if (!response.ok) return;
+  const updatedAt = response.headers.get("X-Audio-Updated-At") || "";
+  if (updatedAt && lastLiveAudioUpdatedAt && Date.parse(updatedAt) <= Date.parse(lastLiveAudioUpdatedAt)) return;
+  const sampleRate = Number(response.headers.get("X-Audio-Sample-Rate") || 16000) || 16000;
+  const chunk = await response.arrayBuffer();
+  if (controller.signal.aborted) return;
+  if (updatedAt) lastLiveAudioUpdatedAt = updatedAt;
+  playLivePcmChunk(chunk, sampleRate);
+}
+
+async function startLiveAudio(deviceId) {
+  await ensureLiveAudioContext();
+  stopLiveAudio();
+  await ensureLiveAudioContext();
+  if ((location.hostname || "").endsWith("vercel.app")) {
+    const poll = async () => {
+      await fetchLiveAudio(deviceId).catch(() => {});
+      liveAudioPollTimer = setTimeout(poll, 180);
+    };
+    poll();
+    return;
+  }
+  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  liveAudioSocket = new WebSocket(`${protocol}//${location.host}/ws/live-audio?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
+  liveAudioSocket.binaryType = "arraybuffer";
+  liveAudioSocket.onmessage = (event) => playLivePcmChunk(event.data, 16000);
+  liveAudioSocket.onerror = () => {
+    if (liveAudioSocket) liveAudioSocket.close();
+    const poll = async () => {
+      await fetchLiveAudio(deviceId).catch(() => {});
+      liveAudioPollTimer = setTimeout(poll, 180);
+    };
+    if (!liveAudioPollTimer) poll();
+  };
+}
 function liveTapPayload(event, imageElement) {
   if (!imageElement || !imageElement.naturalWidth || !imageElement.naturalHeight) return null;
   const rect = imageElement.getBoundingClientRect();
@@ -905,45 +1053,49 @@ function liveTapPayload(event, imageElement) {
   };
 }
 
-function startLivePolling(deviceId, intervalMs = 350) {
-  if (livePollTimer) clearInterval(livePollTimer);
-  const poll = () => fetchLiveFrame(deviceId).catch((error) => {
-    if (!screen.classList.contains("streaming")) screenText.textContent = error.message;
-  });
+function startLivePolling(deviceId, intervalMs = 220) {
+  if (livePollTimer) clearTimeout(livePollTimer);
+  const poll = async () => {
+    try {
+      await fetchLiveFrame(deviceId);
+    } catch (error) {
+      if (error.name !== "AbortError" && !screen.classList.contains("streaming")) screenText.textContent = error.message;
+    } finally {
+      livePollTimer = setTimeout(poll, intervalMs);
+    }
+  };
   poll();
-  livePollTimer = setInterval(poll, intervalMs);
 }
 
 function startLiveFallbackPolling(deviceId) {
-  if (!livePollTimer) startLivePolling(deviceId, 350);
+  if (!livePollTimer) startLivePolling(deviceId, 220);
 }
 
 function openLiveViewer(deviceId, mode = "screen") {
   liveControlMode = mode;
   if (liveSocket) liveSocket.close();
-  if (livePollTimer) clearInterval(livePollTimer);
+  if (livePollTimer) clearTimeout(livePollTimer);
   if (liveSocketFallbackTimer) clearTimeout(liveSocketFallbackTimer);
   livePollTimer = null;
   liveSocketFallbackTimer = null;
   lastLiveSocketFrameAt = 0;
+  resetLiveFrameState();
+  if (mode === "camera") startLiveAudio(deviceId).catch(() => {});
+  else stopLiveAudio();
   if (location.hostname.endsWith("vercel.app")) {
-    startLivePolling(deviceId, 350);
+    startLivePolling(deviceId, 220);
     return;
   }
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
   liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
   liveSocket.binaryType = "blob";
   liveSocket.onopen = () => {
-    if (livePollTimer) clearInterval(livePollTimer);
+    if (livePollTimer) clearTimeout(livePollTimer);
     livePollTimer = null;
   };
   liveSocket.onmessage = (event) => {
     lastLiveSocketFrameAt = Date.now();
-    const previous = liveFrame.src;
-    liveFrame.src = URL.createObjectURL(event.data);
-    screen.classList.add("streaming");
-    screenText.textContent = mode === "camera" ? "Live camera stream active." : "Live screen stream active. Click on the preview to send taps.";
-    if (previous.startsWith("blob:")) URL.revokeObjectURL(previous);
+    renderLiveBlob(event.data, mode === "camera" ? "Live camera stream active." : "Live screen stream active. Click on the preview to send taps.");
   };
   liveSocket.onerror = () => {
     startLiveFallbackPolling(deviceId);

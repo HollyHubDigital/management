@@ -93,6 +93,8 @@ new RealtimeHub(registry).startOfflineSweep();
 
 const liveViewers = new Map();
 const liveFrames = new Map();
+const liveAudioViewers = new Map();
+const liveAudioFrames = new Map();
 const activeRecordings = new Map();
 
 function websocketAccept(key) {
@@ -158,6 +160,36 @@ function handleWebSocket(req, socket) {
     liveViewers.get(deviceId).add(socket);
     socket.on("close", () => liveViewers.get(deviceId)?.delete(socket));
     socket.on("error", () => liveViewers.get(deviceId)?.delete(socket));
+    return;
+  }
+
+
+  if (url.pathname === "/ws/live-audio") {
+    const adminToken = url.searchParams.get("adminToken") || "";
+    const deviceId = url.searchParams.get("deviceId") || "";
+    const session = store.state.sessions[adminToken];
+    const sessionUserId = session && Date.parse(session.expiresAt) > Date.now() ? session.userId : null;
+    const device = store.state.devices[deviceId];
+    const allowed = device && (adminToken === process.env.CP_DEVICE_ADMIN_TOKEN || (session && session.role === "admin") || (sessionUserId && deviceOwnerId(device) === sessionUserId));
+    if (!allowed) return socket.end();
+    if (!liveAudioViewers.has(deviceId)) liveAudioViewers.set(deviceId, new Set());
+    liveAudioViewers.get(deviceId).add(socket);
+    socket.on("close", () => liveAudioViewers.get(deviceId)?.delete(socket));
+    socket.on("error", () => liveAudioViewers.get(deviceId)?.delete(socket));
+    return;
+  }
+
+  if (url.pathname.startsWith("/ws/device-audio/")) {
+    const deviceId = url.pathname.split("/").pop();
+    const token = url.searchParams.get("token") || "";
+    if (!registry.authenticate(deviceId, token)) return socket.end();
+    socket.on("data", (chunk) => readWsFrames(socket, chunk, (payload) => {
+      const audio = { chunk: Buffer.from(payload), contentType: "audio/pcm; rate=16000", updatedAt: new Date().toISOString(), sampleRate: 16000 };
+      liveAudioFrames.set(deviceId, audio);
+      const viewers = liveAudioViewers.get(deviceId) || new Set();
+      const frame = wsFrame(payload, 2);
+      for (const viewer of viewers) if (!viewer.destroyed) viewer.write(frame);
+    }));
     return;
   }
 
@@ -386,14 +418,30 @@ function recordingFilePath(recordingId) {
   return path.join(RECORDING_DIR, `${safeFileName(recordingId)}.mjpeg`);
 }
 
+function activeRecordingForDevice(deviceId) {
+  const memoryRecording = activeRecordings.get(deviceId);
+  if (memoryRecording && !memoryRecording.stoppedAt && memoryRecording.status === "recording") return memoryRecording;
+  const stored = Object.values(store.state.recordings || {}).find((recording) => recording.deviceId === deviceId && recording.status === "recording" && !recording.stoppedAt);
+  if (!stored) return null;
+  const recording = { ...stored, filePath: recordingFilePath(stored.id), size: stored.size || 0, frameCount: stored.frameCount || 0 };
+  activeRecordings.set(deviceId, recording);
+  return recording;
+}
+
 function appendRecordingFrame(deviceId, frame, contentType) {
-  const active = activeRecordings.get(deviceId);
-  if (!active || active.stoppedAt) return;
+  const active = activeRecordingForDevice(deviceId);
+  if (!active || active.stoppedAt || active.status !== "recording") return;
   const boundary = `--cp-device-frame\r\nContent-Type: ${contentType || "image/jpeg"}\r\nContent-Length: ${frame.length}\r\n\r\n`;
   fs.appendFileSync(active.filePath, Buffer.concat([Buffer.from(boundary), frame, Buffer.from("\r\n")]));
   active.frameCount += 1;
   active.size += Buffer.byteLength(boundary) + frame.length + 2;
   active.updatedAt = new Date().toISOString();
+  const stored = store.state.recordings && store.state.recordings[active.id];
+  if (stored) {
+    stored.frameCount = active.frameCount;
+    stored.size = active.size;
+    stored.updatedAt = active.updatedAt;
+  }
 }
 
 async function persistRecordingToGithub(recording) {
@@ -414,14 +462,15 @@ function canAccessRecording(req, recording) {
   return Boolean(user && user.role === "user" && recording.ownerUserId === user.id);
 }
 
-function serveStoredFile(res, fileId) {
+function serveStoredFile(res, fileId, options = {}) {
   const meta = store.state.files[fileId];
   if (!meta) return send(res, 404, { error: "File not found" });
   const filePath = path.join(FILE_DIR, fileId);
   if (!fs.existsSync(filePath)) return send(res, 404, { error: "File data not found" });
+  const disposition = options.inline ? "inline" : "attachment";
   res.writeHead(200, {
     "Content-Type": meta.contentType || "application/octet-stream",
-    "Content-Disposition": `attachment; filename="${safeFileName(meta.name)}"`,
+    "Content-Disposition": `${disposition}; filename="${safeFileName(meta.name)}"`,
     "Cache-Control": "no-store"
   });
   fs.createReadStream(filePath).pipe(res);
@@ -510,6 +559,15 @@ if (["POST", "PUT"].includes(req.method) && (url.pathname === "/api/mdm/checkin"
       if (!frame) return send(res, 404, { error: "No live frame received yet. Start Live Screen or Camera in the enrolled agent." });
       res.writeHead(200, { "Content-Type": frame.contentType, "Cache-Control": "no-store", "X-Frame-Updated-At": frame.updatedAt });
       return res.end(frame.frame);
+    }
+
+    if (req.method === "GET" && url.pathname.startsWith("/api/live/") && url.pathname.endsWith("/audio")) {
+      const deviceId = url.pathname.split("/")[3];
+      if (!canViewLiveFrame(req, deviceId)) return send(res, 401, { error: "Live audio access denied" });
+      const audio = liveAudioFrames.get(deviceId);
+      if (!audio) return send(res, 404, { error: "No live audio received yet. Start Live Camera with microphone permission allowed." });
+      res.writeHead(200, { "Content-Type": audio.contentType, "Cache-Control": "no-store", "X-Audio-Updated-At": audio.updatedAt, "X-Audio-Sample-Rate": String(audio.sampleRate || 16000) });
+      return res.end(audio.chunk);
     }
 
     if (req.method === "GET" && url.pathname === "/api/auth/check-availability") {
@@ -696,7 +754,7 @@ return send(res, 200, { token, user: publicUser(user) });
       const fileId = url.pathname.split("/").pop();
       const meta = store.state.files[fileId];
       if (!meta || !ownsDevice(user.id, meta.sourceDeviceId)) return send(res, 404, { error: "File not found" });
-      return serveStoredFile(res, fileId);
+      return serveStoredFile(res, fileId, { inline: url.searchParams.get("inline") === "1" });
     }
 
     if (req.method === "POST" && url.pathname === "/api/payments/init") {
@@ -755,6 +813,16 @@ return send(res, 200, { token, user: publicUser(user) });
         liveFrames.set(deviceId, { frame, contentType, updatedAt: new Date().toISOString() });
         appendRecordingFrame(deviceId, frame, contentType);
         return send(res, 200, { ok: true, size: frame.length });
+      }
+      if (req.method === "POST" && action === "live-audio") {
+        const contentType = req.headers["content-type"] || "audio/pcm; rate=16000";
+        const chunk = await readRawBody(req, 256 * 1024);
+        const audio = { chunk, contentType, updatedAt: new Date().toISOString(), sampleRate: Number(req.headers["x-audio-sample-rate"] || 16000) || 16000 };
+        liveAudioFrames.set(deviceId, audio);
+        const viewers = liveAudioViewers.get(deviceId) || new Set();
+        const frame = wsFrame(chunk, 2);
+        for (const viewer of viewers) if (!viewer.destroyed) viewer.write(frame);
+        return send(res, 200, { ok: true, size: chunk.length });
       }
       if (req.method === "GET" && action === "commands") {
         await hydrateStore(true);
@@ -824,8 +892,8 @@ return send(res, 200, { token, user: publicUser(user) });
         const user = sessionUser(req);
         if (!user || !ownsDevice(user.id, deviceId) || !devicePaidAccessAllowed(user.id, device)) return send(res, 403, { error: "Active subscription required" });
       }
-      const existing = activeRecordings.get(deviceId);
-      if (existing && !existing.stoppedAt) return send(res, 200, { recording: existing });
+      const existing = activeRecordingForDevice(deviceId);
+      if (existing && !existing.stoppedAt) return send(res, 200, { recording: { ...existing, filePath: undefined } });
       const recordingId = randomId("rec");
       const filePath = recordingFilePath(recordingId);
       fs.writeFileSync(filePath, Buffer.from(""));
@@ -841,9 +909,10 @@ return send(res, 200, { token, user: publicUser(user) });
       const recordingId = url.pathname.split("/")[3];
       const meta = store.state.recordings[recordingId];
       if (!canAccessRecording(req, meta)) return send(res, 404, { error: "Recording not found" });
-      const active = activeRecordings.get(meta.deviceId);
-      if (active && active.id === recordingId) { active.stoppedAt = new Date().toISOString(); active.status = "stopped"; }
-      store.transaction((state) => { if (state.recordings[recordingId]) { state.recordings[recordingId].status = "stopped"; state.recordings[recordingId].stoppedAt = new Date().toISOString(); } });
+      const active = activeRecordingForDevice(meta.deviceId);
+      const stoppedAt = new Date().toISOString();
+      if (active && active.id === recordingId) { active.stoppedAt = stoppedAt; active.status = "stopped"; }
+      store.transaction((state) => { if (state.recordings[recordingId]) Object.assign(state.recordings[recordingId], { status: "stopped", stoppedAt, updatedAt: stoppedAt, size: active ? active.size : state.recordings[recordingId].size, frameCount: active ? active.frameCount : state.recordings[recordingId].frameCount }); });
       await persistStateBestEffort("Stop live recording metadata");
       return send(res, 200, { recording: store.state.recordings[recordingId] });
     }
@@ -852,7 +921,7 @@ return send(res, 200, { token, user: publicUser(user) });
       const recordingId = url.pathname.split("/")[3];
       const meta = store.state.recordings[recordingId];
       if (!canAccessRecording(req, meta)) return send(res, 404, { error: "Recording not found" });
-      const active = activeRecordings.get(meta.deviceId);
+      const active = activeRecordingForDevice(meta.deviceId);
       const filePath = active && active.id === recordingId ? active.filePath : recordingFilePath(recordingId);
       if (active && !active.stoppedAt) { active.stoppedAt = new Date().toISOString(); active.status = "saved"; }
       const fullMeta = { ...meta, ...(active || {}), filePath };
@@ -869,7 +938,8 @@ return send(res, 200, { token, user: publicUser(user) });
       if (!canAccessRecording(req, recording)) return send(res, 404, { error: "Recording not found" });
       const filePath = recordingFilePath(recordingId);
       if (!fs.existsSync(filePath)) return send(res, 404, { error: "Recording file is not available on this server instance. Check GitHub recording path.", githubPath: recording.githubPath });
-      res.writeHead(200, { "Content-Type": recording.contentType || "multipart/x-mixed-replace; boundary=cp-device-frame", "Content-Disposition": `attachment; filename="${safeFileName(recording.name || recording.id)}.mjpeg"`, "Cache-Control": "no-store" });
+      const inline = url.searchParams.get("inline") === "1";
+      res.writeHead(200, { "Content-Type": recording.contentType || "multipart/x-mixed-replace; boundary=cp-device-frame", "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${safeFileName(recording.name || recording.id)}.mjpeg"`, "Cache-Control": "no-store" });
       return fs.createReadStream(filePath).pipe(res);
     }
 
@@ -933,7 +1003,7 @@ return send(res, 200, { token, user: publicUser(user) });
     }
 
     if (req.method === "GET" && url.pathname.startsWith("/api/files/")) {
-      return serveStoredFile(res, url.pathname.split("/").pop());
+      return serveStoredFile(res, url.pathname.split("/").pop(), { inline: url.searchParams.get("inline") === "1" });
     }
     if (req.method === "POST" && url.pathname === "/api/admin/enroll-browser") {
       const body = await parseJsonBody(req);

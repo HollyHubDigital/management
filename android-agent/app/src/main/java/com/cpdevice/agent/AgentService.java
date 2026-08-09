@@ -468,15 +468,15 @@ public class AgentService extends Service {
     private String listFiles(String requestedPath) {
         try {
             File dir = resolveFile(requestedPath);
-            if (!dir.exists() || !dir.isDirectory()) return "{\\\"files\\\":[]}";
+            if (!dir.exists() || !dir.isDirectory()) return "{\"files\":[]}";
             File[] files = dir.listFiles();
-            StringBuilder json = new StringBuilder("{\\\"files\\\":[");
+            StringBuilder json = new StringBuilder("{\"files\":[");
             if (files != null) {
                 int count = 0;
                 for (File file : files) {
                     if (count++ > 0) json.append(",");
                     String contentType = file.isDirectory() ? "inode/directory" : guessContentType(file);
-                    json.append("{\\\"name\\\":\\\"").append(safe(file.getName())).append("\\\",\\\"path\\\":\\\"").append(safe(file.getAbsolutePath())).append("\\\",\\\"directory\\\":").append(file.isDirectory()).append(",\\\"size\\\":").append(file.isDirectory() ? 0 : file.length()).append(",\\\"contentType\\\":\\\"").append(safe(contentType)).append("\\\"}");
+                    json.append("{\"name\":\"").append(safe(file.getName())).append("\",\"path\":\"").append(safe(file.getAbsolutePath())).append("\",\"directory\":").append(file.isDirectory()).append(",\"size\":").append(file.isDirectory() ? 0 : file.length()).append(",\"contentType\":\"").append(safe(contentType)).append("\"}");
                     if (count >= 200) break;
                 }
             }

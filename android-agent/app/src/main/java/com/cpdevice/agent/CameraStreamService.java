@@ -15,6 +15,9 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CameraCharacteristics;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -35,8 +38,13 @@ public class CameraStreamService extends Service {
     private CameraDevice camera;
     private CameraCaptureSession session;
     private SimpleWebSocketClient ws;
+    private SimpleWebSocketClient audioWs;
+    private Thread audioThread;
+    private volatile boolean audioRunning;
     private final ExecutorService uploadExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService audioUploadExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean uploadBusy;
+    private volatile boolean audioUploadBusy;
     private long lastFrameAt;
     private String requestedFacing = "back";
 
@@ -61,8 +69,10 @@ public class CameraStreamService extends Service {
         try { if (session != null) session.close(); } catch (Exception ignored) { }
         try { if (camera != null) camera.close(); } catch (Exception ignored) { }
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
+        stopAudio();
         if (ws != null) ws.close();
         uploadExecutor.shutdownNow();
+        audioUploadExecutor.shutdownNow();
         if (thread != null) thread.quitSafely();
         super.onDestroy();
     }
@@ -71,6 +81,7 @@ public class CameraStreamService extends Service {
         try { if (session != null) session.close(); } catch (Exception ignored) { }
         try { if (camera != null) camera.close(); } catch (Exception ignored) { }
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
+        stopAudio();
         if (ws != null) ws.close();
         session = null; camera = null; reader = null; ws = null; lastFrameAt = 0;
         startCamera();
@@ -84,6 +95,7 @@ public class CameraStreamService extends Service {
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
             try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
+            startAudio(prefs);
             reader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 2);
             reader.setOnImageAvailableListener(this::onImage, handler);
             CameraManager manager = (CameraManager) getSystemService(CAMERA_SERVICE);
@@ -147,6 +159,99 @@ public class CameraStreamService extends Service {
         } finally { if (image != null) image.close(); }
     }
 
+
+    private void startAudio(SharedPreferences prefs) {
+        if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
+        stopAudio();
+        audioRunning = true;
+        String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+        String deviceId = prefs.getString("deviceId", "");
+        String token = prefs.getString("deviceToken", "");
+        String audioWsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device-audio/" + deviceId + "?token=" + token;
+        audioWs = new SimpleWebSocketClient();
+        try { audioWs.connect(audioWsUrl); } catch (Exception ignored) { audioWs = null; }
+        audioThread = new Thread(() -> recordAudio(serverUrl, deviceId, token), "cp-camera-audio");
+        audioThread.start();
+    }
+
+    private void stopAudio() {
+        audioRunning = false;
+        try { if (audioWs != null) audioWs.close(); } catch (Exception ignored) { }
+        audioWs = null;
+        if (audioThread != null) {
+            try { audioThread.interrupt(); } catch (Exception ignored) { }
+            audioThread = null;
+        }
+    }
+
+    private void recordAudio(String serverUrl, String deviceId, String token) {
+        AudioRecord recorder = null;
+        try {
+            int sampleRate = 16000;
+            int minBuffer = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            int bufferSize = Math.max(minBuffer, 3200);
+            recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize * 2);
+            byte[] buffer = new byte[bufferSize];
+            recorder.startRecording();
+            while (audioRunning && !Thread.currentThread().isInterrupted()) {
+                int read = recorder.read(buffer, 0, buffer.length);
+                if (read <= 0) continue;
+                byte[] chunk = new byte[read];
+                System.arraycopy(buffer, 0, chunk, 0, read);
+                boolean sent = false;
+                try {
+                    if (audioWs != null) {
+                        audioWs.sendBinary(chunk);
+                        sent = true;
+                    }
+                } catch (Exception ignored) {
+                    audioWs = null;
+                }
+                if (!sent) postAudioAsync(serverUrl, deviceId, token, chunk, sampleRate);
+            }
+        } catch (Exception ignored) {
+        } finally {
+            try { if (recorder != null) recorder.stop(); } catch (Exception ignored) { }
+            try { if (recorder != null) recorder.release(); } catch (Exception ignored) { }
+        }
+    }
+
+    private void postAudioAsync(String serverUrl, String deviceId, String token, byte[] chunk, int sampleRate) {
+        if (audioUploadBusy) return;
+        audioUploadBusy = true;
+        audioUploadExecutor.execute(() -> {
+            try {
+                postAudio(serverUrl, deviceId, token, chunk, sampleRate);
+            } finally {
+                audioUploadBusy = false;
+            }
+        });
+    }
+
+    private void postAudio(String serverUrl, String deviceId, String token, byte[] chunk, int sampleRate) {
+        HttpURLConnection conn = null;
+        try {
+            if (deviceId.length() == 0 || token.length() == 0) return;
+            URL url = new URL(serverUrl + "/api/device/" + deviceId + "/live-audio");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setRequestProperty("Content-Type", "audio/pcm; rate=" + sampleRate);
+            conn.setRequestProperty("X-Audio-Sample-Rate", String.valueOf(sampleRate));
+            conn.setFixedLengthStreamingMode(chunk.length);
+            OutputStream output = conn.getOutputStream();
+            output.write(chunk);
+            output.close();
+            conn.getResponseCode();
+        } catch (Exception ignored) {
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+    }
+
     private void postFrameAsync(byte[] frame) {
         if (uploadBusy) return;
         uploadBusy = true;
@@ -187,5 +292,5 @@ public class CameraStreamService extends Service {
     }
 
     private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Shield Device Camera", NotificationManager.IMPORTANCE_DEFAULT)); }
-    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera streaming is active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build(); }
+    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera and microphone streaming are active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build(); }
 }

@@ -1,5 +1,22 @@
 const { hashToken, randomId, signPayload } = require("../lib/security");
 
+function parsePossiblyEscapedJson(value) {
+  if (typeof value !== "string") return value;
+  let candidate = value.trim();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (typeof parsed !== "string") return parsed;
+      candidate = parsed.trim();
+      continue;
+    } catch { }
+    const unescaped = candidate.replace(/\\"/g, '"').replace(/\\\//g, '/');
+    if (unescaped === candidate) break;
+    candidate = unescaped;
+  }
+  return value;
+}
+
 class DeviceRegistry {
   constructor(store, persistenceStore, enrollmentSecret) {
     this.store = store;
@@ -93,12 +110,7 @@ class DeviceRegistry {
       // Normalize result.output if it's a JSON string so UI gets consistent shapes
       const normalized = { ...result };
       if (typeof normalized.output === "string") {
-        try {
-          const parsed = JSON.parse(normalized.output);
-          normalized.output = parsed;
-        } catch (e) {
-          // leave as string if it's not valid JSON
-        }
+        normalized.output = parsePossiblyEscapedJson(normalized.output);
       }
       // If the agent returned a files list inside output, normalize to top-level files
       if (normalized.output && Array.isArray(normalized.output.files) && !normalized.files) {
