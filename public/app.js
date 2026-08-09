@@ -287,6 +287,7 @@ function commandGateMessage(device, type) {
     if (type === "shell" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Android Device Owner or OEM/system privileges.";
     if (type === "screen.tap" && !capabilities.accessibility) return "Requires Shield Device Agent Accessibility service.";
     if (["camera.stream.request", "camera.switch"].includes(type) && !capabilities.camera) return "Requires camera permission in the Android agent.";
+    if (["camera.stream.request", "camera.switch"].includes(type) && capabilities.microphone === false) return "Requires microphone permission in the Android agent for camera audio.";
     if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Android Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
     if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Device Owner system-update policy or OEM/system updater integration.";
@@ -323,7 +324,7 @@ function refreshCapabilityGates() {
   setButtonGate(lostLocate, commandGateMessage(target, "locate.device"));
   setButtonGate(lostLock, commandGateMessage(target, "lock.device"));
   setButtonGate(lostRing, commandGateMessage(target, "lost.ring"));
-  setButtonGate(lostDisable, commandGateMessage(target, "lost.disable"));
+  setButtonGate(lostDisable, commandGateMessage(target, "live.stop"));
   if (lostMessageForm) {
     const submit = lostMessageForm.querySelector('button[type="submit"]');
     if (submit) setButtonGate(submit, commandGateMessage(target, "lost.message"));
@@ -512,7 +513,8 @@ function friendlyCommandLabel(type) {
     "lock.device": "Lock device",
     "lost.ring": "Lost Mode ring",
     "lost.message": "Lost Mode message",
-    "lost.disable": "Disable live sessions",
+    "lost.disable": "Disable lost mode",
+    "live.stop": "Stop live session",
     "mobile.data.on": "Turn on mobile data",
     "device.info.refresh": "Refresh device info",
     "shell": "Execute shell command",
@@ -758,6 +760,11 @@ function renderDeviceFileBrowser(commandId = "") {
     renderExportedFiles(target, content);
     return;
   }
+  if (listed.error) {
+    content.innerHTML = `<p class="modal-note">${escapeHtml(listed.error)}</p>`;
+    renderExportedFiles(target, content);
+    return;
+  }
   const currentPath = command && command.payload && command.payload.path ? command.payload.path : "/sdcard";
   const heading = document.createElement("p");
   heading.className = "modal-note";
@@ -829,14 +836,16 @@ async function startLiveRecording() {
 
 async function stopLiveRecording() {
   if (!activeRecordingId) throw new Error("No active recording to stop");
-  const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/stop`, { method: "POST", body: "{}" });
+  const target = targetDevice();
+  const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/stop`, { method: "POST", body: JSON.stringify({ deviceId: target && target.id }) });
   if (recordingStatus) recordingStatus.textContent = `Recording stopped: ${body.recording ? body.recording.id : activeRecordingId}`;
   await refresh();
 }
 
 async function saveLiveRecording() {
   if (!activeRecordingId) throw new Error("No active recording to save");
-  const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/save`, { method: "POST", body: "{}" });
+  const target = targetDevice();
+  const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/save`, { method: "POST", body: JSON.stringify({ deviceId: target && target.id }) });
   localStorage.removeItem("cpActiveRecordingId");
   activeRecordingId = "";
   if (recordingStatus) recordingStatus.textContent = body.github && body.github.skipped ? `Saved locally: ${body.github.reason}` : "Recording saved.";
@@ -1000,6 +1009,7 @@ async function fetchLiveAudio(deviceId) {
     cache: "no-store",
     signal: controller.signal
   });
+  if (response.status === 204) return;
   if (!response.ok) return;
   const updatedAt = response.headers.get("X-Audio-Updated-At") || "";
   if (updatedAt && lastLiveAudioUpdatedAt && Date.parse(updatedAt) <= Date.parse(lastLiveAudioUpdatedAt)) return;
@@ -1071,6 +1081,31 @@ function startLiveFallbackPolling(deviceId) {
   if (!livePollTimer) startLivePolling(deviceId, 220);
 }
 
+function stopLiveViewerLocal(message = "Live session stopped.") {
+  if (liveSocket) liveSocket.close();
+  if (livePollTimer) clearTimeout(livePollTimer);
+  if (liveSocketFallbackTimer) clearTimeout(liveSocketFallbackTimer);
+  if (liveFetchController) liveFetchController.abort();
+  stopLiveAudio();
+  liveSocket = null;
+  livePollTimer = null;
+  liveSocketFallbackTimer = null;
+  liveFetchController = null;
+  liveControlMode = "";
+  lastLiveSocketFrameAt = 0;
+  resetLiveFrameState();
+  if (liveFrame) liveFrame.removeAttribute("src");
+  if (screen) screen.classList.remove("streaming");
+  if (screenText) screenText.textContent = message;
+}
+
+async function stopLiveSession() {
+  const target = targetDevice();
+  if (!target) throw new Error("Select exactly one target device to stop live streaming");
+  await createCommand([target.id], "live.stop", { requestedAt: new Date().toISOString(), mode: "admin-control-session" });
+  stopLiveViewerLocal(`Live stop requested for ${target.name}.`);
+  await refresh();
+}
 function openLiveViewer(deviceId, mode = "screen") {
   liveControlMode = mode;
   if (liveSocket) liveSocket.close();
@@ -1221,7 +1256,7 @@ if (lockDevice) {
 if (lostLocate) lostLocate.addEventListener("click", () => sendLostModeCommand("locate.device").catch((error) => (log.textContent = error.message)));
 if (lostLock) lostLock.addEventListener("click", () => sendLostModeCommand("lock.device").catch((error) => (log.textContent = error.message)));
 if (lostRing) lostRing.addEventListener("click", () => sendLostModeCommand("lost.ring").catch((error) => (log.textContent = error.message)));
-if (lostDisable) lostDisable.addEventListener("click", () => sendLostModeCommand("lost.disable").catch((error) => (log.textContent = error.message)));
+if (lostDisable) lostDisable.addEventListener("click", () => stopLiveSession().catch((error) => (log.textContent = error.message)));
 if (lostMessageForm) {
   lostMessageForm.addEventListener("submit", (event) => {
     event.preventDefault();

@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 41); });
         Button location = button("Allow Location", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 42); });
         Button phoneInfo = button("Allow Phone/SIM Info", view -> requestPhoneInfoPermissions());
-        Button files = button("Allow File Access", view -> startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)));
+        Button files = button("Allow File Access", view -> requestAllFilesAccess());
         Button battery = button("Allow Background Running", view -> requestBatteryOptimizationExemption());
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
@@ -106,6 +106,19 @@ public class MainActivity extends Activity {
     }
 
 
+    private void requestAllFilesAccess() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+                status.setText("Grant All files access to browse folders and export real files from device storage.");
+                return;
+            } catch (Exception ignored) { }
+        }
+        startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+        status.setText("Grant file access to browse folders and export real files from device storage.");
+    }
     private void requestPhoneInfoPermissions() {
         if (Build.VERSION.SDK_INT < 23) return;
         java.util.ArrayList<String> permissions = new java.util.ArrayList<>();

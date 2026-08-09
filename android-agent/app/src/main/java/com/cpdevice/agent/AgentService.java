@@ -103,12 +103,13 @@ public class AgentService extends Service {
         boolean owner = dpm != null && dpm.isDeviceOwnerApp(getPackageName());
         if (owner) enforceOwnerSecurity(dpm, receiver);
         boolean accessibility = CpAccessibilityService.isReady();
-        boolean camera = hasPermission(Manifest.permission.CAMERA) && hasPermission(Manifest.permission.RECORD_AUDIO);
+        boolean camera = hasPermission(Manifest.permission.CAMERA);
+        boolean microphone = hasPermission(Manifest.permission.RECORD_AUDIO);
         boolean location = hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) || hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
         boolean files = hasFileAccess();
-        String alerts = securityAlerts(owner, admin, camera, location, files, accessibility);
+        String alerts = securityAlerts(owner, admin, camera && microphone, location, files, accessibility);
         String deviceDetails = collectDeviceDetails();
-        String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"deviceDetails\":" + deviceDetails + ",\"capabilities\":{\"nativeAgent\":true,\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"camera\":" + camera + ",\"files\":" + files + ",\"location\":" + location + ",\"oemPrivileged\":false},\"operation\":{\"agent\":\"running\",\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"tamperResistant\":" + owner + ",\"factoryResetBlockedInSettings\":" + owner + ",\"recoveryFactoryResetBlockable\":false},\"alerts\":" + alerts + "}";
+        String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"deviceDetails\":" + deviceDetails + ",\"capabilities\":{\"nativeAgent\":true,\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"camera\":" + camera + ",\"microphone\":" + microphone + ",\"files\":" + files + ",\"location\":" + location + ",\"oemPrivileged\":false},\"operation\":{\"agent\":\"running\",\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"tamperResistant\":" + owner + ",\"factoryResetBlockedInSettings\":" + owner + ",\"recoveryFactoryResetBlockable\":false},\"alerts\":" + alerts + "}";
         request("POST", "/api/device/" + deviceId() + "/heartbeat", body);
     }
 
@@ -143,17 +144,18 @@ public class AgentService extends Service {
         if ("lock.device".equals(type)) { if (admin) { showLiveActionNotification("Lost Mode lock requested", "This enrolled device is being locked from the dashboard."); dpm.lockNow(); return "Device locked."; } return "Device Admin is required to lock device."; }
         if ("lost.ring".equals(type)) return lostRing();
         if ("lost.message".equals(type)) return lostMessage(textValue(commandJson, "message", commandStart, "This device is lost. Please contact the owner."));
+        if ("live.stop".equals(type)) return stopLiveServices();
         if ("lost.disable".equals(type)) return lostDisable(dpm, admin);
         if ("mobile.data.on".equals(type)) return owner ? "Device Owner active, but Android public APIs still do not expose mobile data toggle. Requires OEM/system API." : "Android does not allow normal or Device Admin apps to toggle mobile data. Requires OEM/system privileges.";
         if ("firmware.update".equals(type)) return "Firmware update queued URL received. Android firmware flashing requires Device Owner system update policy, OEM/system privileges, or vendor updater integration.";
-        if ("screen.control.request".equals(type)) { showLiveActionNotification("Live screen requested", "Screen sharing requires Android capture approval on this device."); openScreenCaptureConsent(); return "Screen capture permission opened on device. Approve it to start live remote desktop."; }
+        if ("screen.control.request".equals(type)) { stopLiveServices(); showLiveActionNotification("Live screen requested", "Screen sharing requires Android capture approval on this device."); openScreenCaptureConsent(); return "Screen capture permission opened on device. Approve it to start live remote desktop."; }
         if ("screen.tap".equals(type)) {
             int[] tap = tapCoordinates(commandJson, commandStart);
             int x = tap[0];
             int y = tap[1];
             return CpAccessibilityService.tap(x, y) ? "Tap dispatched at " + x + "," + y : "Accessibility service is not enabled.";
         }
-        if ("camera.stream.request".equals(type)) { showLiveActionNotification("Live camera active", "Camera streaming is visible while active."); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "back")); startForegroundService(intent); return "Camera stream requested. Android camera and microphone permissions must be approved on the device."; }
+        if ("camera.stream.request".equals(type)) { stopLiveServices(); showLiveActionNotification("Live camera active", "Camera and microphone streaming are visible while active."); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "back")); startForegroundService(intent); return "Camera video and microphone stream requested. Android camera and microphone permissions must be approved on the device."; }
         if ("camera.switch".equals(type)) { showLiveActionNotification("Live camera active", "Camera streaming is visible while active."); Intent stop = new Intent(this, CameraStreamService.class); stopService(stop); Intent intent = new Intent(this, CameraStreamService.class); intent.putExtra("facing", textValue(commandJson, "facing", commandStart, "front")); startForegroundService(intent); return "Camera switched to " + textValue(commandJson, "facing", commandStart, "front") + "."; }
         return "Command received: " + type;
     }
@@ -411,6 +413,12 @@ public class AgentService extends Service {
         startActivity(intent);
     }
 
+    private String stopLiveServices() {
+        try { stopService(new Intent(this, CameraStreamService.class)); } catch (Exception ignored) { }
+        try { stopService(new Intent(this, LiveStreamService.class)); } catch (Exception ignored) { }
+        showLiveActionNotification("Live session stopped", "Live camera, microphone, and screen streaming were stopped from the dashboard.");
+        return "Live camera, microphone, and screen streaming stopped.";
+    }
     private String lostRing() {
         showLiveActionNotification("Lost Mode ring", "This enrolled device is ringing from the dashboard.");
         try {
@@ -468,9 +476,11 @@ public class AgentService extends Service {
     private String listFiles(String requestedPath) {
         try {
             File dir = resolveFile(requestedPath);
-            if (!dir.exists() || !dir.isDirectory()) return "{\"files\":[]}";
+            if (!dir.exists()) return "{\"files\":[],\"error\":\"Path does not exist: " + safe(requestedPath) + "\"}";
+            if (!dir.isDirectory()) return "{\"files\":[],\"error\":\"Path is not a folder: " + safe(dir.getAbsolutePath()) + "\"}";
             File[] files = dir.listFiles();
             StringBuilder json = new StringBuilder("{\"files\":[");
+            if (files == null) return "{\"files\":[],\"error\":\"Folder is not readable. Open Shield Device Agent and tap Allow File Access, then grant All files access.\"}";
             if (files != null) {
                 int count = 0;
                 for (File file : files) {
@@ -528,13 +538,33 @@ public class AgentService extends Service {
     }
 
     private String textValue(String text, String key, int from, String fallback) {
-        String marker = "\\\"" + key + "\\\":\\\"";
-        int index = text.indexOf(marker, from);
-        if (index < 0) return fallback;
-        int start = index + marker.length();
-        int end = text.indexOf("\\\"", start);
-        if (end < 0) return fallback;
-        return text.substring(start, end).replace("\\\\/", "/").replace("\\\\\"", "\"");
+        String[] markers = new String[]{"\"" + key + "\":\"", "\\\"" + key + "\\\":\\\""};
+        for (String marker : markers) {
+            int index = text.indexOf(marker, from);
+            if (index < 0) continue;
+            int start = index + marker.length();
+            StringBuilder value = new StringBuilder();
+            boolean escaped = marker.startsWith("\\");
+            for (int cursor = start; cursor < text.length(); cursor++) {
+                char current = text.charAt(cursor);
+                if (escaped) {
+                    if (current == '\\' && cursor + 1 < text.length()) {
+                        char next = text.charAt(cursor + 1);
+                        if (next == '\"') break;
+                        if (next == '/' || next == '\\') { value.append(next); cursor++; continue; }
+                    }
+                } else {
+                    if (current == '\"') break;
+                    if (current == '\\' && cursor + 1 < text.length()) {
+                        char next = text.charAt(cursor + 1);
+                        if (next == '/' || next == '\"' || next == '\\') { value.append(next); cursor++; continue; }
+                    }
+                }
+                value.append(current);
+            }
+            return value.toString();
+        }
+        return fallback;
     }
 
     private int numberAfter(String text, String marker, int from, int fallback) {

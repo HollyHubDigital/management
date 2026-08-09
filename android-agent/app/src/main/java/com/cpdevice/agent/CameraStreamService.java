@@ -18,6 +18,7 @@ import android.media.ImageReader;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.media.AudioManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -191,8 +192,12 @@ public class CameraStreamService extends Service {
             int minBuffer = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
             int bufferSize = Math.max(minBuffer, 3200);
             recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize * 2);
+            if (recorder.getState() != AudioRecord.STATE_INITIALIZED) return;
+            AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+            if (audioManager != null) audioManager.setMicrophoneMute(false);
             byte[] buffer = new byte[bufferSize];
             recorder.startRecording();
+            if (recorder.getRecordingState() != AudioRecord.RECORDSTATE_RECORDING) return;
             while (audioRunning && !Thread.currentThread().isInterrupted()) {
                 int read = recorder.read(buffer, 0, buffer.length);
                 if (read <= 0) continue;
