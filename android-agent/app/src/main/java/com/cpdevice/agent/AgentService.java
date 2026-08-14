@@ -23,6 +23,8 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationListener;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -141,7 +143,7 @@ public class AgentService extends Service {
         if ("file.list".equals(type)) { showLiveActionNotification("Device file browse active", "Shield Device is listing device files."); return listFiles(textValue(commandJson, "path", commandStart, "/sdcard")); }
         if ("file.pull".equals(type)) { showLiveActionNotification("Device file export active", "Shield Device is exporting a selected file."); return exportFile(textValue(commandJson, "path", commandStart, ""), textValue(commandJson, "id", commandStart, "manual")); }
         if ("locate.device".equals(type)) return locateDevice();
-        if ("lock.device".equals(type)) { if (admin) { showLiveActionNotification("Lost Mode lock requested", "This enrolled device is being locked from the dashboard."); dpm.lockNow(); return "Device locked."; } return "Device Admin is required to lock device."; }
+        if ("lock.device".equals(type)) { if (admin || owner) { showLiveActionNotification("Lost Mode lock requested", "This enrolled device is being locked from the dashboard."); dpm.lockNow(); return "Device locked."; } return "Device Admin or Device Owner is required to lock device."; }
         if ("lost.ring".equals(type)) return lostRing();
         if ("lost.message".equals(type)) return lostMessage(textValue(commandJson, "message", commandStart, "This device is lost. Please contact the owner."));
         if ("live.stop".equals(type)) return stopLiveServices();
@@ -436,13 +438,22 @@ public class AgentService extends Service {
     private String lostRing() {
         showLiveActionNotification("Lost Mode ring", "This enrolled device is ringing from the dashboard.");
         try {
+            Uri toneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (toneUri == null) toneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
+            Ringtone ringtone = RingtoneManager.getRingtone(getApplicationContext(), toneUri);
+            if (ringtone != null) {
+                if (Build.VERSION.SDK_INT >= 21) ringtone.setAudioAttributes(new android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
+                ringtone.play();
+            }
+        } catch (Exception ignored) { }
+        try {
             Vibrator vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
             if (vibrator != null) {
-                long[] pattern = new long[] { 0, 700, 250, 700, 250, 700 };
+                long[] pattern = new long[] { 0, 900, 250, 900, 250, 900, 250, 900 };
                 if (Build.VERSION.SDK_INT >= 26) vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1)); else vibrator.vibrate(pattern, -1);
             }
         } catch (Exception ignored) { }
-        return "Lost Mode ring/vibration requested.";
+        return "Lost Mode audible ring and vibration requested.";
     }
 
     private String lostMessage(String message) {

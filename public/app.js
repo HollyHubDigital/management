@@ -296,7 +296,7 @@ function commandGateMessage(device, type) {
     if (type === "screen.tap" && !capabilities.accessibility) return "Requires Shield Device Agent Accessibility service.";
     if (["camera.stream.request", "camera.switch"].includes(type) && !capabilities.camera) return "Requires camera permission in the Android agent.";
     if (["camera.stream.request", "camera.switch"].includes(type) && capabilities.microphone === false) return "Requires microphone permission in the Android agent for camera audio.";
-    if (type === "lock.device" && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Android Device Admin or Device Owner.";
+    if (type === "lock.device" && !capabilities.nativeAgent && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Shield Device Agent with Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
     if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Device Owner system-update policy or OEM/system updater integration.";
   }
@@ -1045,12 +1045,12 @@ async function startLiveAudio(deviceId) {
   liveAudioSocket.onmessage = (event) => playLivePcmChunk(event.data, 16000);
   liveAudioSocket.onerror = () => {
     if (liveAudioSocket) liveAudioSocket.close();
-    const poll = async () => {
-      await fetchLiveAudio(deviceId).catch(() => {});
-      liveAudioPollTimer = setTimeout(poll, 180);
-    };
-    if (!liveAudioPollTimer) poll();
   };
+  const backupPoll = async () => {
+    await fetchLiveAudio(deviceId).catch(() => {});
+    liveAudioPollTimer = setTimeout(backupPoll, 500);
+  };
+  backupPoll();
 }
 function liveTapPayload(event, imageElement) {
   if (!imageElement || !imageElement.naturalWidth || !imageElement.naturalHeight) return null;
@@ -1130,10 +1130,8 @@ function openLiveViewer(deviceId, mode = "screen") {
   }
   liveSocket = new WebSocket(liveWsUrl(`/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`));
   liveSocket.binaryType = "blob";
-  liveSocket.onopen = () => {
-    if (livePollTimer) clearTimeout(livePollTimer);
-    livePollTimer = null;
-  };
+  startLivePolling(deviceId, 500);
+  liveSocket.onopen = () => {};
   liveSocket.onmessage = (event) => {
     lastLiveSocketFrameAt = Date.now();
     renderLiveBlob(event.data, mode === "camera" ? "Live camera stream active." : "Live screen stream active. Click on the preview to send taps.");

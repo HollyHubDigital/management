@@ -155,7 +155,7 @@ public class CameraStreamService extends Service {
             } catch (Exception ignored) {
                 ws = null;
             }
-            if (!sent) postFrameAsync(jpeg);
+            postFrameAsync(jpeg);
         } catch (Exception ignored) {
         } finally { if (image != null) image.close(); }
     }
@@ -212,7 +212,7 @@ public class CameraStreamService extends Service {
                 } catch (Exception ignored) {
                     audioWs = null;
                 }
-                if (!sent) postAudioAsync(serverUrl, deviceId, token, chunk, sampleRate);
+                postAudioAsync(serverUrl, deviceId, token, chunk, sampleRate);
             }
         } catch (Exception ignored) {
         } finally {

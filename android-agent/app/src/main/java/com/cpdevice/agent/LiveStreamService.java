@@ -116,7 +116,7 @@ public class LiveStreamService extends Service {
             } catch (Exception ignored) {
                 ws = null;
             }
-            if (!sent) postFrameAsync(frame);
+            postFrameAsync(frame);
             bitmap.recycle();
             cropped.recycle();
         } catch (Exception ignored) {
