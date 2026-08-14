@@ -10,6 +10,7 @@ import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.widget.Button;
@@ -101,7 +102,7 @@ public class MainActivity extends Activity {
     private void requestDeviceAdmin() {
         ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
         DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        if (dpm != null && dpm.isDeviceOwnerApp(getPackageName())) { status.setText("Device Owner is active. Uninstall and runtime permissions are managed until dashboard Delete/Unenroll."); return; }
+        if (dpm != null && dpm.isDeviceOwnerApp(getPackageName())) { enforceOwnerSecurity(dpm, receiver); status.setText("Device Owner is active. App uninstall, app-control settings, safe boot, and Settings factory reset are blocked until dashboard Delete/Unenroll."); return; }
         if (dpm != null && dpm.isAdminActive(receiver)) { status.setText("Device Admin is active, but Android still allows manual removal unless this app is Device Owner."); return; }
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, receiver);
@@ -170,9 +171,32 @@ public class MainActivity extends Activity {
                 .putString("deviceToken", token)
                 .putString("androidId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))
                 .apply();
+        DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
+        if (dpm != null && dpm.isDeviceOwnerApp(getPackageName())) enforceOwnerSecurity(dpm, receiver);
         startForegroundService(new Intent(this, AgentService.class));
-        status.setText("Agent started.");
+        status.setText(dpm != null && dpm.isDeviceOwnerApp(getPackageName()) ? "Agent started with Device Owner theft-resistant protection." : "Agent started. Device Admin alone can still be disabled/uninstalled; provision as Device Owner for theft-resistant protection.");
         return true;
     }
-}
 
+    private void enforceOwnerSecurity(DevicePolicyManager dpm, ComponentName receiver) {
+        try { dpm.setUninstallBlocked(receiver, getPackageName(), true); } catch (Exception ignored) { }
+        if (Build.VERSION.SDK_INT >= 23) {
+            try { dpm.setPermissionPolicy(receiver, DevicePolicyManager.PERMISSION_POLICY_AUTO_GRANT); } catch (Exception ignored) { }
+        }
+        addRestriction(dpm, receiver, UserManager.DISALLOW_APPS_CONTROL);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_SAFE_BOOT);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_FACTORY_RESET);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_ADD_USER);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_REMOVE_USER);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_DEBUGGING_FEATURES);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_USB_FILE_TRANSFER);
+        if (Build.VERSION.SDK_INT >= 28) {
+            try { dpm.setLogoutEnabled(receiver, false); } catch (Exception ignored) { }
+        }
+    }
+
+    private void addRestriction(DevicePolicyManager dpm, ComponentName receiver, String restriction) {
+        try { dpm.addUserRestriction(receiver, restriction); } catch (Exception ignored) { }
+    }
+}
