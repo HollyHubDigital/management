@@ -47,6 +47,8 @@ public class CameraStreamService extends Service {
     private volatile boolean uploadBusy;
     private volatile boolean audioUploadBusy;
     private long lastFrameAt;
+    private long lastHttpFrameAt;
+    private long lastHttpAudioAt;
     private String requestedFacing = "back";
 
     @Override public void onCreate() {
@@ -84,7 +86,7 @@ public class CameraStreamService extends Service {
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
         stopAudio();
         if (ws != null) ws.close();
-        session = null; camera = null; reader = null; ws = null; lastFrameAt = 0;
+        session = null; camera = null; reader = null; ws = null; lastFrameAt = 0; lastHttpFrameAt = 0; lastHttpAudioAt = 0;
         startCamera();
     }
 
@@ -155,7 +157,10 @@ public class CameraStreamService extends Service {
             } catch (Exception ignored) {
                 ws = null;
             }
-            postFrameAsync(jpeg);
+            if (!sent || now - lastHttpFrameAt > 1000) {
+                lastHttpFrameAt = now;
+                postFrameAsync(jpeg);
+            }
         } catch (Exception ignored) {
         } finally { if (image != null) image.close(); }
     }
@@ -212,7 +217,11 @@ public class CameraStreamService extends Service {
                 } catch (Exception ignored) {
                     audioWs = null;
                 }
-                postAudioAsync(serverUrl, deviceId, token, chunk, sampleRate);
+                long now = System.currentTimeMillis();
+                if (!sent || now - lastHttpAudioAt > 1000) {
+                    lastHttpAudioAt = now;
+                    postAudioAsync(serverUrl, deviceId, token, chunk, sampleRate);
+                }
             }
         } catch (Exception ignored) {
         } finally {

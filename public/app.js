@@ -39,6 +39,9 @@ let liveControlMode = "";
 let liveFrameSequence = 0;
 let liveRenderedFrameSequence = 0;
 let liveFrameUrl = "";
+let liveRenderBusy = false;
+let livePendingBlob = null;
+let livePendingMessage = "";
 let lastLiveFrameUpdatedAt = "";
 let liveAudioContext = null;
 let liveAudioNextTime = 0;
@@ -935,24 +938,35 @@ function resetLiveFrameState() {
 }
 
 function renderLiveBlob(blob, message = "") {
-  if (!liveFrame) return;
-  const sequence = ++liveFrameSequence;
+  if (!liveFrame || !blob) return;
+  if (liveRenderBusy) {
+    livePendingBlob = blob;
+    livePendingMessage = message;
+    return;
+  }
+  liveRenderBusy = true;
   const url = URL.createObjectURL(blob);
   const probe = new Image();
   probe.onload = () => {
-    if (sequence < liveRenderedFrameSequence) {
-      URL.revokeObjectURL(url);
-      return;
-    }
     const previous = liveFrameUrl;
-    liveRenderedFrameSequence = sequence;
     liveFrameUrl = url;
     liveFrame.src = url;
     screen.classList.add("streaming");
     screenText.textContent = message;
     if (previous && previous !== url) URL.revokeObjectURL(previous);
+    liveRenderBusy = false;
+    if (livePendingBlob) {
+      const nextBlob = livePendingBlob;
+      const nextMessage = livePendingMessage;
+      livePendingBlob = null;
+      livePendingMessage = "";
+      renderLiveBlob(nextBlob, nextMessage);
+    }
   };
-  probe.onerror = () => URL.revokeObjectURL(url);
+  probe.onerror = () => {
+    URL.revokeObjectURL(url);
+    liveRenderBusy = false;
+  };
   probe.src = url;
 }
 

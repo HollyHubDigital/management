@@ -37,6 +37,7 @@ public class LiveStreamService extends Service {
     private final ExecutorService uploadExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean uploadBusy;
     private long lastFrameAt;
+    private long lastHttpFrameAt;
 
     @Override public void onCreate() {
         super.onCreate();
@@ -116,7 +117,10 @@ public class LiveStreamService extends Service {
             } catch (Exception ignored) {
                 ws = null;
             }
-            postFrameAsync(frame);
+            if (!sent || now - lastHttpFrameAt > 1000) {
+                lastHttpFrameAt = now;
+                postFrameAsync(frame);
+            }
             bitmap.recycle();
             cropped.recycle();
         } catch (Exception ignored) {
