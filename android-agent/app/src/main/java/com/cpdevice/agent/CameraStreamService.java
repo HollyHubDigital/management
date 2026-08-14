@@ -92,12 +92,12 @@ public class CameraStreamService extends Service {
         try {
             if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) { stopSelf(); return; }
             SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
-            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+            String serverUrl = liveServerUrl(prefs);
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
             try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
             startAudio(prefs);
-            reader = ImageReader.newInstance(640, 480, ImageFormat.JPEG, 2);
+            reader = ImageReader.newInstance(480, 360, ImageFormat.JPEG, 2);
             reader.setOnImageAvailableListener(this::onImage, handler);
             CameraManager manager = (CameraManager) getSystemService(CAMERA_SERVICE);
             String cameraId = chooseCameraId(manager, requestedFacing);
@@ -141,7 +141,7 @@ public class CameraStreamService extends Service {
         try {
             long now = System.currentTimeMillis();
             image = imageReader.acquireLatestImage();
-            if (image == null || now - lastFrameAt < 150) return;
+            if (image == null || now - lastFrameAt < 90) return;
             lastFrameAt = now;
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] jpeg = new byte[buffer.remaining()];
@@ -165,7 +165,7 @@ public class CameraStreamService extends Service {
         if (Build.VERSION.SDK_INT >= 23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
         stopAudio();
         audioRunning = true;
-        String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+        String serverUrl = liveServerUrl(prefs);
         String deviceId = prefs.getString("deviceId", "");
         String token = prefs.getString("deviceToken", "");
         String audioWsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device-audio/" + deviceId + "?token=" + token;
@@ -190,7 +190,7 @@ public class CameraStreamService extends Service {
         try {
             int sampleRate = 16000;
             int minBuffer = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-            int bufferSize = Math.max(minBuffer, 3200);
+            int bufferSize = Math.max(minBuffer, 1600);
             recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSize * 2);
             if (recorder.getState() != AudioRecord.STATE_INITIALIZED) return;
             AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
@@ -241,8 +241,8 @@ public class CameraStreamService extends Service {
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(4000);
-            conn.setReadTimeout(4000);
+            conn.setConnectTimeout(2000);
+            conn.setReadTimeout(2000);
             conn.setRequestProperty("Authorization", "Bearer " + token);
             conn.setRequestProperty("Content-Type", "audio/pcm; rate=" + sampleRate);
             conn.setRequestProperty("X-Audio-Sample-Rate", String.valueOf(sampleRate));
@@ -273,7 +273,7 @@ public class CameraStreamService extends Service {
         HttpURLConnection conn = null;
         try {
             SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
-            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+            String serverUrl = liveServerUrl(prefs);
             String deviceId = prefs.getString("deviceId", "");
             String token = prefs.getString("deviceToken", "");
             if (deviceId.length() == 0 || token.length() == 0) return;
@@ -281,8 +281,8 @@ public class CameraStreamService extends Service {
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(8000);
+            conn.setConnectTimeout(2500);
+            conn.setReadTimeout(2500);
             conn.setRequestProperty("Authorization", "Bearer " + token);
             conn.setRequestProperty("Content-Type", "image/jpeg");
             conn.setFixedLengthStreamingMode(frame.length);
@@ -296,6 +296,11 @@ public class CameraStreamService extends Service {
         }
     }
 
+    private String liveServerUrl(SharedPreferences prefs) {
+        String fallback = prefs.getString("serverUrl", "https://shied.onrender.com");
+        String live = prefs.getString("liveServerUrl", fallback);
+        return (live == null || live.length() == 0 ? fallback : live).replaceAll("/$", "");
+    }
     private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Shield Device Camera", NotificationManager.IMPORTANCE_DEFAULT)); }
     private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera and microphone streaming are active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build(); }
 }

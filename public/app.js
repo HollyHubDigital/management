@@ -11,6 +11,13 @@ const adminLogin = document.getElementById("adminLogin");
 const adminPassword = document.getElementById("adminPassword");
 const adminLoginButton = document.getElementById("adminLoginButton");
 let adminToken = localStorage.getItem("cpAdminToken") || "";
+const APP_CONFIG = window.CP_DEVICE_CONFIG || {};
+const API_BASE = (APP_CONFIG.API_BASE_URL || window.location.origin).replace(/\/$/, "");
+const LIVE_BASE = (APP_CONFIG.LIVE_BASE_URL || API_BASE || window.location.origin).replace(/\/$/, "");
+const apiUrl = (path) => `${API_BASE}${path}`;
+const liveApiUrl = (path) => `${LIVE_BASE}${path}`;
+const liveWsUrl = (path) => `${LIVE_BASE.replace("https://", "wss://").replace("http://", "ws://")}${path}`;
+const persistentLiveConfigured = () => LIVE_BASE !== window.location.origin && !LIVE_BASE.includes("vercel.app");
 const adminAuthPage = window.location.pathname.endsWith("admin-auth.html");
 const adminDashboardPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
 if (adminTokenInput && adminToken) adminTokenInput.value = adminToken;
@@ -90,7 +97,7 @@ async function readJsonResponse(response) {
 }
 
 async function loginAdmin() {
-  const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ login: adminLogin.value, password: adminPassword.value }) });
+  const response = await fetch(apiUrl("/api/auth/login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ login: adminLogin.value, password: adminPassword.value }) });
   const body = await readJsonResponse(response);
   if (!response.ok || !body.user || body.user.role !== "admin") throw new Error(body.error || "Admin login failed");
   adminToken = body.token;
@@ -189,7 +196,7 @@ async function verifyAdminSession() {
   }
 }
 async function api(path, options = {}) {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}`, ...(options.headers || {}) }
   });
@@ -265,8 +272,8 @@ async function enrollCurrentDevice() {
 }
 
 function buildAgentEnrollmentLink(enrollment) {
-  const serverUrl = `${location.protocol}//${location.host}`;
-  const params = new URLSearchParams({ serverUrl, deviceId: enrollment.deviceId, token: enrollment.token });
+  const serverUrl = API_BASE;
+  const params = new URLSearchParams({ serverUrl, liveServerUrl: LIVE_BASE, deviceId: enrollment.deviceId, token: enrollment.token });
   return `cpdevice://enroll?${params.toString()}`;
 }
 
@@ -623,7 +630,7 @@ async function refresh() {
 }
 
 async function uploadFile(file) {
-  const response = await fetch("/api/files", {
+  const response = await fetch(apiUrl("/api/files"), {
     method: "POST",
     headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": file.type || "application/octet-stream", "X-File-Name": file.name },
     body: await file.arrayBuffer()
@@ -640,7 +647,7 @@ async function installSelectedApp() {
   if (apkFile.files[0]) {
     const uploaded = await uploadFile(apkFile.files[0]);
     payload.fileId = uploaded.id;
-    payload.apkUrl = `${location.protocol}//${location.host}/api/files/${uploaded.id}`;
+    payload.apkUrl = apiUrl(`/api/files/${uploaded.id}`);
     payload.fileName = uploaded.name;
   } else if (apkUrl.value.trim()) {
     payload.apkUrl = apkUrl.value.trim();
@@ -724,7 +731,7 @@ function renderExportedFiles(target, content) {
     const row = document.createElement("div");
     row.className = "file-row";
     const type = file.contentType || "application/octet-stream";
-    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="/api/files/${encodeURIComponent(file.id)}?inline=1" target="_blank" rel="noopener">View / Download</a>`;
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="${apiUrl(`/api/files/${encodeURIComponent(file.id)}?inline=1`)}" target="_blank" rel="noopener">View / Download</a>`;
     content.appendChild(row);
   }
 }
@@ -853,10 +860,10 @@ async function saveLiveRecording() {
 }
 
 function viewRecording(recordingId) {
-  window.open(`/api/recordings/${encodeURIComponent(recordingId)}/download?inline=1&token=${encodeURIComponent(adminToken)}`, "_blank", "noopener");
+  window.open(apiUrl(`/api/recordings/${encodeURIComponent(recordingId)}/download?inline=1&token=${encodeURIComponent(adminToken)}`), "_blank", "noopener");
 }
 async function downloadRecording(recordingId) {
-  const response = await fetch(`/api/recordings/${encodeURIComponent(recordingId)}/download`, { headers: { Authorization: `Bearer ${adminToken}` } });
+  const response = await fetch(apiUrl(`/api/recordings/${encodeURIComponent(recordingId)}/download`), { headers: { Authorization: `Bearer ${adminToken}` } });
   if (!response.ok) {
     const body = await readJsonResponse(response);
     throw new Error(body.error || "Recording download failed");
@@ -952,7 +959,7 @@ async function fetchLiveFrame(deviceId) {
   if (liveFetchController) liveFetchController.abort();
   const controller = new AbortController();
   liveFetchController = controller;
-  const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`, {
+  const response = await fetch(liveApiUrl(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`), {
     headers: { Authorization: `Bearer ${adminToken}` },
     cache: "no-store",
     signal: controller.signal
@@ -1004,7 +1011,7 @@ async function fetchLiveAudio(deviceId) {
   if (liveAudioFetchController) liveAudioFetchController.abort();
   const controller = new AbortController();
   liveAudioFetchController = controller;
-  const response = await fetch(`/api/live/${encodeURIComponent(deviceId)}/audio?t=${Date.now()}`, {
+  const response = await fetch(liveApiUrl(`/api/live/${encodeURIComponent(deviceId)}/audio?t=${Date.now()}`), {
     headers: { Authorization: `Bearer ${adminToken}` },
     cache: "no-store",
     signal: controller.signal
@@ -1024,7 +1031,7 @@ async function startLiveAudio(deviceId) {
   await ensureLiveAudioContext();
   stopLiveAudio();
   await ensureLiveAudioContext();
-  if ((location.hostname || "").endsWith("vercel.app")) {
+  if (!persistentLiveConfigured() && (location.hostname || "").endsWith("vercel.app")) {
     const poll = async () => {
       await fetchLiveAudio(deviceId).catch(() => {});
       liveAudioPollTimer = setTimeout(poll, 180);
@@ -1032,8 +1039,7 @@ async function startLiveAudio(deviceId) {
     poll();
     return;
   }
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  liveAudioSocket = new WebSocket(`${protocol}//${location.host}/ws/live-audio?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
+  liveAudioSocket = new WebSocket(liveWsUrl(`/ws/live-audio?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`));
   liveAudioSocket.binaryType = "arraybuffer";
   liveAudioSocket.onmessage = (event) => playLivePcmChunk(event.data, 16000);
   liveAudioSocket.onerror = () => {
@@ -1117,12 +1123,11 @@ function openLiveViewer(deviceId, mode = "screen") {
   resetLiveFrameState();
   if (mode === "camera") startLiveAudio(deviceId).catch(() => {});
   else stopLiveAudio();
-  if (location.hostname.endsWith("vercel.app")) {
+  if (!persistentLiveConfigured() && location.hostname.endsWith("vercel.app")) {
     startLivePolling(deviceId, 220);
     return;
   }
-  const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  liveSocket = new WebSocket(`${protocol}//${location.host}/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`);
+  liveSocket = new WebSocket(liveWsUrl(`/ws/live?deviceId=${encodeURIComponent(deviceId)}&adminToken=${encodeURIComponent(adminToken)}`));
   liveSocket.binaryType = "blob";
   liveSocket.onopen = () => {
     if (livePollTimer) clearTimeout(livePollTimer);
@@ -1210,7 +1215,7 @@ if (downloadAgent) {
       return;
     }
     const { details } = await enrollCurrentDevice();
-    const downloadUrl = details.platform === "ios" ? "/api/enrollment/ios-profile" : "/api/enrollment/android-agent";
+    const downloadUrl = details.platform === "ios" ? apiUrl("/api/enrollment/ios-profile") : apiUrl("/api/enrollment/android-agent");
     const link = document.createElement("a");
     link.href = downloadUrl;
     link.download = details.platform === "ios" ? "cp-device-enrollment.mobileconfig" : "cp-device-agent.apk";
@@ -1305,7 +1310,7 @@ if (adminLogout) {
     localStorage.removeItem("cpAdminToken");
     state = { devices: {}, commands: {} };
     try {
-      await fetch("/api/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      await fetch(apiUrl("/api/auth/logout"), { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     } catch { }
     setAdminAuthFlashMessage("Logged out.");
     redirectToAdminAuth();

@@ -21,6 +21,7 @@ public class MainActivity extends Activity {
     public static final String ACTION_START_SCREEN = "com.cpdevice.agent.START_SCREEN";
     private static final int SCREEN_CAPTURE_REQUEST = 4401;
     private EditText serverUrl;
+    private EditText liveServerUrl;
     private EditText deviceId;
     private EditText deviceToken;
     private TextView status;
@@ -46,14 +47,16 @@ public class MainActivity extends Activity {
         status = new TextView(this);
         status.setText("Install and enroll with Android Device Owner for theft-resistant protection; Device Admin alone can still be removed in Settings.");
         layout.addView(status);
-        serverUrl = input("Control Server URL", "https://admin-device-management.vercel.app");
+        serverUrl = input("Control Server URL", "https://shied.onrender.com");
+        liveServerUrl = input("Live WebSocket Server URL", "https://shied.onrender.com");
         deviceId = input("Device ID", "");
         deviceToken = input("Device Token", "");
         android.content.SharedPreferences saved = getSharedPreferences("cp-device", Context.MODE_PRIVATE);
         serverUrl.setText(saved.getString("serverUrl", serverUrl.getText().toString()));
+        liveServerUrl.setText(saved.getString("liveServerUrl", saved.getString("serverUrl", liveServerUrl.getText().toString())));
         deviceId.setText(saved.getString("deviceId", ""));
         deviceToken.setText(saved.getString("deviceToken", ""));
-        layout.addView(serverUrl); layout.addView(deviceId); layout.addView(deviceToken);
+        layout.addView(serverUrl); layout.addView(liveServerUrl); layout.addView(deviceId); layout.addView(deviceToken);
         Button admin = button("Enable Device Admin / Check Owner", view -> requestDeviceAdmin());
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 41); });
@@ -85,6 +88,7 @@ public class MainActivity extends Activity {
         Uri data = intent == null ? null : intent.getData();
         if (data == null || !"cpdevice".equals(data.getScheme()) || !"enroll".equals(data.getHost())) return;
         serverUrl.setText(value(data, "serverUrl", serverUrl.getText().toString()));
+        liveServerUrl.setText(value(data, "liveServerUrl", serverUrl.getText().toString()));
         deviceId.setText(value(data, "deviceId", ""));
         deviceToken.setText(value(data, "token", ""));
         status.setText("Enrollment received. For theft-resistant protection, provision as Device Owner; then enable needed services and Start Live Screen.");
@@ -161,6 +165,7 @@ public class MainActivity extends Activity {
         }
         getSharedPreferences("cp-device", Context.MODE_PRIVATE).edit()
                 .putString("serverUrl", serverUrl.getText().toString().trim())
+                .putString("liveServerUrl", liveServerUrl.getText().toString().trim().isEmpty() ? serverUrl.getText().toString().trim() : liveServerUrl.getText().toString().trim())
                 .putString("deviceId", id)
                 .putString("deviceToken", token)
                 .putString("androidId", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID))

@@ -68,7 +68,7 @@ public class LiveStreamService extends Service {
     private void startProjection(int resultCode, Intent data) {
         try {
             SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
-            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+            String serverUrl = liveServerUrl(prefs);
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
             try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
@@ -76,7 +76,7 @@ public class LiveStreamService extends Service {
             WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
             DisplayMetrics metrics = new DisplayMetrics();
             wm.getDefaultDisplay().getRealMetrics(metrics);
-            int width = Math.min(metrics.widthPixels, 720);
+            int width = Math.min(metrics.widthPixels, 540);
             int height = Math.max(1, (int) (metrics.heightPixels * (width / (float) metrics.widthPixels)));
             int density = metrics.densityDpi;
             reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
@@ -94,7 +94,7 @@ public class LiveStreamService extends Service {
         try {
             long now = System.currentTimeMillis();
             image = imageReader.acquireLatestImage();
-            if (image == null || now - lastFrameAt < 150) return;
+            if (image == null || now - lastFrameAt < 90) return;
             lastFrameAt = now;
             Image.Plane plane = image.getPlanes()[0];
             ByteBuffer buffer = plane.getBuffer();
@@ -105,7 +105,7 @@ public class LiveStreamService extends Service {
             bitmap.copyPixelsFromBuffer(buffer);
             Bitmap cropped = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight());
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            cropped.compress(Bitmap.CompressFormat.JPEG, 55, out);
+            cropped.compress(Bitmap.CompressFormat.JPEG, 45, out);
             byte[] frame = out.toByteArray();
             boolean sent = false;
             try {
@@ -141,7 +141,7 @@ public class LiveStreamService extends Service {
         HttpURLConnection conn = null;
         try {
             SharedPreferences prefs = getSharedPreferences("cp-device", MODE_PRIVATE);
-            String serverUrl = prefs.getString("serverUrl", "https://admin-device-management.vercel.app");
+            String serverUrl = liveServerUrl(prefs);
             String deviceId = prefs.getString("deviceId", "");
             String token = prefs.getString("deviceToken", "");
             if (deviceId.length() == 0 || token.length() == 0) return;
@@ -149,8 +149,8 @@ public class LiveStreamService extends Service {
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setDoOutput(true);
-            conn.setConnectTimeout(8000);
-            conn.setReadTimeout(8000);
+            conn.setConnectTimeout(2500);
+            conn.setReadTimeout(2500);
             conn.setRequestProperty("Authorization", "Bearer " + token);
             conn.setRequestProperty("Content-Type", "image/jpeg");
             conn.setFixedLengthStreamingMode(frame.length);
@@ -164,6 +164,11 @@ public class LiveStreamService extends Service {
         }
     }
 
+    private String liveServerUrl(SharedPreferences prefs) {
+        String fallback = prefs.getString("serverUrl", "https://shied.onrender.com");
+        String live = prefs.getString("liveServerUrl", fallback);
+        return (live == null || live.length() == 0 ? fallback : live).replaceAll("/$", "");
+    }
     private void createChannel() {
         if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "Shield Device Live", NotificationManager.IMPORTANCE_DEFAULT));
     }

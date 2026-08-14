@@ -10,3 +10,5 @@ User-Interface/
 
 android-agent/local.properties
 .vscode/
+
+render-backend-export/

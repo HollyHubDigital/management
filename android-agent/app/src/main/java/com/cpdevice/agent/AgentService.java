@@ -109,7 +109,7 @@ public class AgentService extends Service {
         boolean files = hasFileAccess();
         String alerts = securityAlerts(owner, admin, camera && microphone, location, files, accessibility);
         String deviceDetails = collectDeviceDetails();
-        String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"deviceDetails\":" + deviceDetails + ",\"capabilities\":{\"nativeAgent\":true,\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"camera\":" + camera + ",\"microphone\":" + microphone + ",\"files\":" + files + ",\"location\":" + location + ",\"oemPrivileged\":false},\"operation\":{\"agent\":\"running\",\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"tamperResistant\":" + owner + ",\"factoryResetBlockedInSettings\":" + owner + ",\"recoveryFactoryResetBlockable\":false},\"alerts\":" + alerts + "}";
+        String body = "{\"info\":{\"manufacturer\":\"" + safe(Build.MANUFACTURER) + "\",\"model\":\"" + safe(Build.MODEL) + "\",\"androidVersion\":\"" + safe(Build.VERSION.RELEASE) + "\",\"androidId\":\"" + safe(prefs.getString("androidId", "")) + "\"},\"deviceDetails\":" + deviceDetails + ",\"capabilities\":{\"nativeAgent\":true,\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"camera\":" + camera + ",\"microphone\":" + microphone + ",\"files\":" + files + ",\"location\":" + location + ",\"oemPrivileged\":false},\"operation\":{\"agent\":\"running\",\"deviceAdmin\":" + admin + ",\"deviceOwner\":" + owner + ",\"accessibility\":" + accessibility + ",\"tamperResistant\":" + owner + ",\"uninstallBlocked\":" + owner + ",\"permissionPolicyAutoGrant\":" + owner + ",\"factoryResetBlockedInSettings\":" + owner + ",\"safeBootBlocked\":" + owner + ",\"recoveryFactoryResetBlockable\":false},\"alerts\":" + alerts + "}";
         request("POST", "/api/device/" + deviceId() + "/heartbeat", body);
     }
 
@@ -198,6 +198,13 @@ public class AgentService extends Service {
         addRestriction(dpm, receiver, UserManager.DISALLOW_APPS_CONTROL);
         addRestriction(dpm, receiver, UserManager.DISALLOW_SAFE_BOOT);
         addRestriction(dpm, receiver, UserManager.DISALLOW_FACTORY_RESET);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_ADD_USER);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_REMOVE_USER);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_DEBUGGING_FEATURES);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_USB_FILE_TRANSFER);
+        if (Build.VERSION.SDK_INT >= 28) {
+            try { dpm.setLogoutEnabled(receiver, false); } catch (Exception ignored) { }
+        }
     }
 
     private void grantPermission(DevicePolicyManager dpm, ComponentName receiver, String permission) {
@@ -249,6 +256,13 @@ public class AgentService extends Service {
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_APPS_CONTROL);
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_SAFE_BOOT);
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_FACTORY_RESET);
+                clearRestriction(dpm, receiver, UserManager.DISALLOW_ADD_USER);
+                clearRestriction(dpm, receiver, UserManager.DISALLOW_REMOVE_USER);
+                clearRestriction(dpm, receiver, UserManager.DISALLOW_DEBUGGING_FEATURES);
+                clearRestriction(dpm, receiver, UserManager.DISALLOW_USB_FILE_TRANSFER);
+                if (Build.VERSION.SDK_INT >= 28) {
+                    try { dpm.setLogoutEnabled(receiver, true); } catch (Exception ignored) { }
+                }
             }
             if (admin && dpm != null) {
                 try { dpm.removeActiveAdmin(receiver); } catch (Exception ignored) { }
@@ -606,7 +620,7 @@ public class AgentService extends Service {
         return out.toString();
     }
 
-    private String serverUrl() { return prefs.getString("serverUrl", "https://admin-device-management.vercel.app").replaceAll("/$", ""); }
+    private String serverUrl() { return prefs.getString("serverUrl", "https://shied.onrender.com").replaceAll("/$", ""); }
     private String deviceId() { return prefs.getString("deviceId", ""); }
     private String token() { return prefs.getString("deviceToken", ""); }
     private String safe(String value) { return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " "); }
