@@ -46,6 +46,11 @@ let lastLiveFrameUpdatedAt = "";
 let liveAudioContext = null;
 let liveAudioNextTime = 0;
 let lastLiveAudioUpdatedAt = "";
+let webRtcPeer = null;
+let webRtcSignal = null;
+let webRtcConnectTimer = null;
+let webRtcRetryTimer = null;
+let webRtcVideoEl = null;
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
 const terminalCommand = document.getElementById("terminalCommand");
@@ -927,6 +932,103 @@ async function sendTerminalCommand(commandText) {
 }
 
 
+
+function getWebRtcVideoElement() {
+  if (!screen) return null;
+  if (!webRtcVideoEl) {
+    webRtcVideoEl = document.createElement("video");
+    webRtcVideoEl.id = "liveVideo";
+    webRtcVideoEl.className = "live-video";
+    webRtcVideoEl.autoplay = true;
+    webRtcVideoEl.playsInline = true;
+    webRtcVideoEl.controls = false;
+    webRtcVideoEl.muted = false;
+    screen.insertBefore(webRtcVideoEl, liveFrame || screen.firstChild);
+  }
+  return webRtcVideoEl;
+}
+
+function sendWebRtcSignal(payload) {
+  if (webRtcSignal && webRtcSignal.readyState === WebSocket.OPEN) webRtcSignal.send(JSON.stringify(payload));
+}
+
+function stopWebRtcLive() {
+  if (webRtcConnectTimer) clearTimeout(webRtcConnectTimer);
+  if (webRtcRetryTimer) clearTimeout(webRtcRetryTimer);
+  webRtcConnectTimer = null;
+  webRtcRetryTimer = null;
+  try { if (webRtcSignal) webRtcSignal.close(); } catch {}
+  try { if (webRtcPeer) webRtcPeer.close(); } catch {}
+  webRtcSignal = null;
+  webRtcPeer = null;
+  if (webRtcVideoEl) {
+    try { if (webRtcVideoEl.srcObject) webRtcVideoEl.srcObject.getTracks().forEach((track) => track.stop()); } catch {}
+    webRtcVideoEl.srcObject = null;
+    webRtcVideoEl.classList.remove("active");
+  }
+}
+
+async function loadWebRtcConfig() {
+  const response = await fetch(apiUrl("/api/webrtc/config"), { headers: { Authorization: `Bearer ${adminToken}` }, cache: "no-store" });
+  if (!response.ok) throw new Error("WebRTC config unavailable");
+  return response.json();
+}
+
+async function tryWebRtcLive(deviceId, mode, fallback) {
+  if (!window.RTCPeerConnection || !window.WebSocket) { fallback(); return false; }
+  stopWebRtcLive();
+  const config = await loadWebRtcConfig().catch(() => null);
+  if (!config) { fallback(); return false; }
+  const timeoutMs = Math.max(8000, Math.min(12000, Number(config.timeoutMs || 10000)));
+  const retryMs = Math.max(30000, Number(config.retryMs || 45000));
+  const video = getWebRtcVideoElement();
+  let connected = false;
+  let fallbackStarted = false;
+  const startFallback = () => {
+    if (fallbackStarted || connected) return;
+    fallbackStarted = true;
+    stopWebRtcLive();
+    fallback();
+    webRtcRetryTimer = setTimeout(() => tryWebRtcLive(deviceId, mode, () => {}).catch(() => {}), retryMs);
+  };
+  webRtcPeer = new RTCPeerConnection({ iceServers: config.iceServers || [] });
+  webRtcPeer.addTransceiver("video", { direction: "recvonly" });
+  if (mode === "camera") webRtcPeer.addTransceiver("audio", { direction: "recvonly" });
+  webRtcPeer.onicecandidate = (event) => { if (event.candidate) sendWebRtcSignal({ type: "candidate", candidate: event.candidate }); };
+  webRtcPeer.ontrack = (event) => {
+    connected = true;
+    if (livePollTimer) clearTimeout(livePollTimer);
+    livePollTimer = null;
+    stopLiveAudio();
+    if (video) {
+      video.srcObject = event.streams[0];
+      video.classList.add("active");
+      screen.classList.add("streaming", "webrtc-streaming");
+      if (screenText) screenText.textContent = mode === "camera" ? "WebRTC camera stream active." : "WebRTC screen stream active.";
+    }
+  };
+  webRtcPeer.onconnectionstatechange = () => {
+    if (["failed", "closed", "disconnected"].includes(webRtcPeer.connectionState)) startFallback();
+  };
+  webRtcSignal = new WebSocket(liveWsUrl(`/ws/webrtc-viewer?deviceId=${encodeURIComponent(deviceId)}&mode=${encodeURIComponent(mode)}&adminToken=${encodeURIComponent(adminToken)}`));
+  webRtcSignal.onmessage = async (event) => {
+    let message;
+    try { message = JSON.parse(event.data); } catch { return; }
+    if (message.type === "answer" && message.sdp) await webRtcPeer.setRemoteDescription(message.sdp).catch(() => startFallback());
+    if (message.type === "candidate" && message.candidate) await webRtcPeer.addIceCandidate(message.candidate).catch(() => {});
+    if (message.type === "device.disconnected") startFallback();
+  };
+  webRtcSignal.onerror = startFallback;
+  webRtcSignal.onopen = async () => {
+    try {
+      const offer = await webRtcPeer.createOffer();
+      await webRtcPeer.setLocalDescription(offer);
+      sendWebRtcSignal({ type: "offer", sdp: webRtcPeer.localDescription, mode });
+    } catch { startFallback(); }
+  };
+  webRtcConnectTimer = setTimeout(startFallback, timeoutMs);
+  return true;
+}
 function resetLiveFrameState() {
   liveFrameSequence += 1;
   liveRenderedFrameSequence = liveFrameSequence;
@@ -1108,6 +1210,7 @@ function stopLiveViewerLocal(message = "Live session stopped.") {
   if (liveSocketFallbackTimer) clearTimeout(liveSocketFallbackTimer);
   if (liveFetchController) liveFetchController.abort();
   stopLiveAudio();
+  stopWebRtcLive();
   liveSocket = null;
   livePollTimer = null;
   liveSocketFallbackTimer = null;
@@ -1116,7 +1219,7 @@ function stopLiveViewerLocal(message = "Live session stopped.") {
   lastLiveSocketFrameAt = 0;
   resetLiveFrameState();
   if (liveFrame) liveFrame.removeAttribute("src");
-  if (screen) screen.classList.remove("streaming");
+  if (screen) screen.classList.remove("streaming", "webrtc-streaming");
   if (screenText) screenText.textContent = message;
 }
 
@@ -1127,15 +1230,7 @@ async function stopLiveSession() {
   stopLiveViewerLocal(`Live stop requested for ${target.name}.`);
   await refresh();
 }
-function openLiveViewer(deviceId, mode = "screen") {
-  liveControlMode = mode;
-  if (liveSocket) liveSocket.close();
-  if (livePollTimer) clearTimeout(livePollTimer);
-  if (liveSocketFallbackTimer) clearTimeout(liveSocketFallbackTimer);
-  livePollTimer = null;
-  liveSocketFallbackTimer = null;
-  lastLiveSocketFrameAt = 0;
-  resetLiveFrameState();
+function startJpegLiveViewer(deviceId, mode = "screen") {
   if (mode === "camera") startLiveAudio(deviceId).catch(() => {});
   else stopLiveAudio();
   if (!persistentLiveConfigured() && location.hostname.endsWith("vercel.app")) {
@@ -1148,7 +1243,7 @@ function openLiveViewer(deviceId, mode = "screen") {
   liveSocket.onopen = () => {};
   liveSocket.onmessage = (event) => {
     lastLiveSocketFrameAt = Date.now();
-    renderLiveBlob(event.data, mode === "camera" ? "Live camera stream active." : "Live screen stream active. Click on the preview to send taps.");
+    renderLiveBlob(event.data, mode === "camera" ? "JPEG fallback camera stream active." : "JPEG fallback screen stream active. Click on the preview to send taps.");
   };
   liveSocket.onerror = () => {
     startLiveFallbackPolling(deviceId);
@@ -1160,6 +1255,18 @@ function openLiveViewer(deviceId, mode = "screen") {
   }, 1200);
 }
 
+function openLiveViewer(deviceId, mode = "screen") {
+  liveControlMode = mode;
+  if (liveSocket) liveSocket.close();
+  if (livePollTimer) clearTimeout(livePollTimer);
+  if (liveSocketFallbackTimer) clearTimeout(liveSocketFallbackTimer);
+  livePollTimer = null;
+  liveSocketFallbackTimer = null;
+  lastLiveSocketFrameAt = 0;
+  resetLiveFrameState();
+  if (screenText) screenText.textContent = "Trying WebRTC live stream. JPEG fallback starts automatically if it cannot connect.";
+  tryWebRtcLive(deviceId, mode, () => startJpegLiveViewer(deviceId, mode)).catch(() => startJpegLiveViewer(deviceId, mode));
+}
 if (screen) {
   screen.addEventListener("pointerdown", (event) => {
     const target = targetDevice();
