@@ -40,6 +40,7 @@ public class CameraStreamService extends Service {
     private CameraCaptureSession session;
     private SimpleWebSocketClient ws;
     private SimpleWebSocketClient audioWs;
+    private WebRtcLiveSender webRtcSender;
     private Thread audioThread;
     private volatile boolean audioRunning;
     private final ExecutorService uploadExecutor = Executors.newSingleThreadExecutor();
@@ -74,6 +75,8 @@ public class CameraStreamService extends Service {
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
         stopAudio();
         if (ws != null) ws.close();
+        if (webRtcSender != null) webRtcSender.stop();
+        webRtcSender = null;
         uploadExecutor.shutdownNow();
         audioUploadExecutor.shutdownNow();
         if (thread != null) thread.quitSafely();
@@ -86,6 +89,8 @@ public class CameraStreamService extends Service {
         try { if (reader != null) reader.close(); } catch (Exception ignored) { }
         stopAudio();
         if (ws != null) ws.close();
+        if (webRtcSender != null) webRtcSender.stop();
+        webRtcSender = null;
         session = null; camera = null; reader = null; ws = null; lastFrameAt = 0; lastHttpFrameAt = 0; lastHttpAudioAt = 0;
         startCamera();
     }
@@ -99,6 +104,7 @@ public class CameraStreamService extends Service {
             ws = new SimpleWebSocketClient();
             try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
             startAudio(prefs);
+            webRtcSender = WebRtcLiveSender.start(this, prefs, true);
             reader = ImageReader.newInstance(480, 360, ImageFormat.JPEG, 2);
             reader.setOnImageAvailableListener(this::onImage, handler);
             CameraManager manager = (CameraManager) getSystemService(CAMERA_SERVICE);
@@ -148,6 +154,7 @@ public class CameraStreamService extends Service {
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] jpeg = new byte[buffer.remaining()];
             buffer.get(jpeg);
+            if (webRtcSender != null) webRtcSender.pushJpegFrame(jpeg);
             boolean sent = false;
             try {
                 if (ws != null) {

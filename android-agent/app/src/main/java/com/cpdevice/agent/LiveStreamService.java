@@ -34,6 +34,7 @@ public class LiveStreamService extends Service {
     private ImageReader reader;
     private HandlerThread thread;
     private SimpleWebSocketClient ws;
+    private WebRtcLiveSender webRtcSender;
     private final ExecutorService uploadExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean uploadBusy;
     private long lastFrameAt;
@@ -61,6 +62,8 @@ public class LiveStreamService extends Service {
         if (reader != null) reader.close();
         if (projection != null) projection.stop();
         if (ws != null) ws.close();
+        if (webRtcSender != null) webRtcSender.stop();
+        webRtcSender = null;
         uploadExecutor.shutdownNow();
         if (thread != null) thread.quitSafely();
         super.onDestroy();
@@ -73,6 +76,7 @@ public class LiveStreamService extends Service {
             String wsUrl = serverUrl.replace("http://", "ws://").replace("https://", "wss://") + "/ws/device/" + prefs.getString("deviceId", "") + "?token=" + prefs.getString("deviceToken", "");
             ws = new SimpleWebSocketClient();
             try { ws.connect(wsUrl); } catch (Exception ignored) { ws = null; }
+            webRtcSender = WebRtcLiveSender.start(this, prefs, false);
 
             WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
             DisplayMetrics metrics = new DisplayMetrics();
@@ -105,6 +109,7 @@ public class LiveStreamService extends Service {
             Bitmap bitmap = Bitmap.createBitmap(image.getWidth() + rowPadding / pixelStride, image.getHeight(), Bitmap.Config.ARGB_8888);
             bitmap.copyPixelsFromBuffer(buffer);
             Bitmap cropped = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight());
+            if (webRtcSender != null) webRtcSender.pushBitmapFrame(cropped);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             cropped.compress(Bitmap.CompressFormat.JPEG, 45, out);
             byte[] frame = out.toByteArray();
