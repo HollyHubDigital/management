@@ -51,6 +51,13 @@ let webRtcSignal = null;
 let webRtcConnectTimer = null;
 let webRtcRetryTimer = null;
 let webRtcVideoEl = null;
+let liveMediaRecorder = null;
+let liveRecordingChunks = [];
+let liveRecordingBlob = null;
+let liveRecordingStopPromise = null;
+let liveRecordingCanvas = null;
+let liveRecordingDrawTimer = null;
+let liveRecordingAudioDestination = null;
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
 const terminalCommand = document.getElementById("terminalCommand");
@@ -585,6 +592,15 @@ function renderAlerts() {
   if (!commands.length) { log.innerHTML = '<p>No operations yet.</p>'; return; }
   const sorted = commands.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   log.innerHTML = "";
+  const actions = document.createElement("div");
+  actions.className = "section-actions";
+  const clear = document.createElement("button");
+  clear.type = "button";
+  clear.className = "danger";
+  clear.textContent = "Clear All";
+  clear.onclick = () => clearAdminOperations().catch((error) => (log.textContent = error.message || "Clear failed"));
+  actions.appendChild(clear);
+  log.appendChild(actions);
   for (const command of sorted) {
     for (const deviceId of command.deviceIds || []) {
       const device = state.devices[deviceId] || { id: deviceId, name: deviceId };
@@ -627,6 +643,12 @@ function renderAlerts() {
       log.appendChild(item);
     }
   }
+}
+
+async function clearAdminOperations() {
+  if (!confirm("Clear all Operations & Alerts? This deletes the backend command history too.")) return;
+  await api("/api/commands", { method: "DELETE" });
+  await refresh();
 }
 
 const deviceFilesModal = document.getElementById("deviceFilesModal");
@@ -740,7 +762,7 @@ function renderExportedFiles(target, content) {
     const row = document.createElement("div");
     row.className = "file-row";
     const type = file.contentType || "application/octet-stream";
-    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="${apiUrl(`/api/files/${encodeURIComponent(file.id)}?inline=1`)}" target="_blank" rel="noopener">View / Download</a>`;
+    row.innerHTML = `<span><strong>${escapeHtml(file.name)}</strong><small>exported - ${escapeHtml(type)} - ${file.size} bytes</small></span><a href="${apiUrl(`/api/files/${encodeURIComponent(file.id)}?inline=1&token=${encodeURIComponent(adminToken)}`)}" target="_blank" rel="noopener">View</a>`;
     content.appendChild(row);
   }
 }
@@ -811,12 +833,23 @@ function renderRecordings() {
   if (!recordingsList) return;
   const recordings = Object.values(state.recordings || {}).sort((a, b) => new Date(b.createdAt || b.updatedAt || 0) - new Date(a.createdAt || a.updatedAt || 0));
   recordingsList.innerHTML = recordings.length ? "" : '<p>No saved recordings yet.</p>';
+  if (recordings.length) {
+    const actions = document.createElement("div");
+    actions.className = "section-actions";
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "danger";
+    clear.textContent = "Clear All";
+    clear.onclick = () => clearAdminRecordings().catch((error) => (log.textContent = error.message || "Clear failed"));
+    actions.appendChild(clear);
+    recordingsList.appendChild(actions);
+  }
   for (const recording of recordings) {
     const row = document.createElement("div");
     row.className = "file-row";
     const device = state.devices && state.devices[recording.deviceId];
     const label = recording.name || `${device ? formatDeviceDisplayName(device) : recording.deviceId || "Device"} recording`;
-    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} • ${recording.frameCount || 0} frames • ${recording.size || 0} bytes</small></span>`;
+    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} ï¿½ ${recording.frameCount || 0} frames ï¿½ ${recording.size || 0} bytes</small></span>`;
     const actions = document.createElement("span");
     actions.className = "device-controls";
     const view = document.createElement("button");
@@ -840,12 +873,102 @@ function renderRecordings() {
   }
 }
 
+
+async function clearAdminRecordings() {
+  if (!confirm("Clear all saved recordings? This deletes them from the backend too.")) return;
+  await api("/api/recordings", { method: "DELETE" });
+  activeRecordingId = "";
+  localStorage.removeItem("adminActiveRecordingId");
+  await refresh();
+}
+
+function liveRecordingMimeType() {
+  const choices = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=h264,aac", "video/mp4", "video/webm;codecs=vp8,opus", "video/webm;codecs=vp8", "video/webm"];
+  return choices.find((type) => window.MediaRecorder && MediaRecorder.isTypeSupported(type)) || "";
+}
+
+function liveVisualElement() {
+  return webRtcVideoEl && webRtcVideoEl.srcObject ? webRtcVideoEl : liveFrame;
+}
+
+function drawLiveRecordingFrame(context, canvas) {
+  const visual = liveVisualElement();
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  if (!visual) return;
+  const sourceWidth = visual.videoWidth || visual.naturalWidth || visual.clientWidth || canvas.width;
+  const sourceHeight = visual.videoHeight || visual.naturalHeight || visual.clientHeight || canvas.height;
+  if (!sourceWidth || !sourceHeight) return;
+  const scale = Math.min(canvas.width / sourceWidth, canvas.height / sourceHeight);
+  const width = sourceWidth * scale;
+  const height = sourceHeight * scale;
+  const x = (canvas.width - width) / 2;
+  const y = (canvas.height - height) / 2;
+  try { context.drawImage(visual, x, y, width, height); } catch {}
+}
+
+async function startBrowserLiveRecording() {
+  if (!window.MediaRecorder) throw new Error("This browser does not support live recording.");
+  liveRecordingChunks = [];
+  liveRecordingBlob = null;
+  liveRecordingCanvas = document.createElement("canvas");
+  const visual = liveVisualElement();
+  liveRecordingCanvas.width = Math.max(320, Math.min(1280, (visual && (visual.videoWidth || visual.naturalWidth || visual.clientWidth)) || 854));
+  liveRecordingCanvas.height = Math.max(240, Math.min(720, (visual && (visual.videoHeight || visual.naturalHeight || visual.clientHeight)) || 480));
+  const context = liveRecordingCanvas.getContext("2d");
+  const stream = liveRecordingCanvas.captureStream(12);
+  if (webRtcVideoEl && webRtcVideoEl.srcObject) {
+    for (const track of webRtcVideoEl.srcObject.getAudioTracks()) stream.addTrack(track);
+  } else if (liveAudioContext) {
+    liveRecordingAudioDestination = liveAudioContext.createMediaStreamDestination();
+    for (const track of liveRecordingAudioDestination.stream.getAudioTracks()) stream.addTrack(track);
+  }
+  liveRecordingDrawTimer = setInterval(() => drawLiveRecordingFrame(context, liveRecordingCanvas), 83);
+  drawLiveRecordingFrame(context, liveRecordingCanvas);
+  const mimeType = liveRecordingMimeType();
+  liveMediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  liveMediaRecorder.ondataavailable = (event) => { if (event.data && event.data.size) liveRecordingChunks.push(event.data); };
+  liveRecordingStopPromise = new Promise((resolve) => {
+    liveMediaRecorder.onstop = () => {
+      if (liveRecordingDrawTimer) clearInterval(liveRecordingDrawTimer);
+      liveRecordingDrawTimer = null;
+      liveRecordingAudioDestination = null;
+      stream.getTracks().forEach((track) => { if (track.kind === "video") track.stop(); });
+      liveRecordingBlob = new Blob(liveRecordingChunks, { type: liveMediaRecorder.mimeType || "video/mp4" });
+      resolve(liveRecordingBlob);
+    };
+  });
+  liveMediaRecorder.start(1000);
+}
+
+async function stopBrowserLiveRecording() {
+  if (!liveMediaRecorder) return liveRecordingBlob;
+  if (liveMediaRecorder.state !== "inactive") liveMediaRecorder.stop();
+  const blob = await liveRecordingStopPromise;
+  liveMediaRecorder = null;
+  liveRecordingStopPromise = null;
+  return blob;
+}
+
+async function uploadBrowserLiveRecording(recordingId) {
+  const blob = await stopBrowserLiveRecording();
+  if (!blob || !blob.size) throw new Error("No recording data captured. Start live video first, then start recording after frames are visible.");
+  const response = await fetch(apiUrl(`/api/recordings/${encodeURIComponent(recordingId)}/upload`), {
+    method: "POST",
+    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": blob.type || "video/mp4" },
+    body: blob
+  });
+  const body = await readJsonResponse(response);
+  if (!response.ok) throw new Error(body.error || "Recording upload failed");
+  return body.recording;
+}
 async function startLiveRecording() {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one target device before recording");
   const body = await api("/api/recordings/start", { method: "POST", body: JSON.stringify({ deviceId: target.id }) });
   activeRecordingId = body.recording && body.recording.id;
   if (activeRecordingId) localStorage.setItem("cpActiveRecordingId", activeRecordingId);
+  await startBrowserLiveRecording();
   if (recordingStatus) recordingStatus.textContent = `Recording ${formatDeviceDisplayName(target)}...`;
   await refresh();
 }
@@ -853,6 +976,7 @@ async function startLiveRecording() {
 async function stopLiveRecording() {
   if (!activeRecordingId) throw new Error("No active recording to stop");
   const target = targetDevice();
+  await uploadBrowserLiveRecording(activeRecordingId);
   const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/stop`, { method: "POST", body: JSON.stringify({ deviceId: target && target.id }) });
   if (recordingStatus) recordingStatus.textContent = `Recording stopped: ${body.recording ? body.recording.id : activeRecordingId}`;
   await refresh();
@@ -861,6 +985,7 @@ async function stopLiveRecording() {
 async function saveLiveRecording() {
   if (!activeRecordingId) throw new Error("No active recording to save");
   const target = targetDevice();
+  if (liveMediaRecorder && liveMediaRecorder.state !== "inactive") await uploadBrowserLiveRecording(activeRecordingId);
   const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/save`, { method: "POST", body: JSON.stringify({ deviceId: target && target.id }) });
   localStorage.removeItem("cpActiveRecordingId");
   activeRecordingId = "";
@@ -881,7 +1006,7 @@ async function downloadRecording(recordingId) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${recordingId}.mjpeg`;
+  link.download = blob.type && blob.type.includes("mp4") ? `${recordingId}.mp4` : blob.type && blob.type.includes("webm") ? `${recordingId}.webm` : `${recordingId}.mjpeg`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1073,7 +1198,7 @@ function renderLiveBlob(blob, message = "") {
 }
 
 async function fetchLiveFrame(deviceId) {
-  if (liveFetchController) liveFetchController.abort();
+  if (liveFetchController) return;
   const controller = new AbortController();
   liveFetchController = controller;
   const response = await fetch(liveApiUrl(`/api/live/${encodeURIComponent(deviceId)}/frame?t=${Date.now()}`), {
@@ -1081,13 +1206,17 @@ async function fetchLiveFrame(deviceId) {
     cache: "no-store",
     signal: controller.signal
   });
-  if (!response.ok) throw new Error(response.status === 404 ? "No live frame yet. Start Live Screen in the Android agent, or Start Live Camera from the dashboard after camera permission is allowed." : "Live frame unavailable");
+  if (!response.ok) {
+    if (liveFetchController === controller) liveFetchController = null;
+    throw new Error(response.status === 404 ? "No live frame yet. Start Live Screen in the Android agent, or Start Live Camera from the dashboard after camera permission is allowed." : "Live frame unavailable");
+  }
   const updatedAt = response.headers.get("X-Frame-Updated-At") || "";
-  if (updatedAt && lastLiveFrameUpdatedAt && Date.parse(updatedAt) < Date.parse(lastLiveFrameUpdatedAt)) return;
+  if (updatedAt && lastLiveFrameUpdatedAt && Date.parse(updatedAt) < Date.parse(lastLiveFrameUpdatedAt)) { if (liveFetchController === controller) liveFetchController = null; return; }
   const blob = await response.blob();
-  if (controller.signal.aborted) return;
+  if (controller.signal.aborted) { if (liveFetchController === controller) liveFetchController = null; return; }
   if (updatedAt) lastLiveFrameUpdatedAt = updatedAt;
   renderLiveBlob(blob, "");
+  if (liveFetchController === controller) liveFetchController = null;
 }
 
 function stopLiveAudio() {
@@ -1118,6 +1247,7 @@ function playLivePcmChunk(arrayBuffer, sampleRate = 16000) {
   const source = liveAudioContext.createBufferSource();
   source.buffer = audioBuffer;
   source.connect(liveAudioContext.destination);
+  if (liveRecordingAudioDestination) source.connect(liveRecordingAudioDestination);
   const now = liveAudioContext.currentTime;
   if (!liveAudioNextTime || liveAudioNextTime < now || liveAudioNextTime - now > 0.45) liveAudioNextTime = now + 0.04;
   source.start(liveAudioNextTime);
@@ -1139,7 +1269,7 @@ async function fetchLiveAudio(deviceId) {
   if (updatedAt && lastLiveAudioUpdatedAt && Date.parse(updatedAt) <= Date.parse(lastLiveAudioUpdatedAt)) return;
   const sampleRate = Number(response.headers.get("X-Audio-Sample-Rate") || 16000) || 16000;
   const chunk = await response.arrayBuffer();
-  if (controller.signal.aborted) return;
+  if (controller.signal.aborted) { if (liveFetchController === controller) liveFetchController = null; return; }
   if (updatedAt) lastLiveAudioUpdatedAt = updatedAt;
   playLivePcmChunk(chunk, sampleRate);
 }

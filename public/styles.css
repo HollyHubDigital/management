@@ -131,3 +131,5 @@ button + button { margin-left: 6px; }
 .live-video { display: none; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 10px; background: #000; }
 .screen.webrtc-streaming .live-video.active { display: block; }
 .screen.webrtc-streaming .live-frame { display: none; }
+.section-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
+.section-actions button { margin: 2px; }
