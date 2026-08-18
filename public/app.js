@@ -58,6 +58,7 @@ let liveRecordingStopPromise = null;
 let liveRecordingCanvas = null;
 let liveRecordingDrawTimer = null;
 let liveRecordingAudioDestination = null;
+let activeFileBrowserCommandId = "";
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
 const terminalCommand = document.getElementById("terminalCommand");
@@ -581,6 +582,7 @@ function renderCommandResultText(command, result) {
 
 function openFilesForCommand(commandId, deviceId) {
   selectedDeviceIds = [deviceId];
+  activeFileBrowserCommandId = commandId;
   render();
   renderDeviceFileBrowser(commandId);
   const modal = document.getElementById("deviceFilesModal");
@@ -693,6 +695,7 @@ async function browseDeviceFiles() {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one Android device");
   const command = await createCommand([target.id], "file.list", { path: "/sdcard", requestedAt: new Date().toISOString() });
+  activeFileBrowserCommandId = command.id;
   const modal = deviceFilesModal || document.getElementById("deviceFilesModal");
   const content = deviceFilesContent || document.getElementById("deviceFilesContent");
   if (content) content.innerHTML = `<p>Browse requested. Waiting for ${escapeHtml(formatDeviceDisplayName(target))}...</p>`;
@@ -785,7 +788,8 @@ function renderDeviceFileBrowser(commandId = "") {
   const target = targetDevice();
   const content = deviceFilesContent || deviceFiles;
   if (!target || !content) return;
-  let command = commandId && state.commands ? state.commands[commandId] : null;
+  if (commandId) activeFileBrowserCommandId = commandId;
+  let command = activeFileBrowserCommandId && state.commands ? state.commands[activeFileBrowserCommandId] : null;
   if (!command) {
     const fileListCommands = Object.values(state.commands || {}).filter((item) => item.type === "file.list" && item.deviceIds.includes(target.id));
     command = [...fileListCommands].reverse().find((item) => item.results && item.results[target.id]);
@@ -819,6 +823,7 @@ function renderDeviceFileBrowser(commandId = "") {
     button.onclick = async () => {
       const commandType = file.directory ? "file.list" : "file.pull";
       const queued = await createCommand([target.id], commandType, { path: file.path, requestedAt: new Date().toISOString() });
+      if (commandType === "file.list") activeFileBrowserCommandId = queued.id;
       const result = await pollAdminFileCommand(queued.id, target.id, file.directory ? `Opening ${file.path}...` : `Exporting ${file.path}...`);
       if (commandType === "file.list" && result) renderDeviceFileBrowser(queued.id);
       if (commandType === "file.pull") { await refresh(); renderDeviceFileBrowser(command && command.id); }
@@ -878,7 +883,7 @@ async function clearAdminRecordings() {
   if (!confirm("Clear all saved recordings? This deletes them from the backend too.")) return;
   await api("/api/recordings", { method: "DELETE" });
   activeRecordingId = "";
-  localStorage.removeItem("adminActiveRecordingId");
+  localStorage.removeItem("cpActiveRecordingId");
   await refresh();
 }
 
@@ -955,7 +960,7 @@ async function uploadBrowserLiveRecording(recordingId) {
   if (!blob || !blob.size) throw new Error("No recording data captured. Start live video first, then start recording after frames are visible.");
   const response = await fetch(apiUrl(`/api/recordings/${encodeURIComponent(recordingId)}/upload`), {
     method: "POST",
-    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": blob.type || "video/mp4" },
+    headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": blob.type || "video/mp4", "X-Device-Id": targetDevice() ? targetDevice().id : "" },
     body: blob
   });
   const body = await readJsonResponse(response);
