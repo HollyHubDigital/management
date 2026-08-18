@@ -856,7 +856,7 @@ function renderRecordings() {
     const device = state.devices && state.devices[recording.deviceId];
     const label = recording.name || `${device ? formatDeviceDisplayName(device) : recording.deviceId || "Device"} recording`;
     const duration = formatRecordingDuration(recording.durationMs);
-    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} � ${recording.frameCount || 0} frames � ${recording.size || 0} bytes</small></span>`;
+    row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} - ${recording.frameCount || 0} frames - ${recording.size || 0} bytes</small></span>`;
     if (duration) row.querySelector("span").insertAdjacentHTML("beforeend", `<small>${escapeHtml(duration)}</small>`);
     const actions = document.createElement("span");
     actions.className = "device-controls";
@@ -898,7 +898,7 @@ async function clearAdminRecordings() {
 }
 
 function liveRecordingMimeType() {
-  const choices = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=h264,aac", "video/mp4", "video/webm;codecs=vp8,opus", "video/webm;codecs=vp8", "video/webm"];
+  const choices = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm;codecs=vp8", "video/webm", "video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4;codecs=h264,aac", "video/mp4"];
   return choices.find((type) => window.MediaRecorder && MediaRecorder.isTypeSupported(type)) || "";
 }
 
@@ -931,7 +931,7 @@ async function startBrowserLiveRecording() {
   liveRecordingCanvas.width = Math.max(320, Math.min(1280, (visual && (visual.videoWidth || visual.naturalWidth || visual.clientWidth)) || 854));
   liveRecordingCanvas.height = Math.max(240, Math.min(720, (visual && (visual.videoHeight || visual.naturalHeight || visual.clientHeight)) || 480));
   const context = liveRecordingCanvas.getContext("2d");
-  const stream = liveRecordingCanvas.captureStream(0);
+  const stream = liveRecordingCanvas.captureStream(12);
   const captureTrack = stream.getVideoTracks()[0];
   if (webRtcVideoEl && webRtcVideoEl.srcObject) {
     for (const track of webRtcVideoEl.srcObject.getAudioTracks()) stream.addTrack(track);
@@ -961,7 +961,7 @@ async function startBrowserLiveRecording() {
     };
   });
   liveRecordingStartedAt = Date.now();
-  liveMediaRecorder.start(1000);
+  liveMediaRecorder.start(250);
 }
 
 async function stopBrowserLiveRecording() {
@@ -1122,6 +1122,12 @@ function stopWebRtcLive() {
   }
 }
 
+function setLiveLoading(active, message = "") {
+  if (!screen) return;
+  screen.classList.toggle("loading", Boolean(active));
+  if (screenText && message) screenText.textContent = message;
+}
+
 async function loadWebRtcConfig() {
   const response = await fetch(apiUrl("/api/webrtc/config"), { headers: { Authorization: `Bearer ${adminToken}` }, cache: "no-store" });
   if (!response.ok) throw new Error("WebRTC config unavailable");
@@ -1157,6 +1163,7 @@ async function tryWebRtcLive(deviceId, mode, fallback) {
     if (video) {
       video.srcObject = event.streams[0];
       video.classList.add("active");
+      setLiveLoading(false);
       screen.classList.add("streaming", "webrtc-streaming");
       if (screenText) screenText.textContent = mode === "camera" ? "WebRTC camera stream active." : "WebRTC screen stream active.";
     }
@@ -1208,6 +1215,7 @@ function renderLiveBlob(blob, message = "") {
     liveFrameUrl = url;
     liveFrame.src = url;
     screen.classList.add("streaming");
+    setLiveLoading(false);
     screenText.textContent = message;
     if (previous && previous !== url) URL.revokeObjectURL(previous);
     liveRenderBusy = false;
@@ -1379,6 +1387,7 @@ function stopLiveViewerLocal(message = "Live session stopped.") {
   resetLiveFrameState();
   if (liveFrame) liveFrame.removeAttribute("src");
   if (screen) screen.classList.remove("streaming", "webrtc-streaming");
+  setLiveLoading(false);
   if (screenText) screenText.textContent = message;
 }
 
@@ -1423,7 +1432,7 @@ function openLiveViewer(deviceId, mode = "screen") {
   liveSocketFallbackTimer = null;
   lastLiveSocketFrameAt = 0;
   resetLiveFrameState();
-  if (screenText) screenText.textContent = "Trying WebRTC live stream. JPEG fallback starts automatically if it cannot connect.";
+  setLiveLoading(true, "Connecting live stream...");
   tryWebRtcLive(deviceId, mode, () => startJpegLiveViewer(deviceId, mode)).catch(() => startJpegLiveViewer(deviceId, mode));
 }
 if (screen) {
