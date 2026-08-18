@@ -931,17 +931,24 @@ async function startBrowserLiveRecording() {
   liveRecordingCanvas.width = Math.max(320, Math.min(1280, (visual && (visual.videoWidth || visual.naturalWidth || visual.clientWidth)) || 854));
   liveRecordingCanvas.height = Math.max(240, Math.min(720, (visual && (visual.videoHeight || visual.naturalHeight || visual.clientHeight)) || 480));
   const context = liveRecordingCanvas.getContext("2d");
-  const stream = liveRecordingCanvas.captureStream(12);
+  const stream = liveRecordingCanvas.captureStream(0);
+  const captureTrack = stream.getVideoTracks()[0];
   if (webRtcVideoEl && webRtcVideoEl.srcObject) {
     for (const track of webRtcVideoEl.srcObject.getAudioTracks()) stream.addTrack(track);
   } else if (liveAudioContext) {
     liveRecordingAudioDestination = liveAudioContext.createMediaStreamDestination();
     for (const track of liveRecordingAudioDestination.stream.getAudioTracks()) stream.addTrack(track);
   }
-  liveRecordingDrawTimer = setInterval(() => drawLiveRecordingFrame(context, liveRecordingCanvas), 83);
+  liveRecordingDrawTimer = setInterval(() => {
+    drawLiveRecordingFrame(context, liveRecordingCanvas);
+    if (captureTrack && typeof captureTrack.requestFrame === "function") captureTrack.requestFrame();
+  }, 83);
   drawLiveRecordingFrame(context, liveRecordingCanvas);
+  if (captureTrack && typeof captureTrack.requestFrame === "function") captureTrack.requestFrame();
   const mimeType = liveRecordingMimeType();
-  liveMediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  const recorderOptions = { videoBitsPerSecond: 2500000, audioBitsPerSecond: 128000 };
+  if (mimeType) recorderOptions.mimeType = mimeType;
+  liveMediaRecorder = new MediaRecorder(stream, recorderOptions);
   liveMediaRecorder.ondataavailable = (event) => { if (event.data && event.data.size) liveRecordingChunks.push(event.data); };
   liveRecordingStopPromise = new Promise((resolve) => {
     liveMediaRecorder.onstop = () => {
@@ -949,7 +956,7 @@ async function startBrowserLiveRecording() {
       liveRecordingDrawTimer = null;
       liveRecordingAudioDestination = null;
       stream.getTracks().forEach((track) => { if (track.kind === "video") track.stop(); });
-      liveRecordingBlob = new Blob(liveRecordingChunks, { type: liveMediaRecorder.mimeType || "video/mp4" });
+      liveRecordingBlob = new Blob(liveRecordingChunks, { type: liveMediaRecorder.mimeType || "video/webm" });
       resolve(liveRecordingBlob);
     };
   });
