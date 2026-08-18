@@ -58,6 +58,7 @@ let liveRecordingStopPromise = null;
 let liveRecordingCanvas = null;
 let liveRecordingDrawTimer = null;
 let liveRecordingAudioDestination = null;
+let liveRecordingStartedAt = 0;
 let activeFileBrowserCommandId = "";
 const targetBadge = document.getElementById("targetBadge");
 const terminalForm = document.getElementById("terminalForm");
@@ -854,7 +855,9 @@ function renderRecordings() {
     row.className = "file-row";
     const device = state.devices && state.devices[recording.deviceId];
     const label = recording.name || `${device ? formatDeviceDisplayName(device) : recording.deviceId || "Device"} recording`;
+    const duration = formatRecordingDuration(recording.durationMs);
     row.innerHTML = `<span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(recording.status || "recording")} � ${recording.frameCount || 0} frames � ${recording.size || 0} bytes</small></span>`;
+    if (duration) row.querySelector("span").insertAdjacentHTML("beforeend", `<small>${escapeHtml(duration)}</small>`);
     const actions = document.createElement("span");
     actions.className = "device-controls";
     const view = document.createElement("button");
@@ -878,6 +881,13 @@ function renderRecordings() {
   }
 }
 
+
+function formatRecordingDuration(durationMs) {
+  const totalSeconds = Math.max(0, Math.round((Number(durationMs) || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return totalSeconds ? `Duration ${minutes}:${String(seconds).padStart(2, "0")}` : "";
+}
 
 async function clearAdminRecordings() {
   if (!confirm("Clear all saved recordings? This deletes them from the backend too.")) return;
@@ -943,6 +953,7 @@ async function startBrowserLiveRecording() {
       resolve(liveRecordingBlob);
     };
   });
+  liveRecordingStartedAt = Date.now();
   liveMediaRecorder.start(1000);
 }
 
@@ -958,13 +969,15 @@ async function stopBrowserLiveRecording() {
 async function uploadBrowserLiveRecording(recordingId) {
   const blob = await stopBrowserLiveRecording();
   if (!blob || !blob.size) throw new Error("No recording data captured. Start live video first, then start recording after frames are visible.");
-  const response = await fetch(apiUrl(`/api/recordings/${encodeURIComponent(recordingId)}/upload`), {
+  const durationMs = liveRecordingStartedAt ? Math.max(0, Date.now() - liveRecordingStartedAt) : 0;
+  const response = await fetch(apiUrl(`/api/recordings/${encodeURIComponent(recordingId)}/upload?durationMs=${encodeURIComponent(durationMs)}`), {
     method: "POST",
     headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": blob.type || "video/mp4", "X-Device-Id": targetDevice() ? targetDevice().id : "" },
     body: blob
   });
   const body = await readJsonResponse(response);
   if (!response.ok) throw new Error(body.error || "Recording upload failed");
+  liveRecordingStartedAt = 0;
   return body.recording;
 }
 async function startLiveRecording() {
