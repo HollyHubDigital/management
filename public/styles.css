@@ -133,3 +133,30 @@ button + button { margin-left: 6px; }
 .screen.webrtc-streaming .live-frame { display: none; }
 .section-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; }
 .section-actions button { margin: 2px; }
+
+
+/* Dashboard icon treatment: presentation only; button handlers remain unchanged. */
+button::before { display: inline-block; margin-right: 7px; font-size: 1.05em; line-height: 1; vertical-align: -0.08em; }
+#enrollDevice::before { content: "\2B"; color: #34d399; }
+#adminLogout::before { content: "\21B1"; color: #fda4af; }
+button[data-live-command="screen.control.request"]::before { content: "\25A3"; color: #60a5fa; }
+button[data-live-command="camera.stream.request"]::before, #frontCamera::before, #backCamera::before { content: "\25C9"; color: #fbbf24; }
+#focusTerminal::before { content: "\276F"; color: #c4b5fd; }
+#installApp::before { content: "\21E9"; color: #34d399; }
+#browseFiles::before { content: "\25A1"; color: #fbbf24; }
+#locateDevice::before, #lostLocate::before { content: "\25CE"; color: #60a5fa; }
+#lockDevice::before, #lostLock::before { content: "\25A0"; color: #f59e0b; }
+#mobileDataOn::before { content: "\21C5"; color: #34d399; }
+#lostRing::before { content: "\266A"; color: #fbbf24; }
+#lostDisable::before { content: "\23FB"; color: #fda4af; }
+#firmwareUpgrade::before { content: "\21C8"; color: #a7f3d0; }
+#downloadAgent::before { content: "\21E9"; color: #34d399; }
+#openAgent::before { content: "\2197"; color: #93c5fd; }
+#refreshDeviceInfo::before { content: "\21BB"; color: #fbbf24; }
+.record-actions button { font-size: 0; display: inline-grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 0 8px 18px rgba(0,0,0,.25); }
+.record-actions button::before { margin: 0; font-size: 17px; }
+.record-start::before { content: "\25CF"; color: #34d399; text-shadow: 0 0 10px rgba(52,211,153,.85); }
+.record-stop::before { content: "\25A0"; color: #fb7185; text-shadow: 0 0 10px rgba(251,113,133,.8); }
+.record-save::before { content: "\21E9"; color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,.75); }
+.record-actions button:hover { transform: translateY(-1px); filter: brightness(1.15); }
+button:disabled::before { color: currentColor; text-shadow: none; }

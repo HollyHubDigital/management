@@ -1007,6 +1007,10 @@ async function saveLiveRecording() {
   const body = await api(`/api/recordings/${encodeURIComponent(activeRecordingId)}/save`, { method: "POST", body: JSON.stringify({ deviceId: target && target.id }) });
   localStorage.removeItem("cpActiveRecordingId");
   activeRecordingId = "";
+  if (body.recording) {
+    state.recordings = { ...(state.recordings || {}), [body.recording.id]: body.recording };
+    renderRecordings();
+  }
   if (recordingStatus) recordingStatus.textContent = body.github && body.github.skipped ? `Saved locally: ${body.github.reason}` : "Recording saved.";
   await refresh();
 }
