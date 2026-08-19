@@ -18,7 +18,7 @@ Aegis Eye Agent should be distributed as an enterprise-managed app, not as an an
    - Zero-touch enrollment through a reseller for fleet deployment.
    - ADB `dpm set-device-owner` only for lab/test devices before user setup.
 5. Configure your EMM/MDM policy to install Aegis Eye Agent from Managed Google Play.
-6. Keep the backend URL on HTTPS only: `https://admin-device-management.vercel.app`.
+6. Keep the backend URL on HTTPS only: `https://YOUR_ADMIN_FRONTEND_URL`.
 
 ## What this does not do
 

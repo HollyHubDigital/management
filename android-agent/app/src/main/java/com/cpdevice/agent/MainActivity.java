@@ -66,17 +66,17 @@ public class MainActivity extends Activity {
         liveServerUrl.setText(saved.getString("liveServerUrl", saved.getString("serverUrl", liveServerUrl.getText().toString())));
         deviceId.setText(saved.getString("deviceId", ""));
         deviceToken.setText(saved.getString("deviceToken", ""));
-        layout.addView(serverUrl); layout.addView(liveServerUrl); layout.addView(deviceId); layout.addView(deviceToken);
-        Button admin = button("Enable Device Admin / Check Owner", view -> requestDeviceAdmin());
+                Button admin = button("Enable Device Admin / Check Owner", view -> requestDeviceAdmin());
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 41); });
         Button location = button("Allow Location", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 42); });
         Button phoneInfo = button("Allow Phone/SIM Info", view -> requestPhoneInfoPermissions());
         Button files = button("Allow File Access", view -> requestAllFilesAccess());
+        Button overlay = button("Allow Owner Message Overlay", view -> requestOverlayPermission());
         Button battery = button("Allow Background Running", view -> requestBatteryOptimizationExemption());
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
-        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(phoneInfo); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
+        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(phoneInfo); layout.addView(files); layout.addView(overlay); layout.addView(battery); layout.addView(screen); layout.addView(start);
         Button site = button("Go to site", view -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://android-device-management.vercel.app"))));
         LinearLayout.LayoutParams siteParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         siteParams.setMargins(0, 24, 0, 72);
@@ -125,6 +125,16 @@ public class MainActivity extends Activity {
     }
 
 
+    private void requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            intent.setData(Uri.parse("package:" + getPackageName()));
+            startActivity(intent);
+            status.setText("Grant Overlay on apps so Lost Mode owner messages can appear over the current screen.");
+            return;
+        }
+        status.setText("Overlay on apps is already allowed for Lost Mode owner messages.");
+    }
     private void requestAllFilesAccess() {
         if (Build.VERSION.SDK_INT >= 30) {
             try {

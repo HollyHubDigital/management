@@ -1,6 +1,7 @@
 package com.cpdevice.agent;
 import android.database.Cursor;
 import android.provider.CallLog;
+import android.provider.Settings;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
@@ -20,6 +21,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.widget.TextView;
+import android.widget.FrameLayout;
+import android.view.View;
+import android.view.Gravity;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationListener;
@@ -53,6 +59,8 @@ import java.util.concurrent.TimeUnit;
 public class AgentService extends Service {
     private volatile boolean running;
     private SharedPreferences prefs;
+    private volatile View ownerMessageView;
+    private volatile String ownerMessageText = "";
 
     @Override
     public void onCreate() {
@@ -61,6 +69,7 @@ public class AgentService extends Service {
         createChannel();
         startForeground(10, notification("Aegis Eye", "Connected to control server"));
         running = true;
+        restoreOwnerMessageOverlay();
         new Thread(this::loop).start();
     }
 
@@ -145,7 +154,8 @@ public class AgentService extends Service {
         if ("locate.device".equals(type)) return locateDevice();
         if ("lock.device".equals(type)) { if (admin || owner) { showLiveActionNotification("Lost Mode lock requested", "This enrolled device is being locked from the dashboard."); dpm.lockNow(); return "Device locked."; } return "Device Admin or Device Owner is required to lock device."; }
         if ("lost.ring".equals(type)) return lostRing();
-        if ("lost.message".equals(type)) return lostMessage(textValue(commandJson, "message", commandStart, "This device is lost. Please contact the owner."));
+        if ("lost.message".equals(type)) return showOwnerMessageOverlay(textValue(commandJson, "message", commandStart, "This device is lost. Please contact the owner."));
+        if ("lost.message.hide".equals(type)) return hideOwnerMessageOverlay();
         if ("live.stop".equals(type)) return stopLiveServices();
         if ("lost.disable".equals(type)) return lostDisable(dpm, admin);
         if ("mobile.data.on".equals(type)) return owner ? "Device Owner active, but Android public APIs still do not expose mobile data toggle. Requires OEM/system API." : "Android does not allow normal or Device Admin apps to toggle mobile data. Requires OEM/system privileges.";
@@ -276,6 +286,91 @@ public class AgentService extends Service {
         }
     }
 
+
+
+    private void applyOwnerLockScreenMessage(String message) {
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
+            if (dpm != null && Build.VERSION.SDK_INT >= 24 && dpm.isDeviceOwnerApp(getPackageName())) {
+                dpm.setDeviceOwnerLockScreenInfo(receiver, message);
+                dpm.lockNow();
+            } else if (dpm != null && dpm.isAdminActive(receiver)) {
+                dpm.lockNow();
+            }
+        } catch (Exception ignored) { }
+    }
+
+    private void clearOwnerLockScreenMessage() {
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName receiver = new ComponentName(this, CpDeviceAdminReceiver.class);
+            if (dpm != null && Build.VERSION.SDK_INT >= 24 && dpm.isDeviceOwnerApp(getPackageName())) {
+                dpm.setDeviceOwnerLockScreenInfo(receiver, "");
+            }
+        } catch (Exception ignored) { }
+    }
+    private void restoreOwnerMessageOverlay() {
+        if (!prefs.getBoolean("ownerMessageActive", false)) return;
+        String message = prefs.getString("ownerMessageText", "");
+        if (message != null && message.trim().length() > 0) showOwnerMessageOverlay(message);
+    }
+    private String showOwnerMessageOverlay(String message) {
+        String cleanMessage = message == null || message.trim().length() == 0 ? "This device is lost. Please contact the owner." : message.trim();
+        prefs.edit().putBoolean("ownerMessageActive", true).putString("ownerMessageText", cleanMessage).apply();
+        applyOwnerLockScreenMessage(cleanMessage);
+        showLiveActionNotification("Lost Mode owner message", cleanMessage.length() > 80 ? cleanMessage.substring(0, 77) + "..." : cleanMessage);
+        if (ownerMessageView != null && cleanMessage.equals(ownerMessageText)) return "Full-screen owner message banner is already visible.";
+        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            return "Owner message notification shown. Overlay permission is required for full-screen Lost Mode banner.";
+        }
+        new android.os.Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+                if (manager == null) return;
+                if (ownerMessageView != null) {
+                    try { manager.removeView(ownerMessageView); } catch (Exception ignored) { }
+                    ownerMessageView = null;
+                }
+                FrameLayout root = new FrameLayout(this);
+                root.setBackgroundColor(Color.argb(238, 120, 0, 0));
+                root.setPadding(36, 48, 36, 48);
+                TextView messageView = new TextView(this);
+                messageView.setText(cleanMessage);
+                messageView.setTextColor(Color.WHITE);
+                messageView.setTextSize(cleanMessage.length() > 400 ? 22 : 28);
+                messageView.setGravity(cleanMessage.length() > 400 ? (Gravity.START | Gravity.CENTER_VERTICAL) : Gravity.CENTER);
+                messageView.setPadding(28, 28, 28, 28);
+                messageView.setBackgroundColor(Color.argb(225, 0, 0, 0));
+                FrameLayout.LayoutParams child = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+                root.addView(messageView, child);
+                WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                        WindowManager.LayoutParams.MATCH_PARENT,
+                        WindowManager.LayoutParams.MATCH_PARENT,
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                        android.graphics.PixelFormat.TRANSLUCENT);
+                root.setOnClickListener(view -> { });
+                ownerMessageText = cleanMessage;
+                ownerMessageView = root;
+                manager.addView(root, params);
+            } catch (Exception ignored) { }
+        });
+        return "Full-screen owner message banner shown.";
+    }
+
+    private String hideOwnerMessageOverlay() {
+        new android.os.Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+                if (manager != null && ownerMessageView != null) manager.removeView(ownerMessageView);
+            } catch (Exception ignored) { } finally {
+                ownerMessageView = null;
+            }
+        });
+        showLiveActionNotification("Lost Mode owner message hidden", "The dashboard hid the owner message banner.");
+        return "Owner message banner hidden.";
+    }
     private String collectDeviceDetails() {
         StringBuilder json = new StringBuilder("{");
         appendJsonField(json, "collectedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).format(new java.util.Date()));
@@ -650,9 +745,3 @@ public class AgentService extends Service {
         return builder.setContentTitle(title).setContentText(text).setSmallIcon(android.R.drawable.stat_sys_upload_done).setOngoing(true).setContentIntent(pending).build();
     }
 }
-
-
-
-
-
-

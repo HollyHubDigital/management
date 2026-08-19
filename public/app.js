@@ -12,8 +12,7 @@ const adminPassword = document.getElementById("adminPassword");
 const adminLoginButton = document.getElementById("adminLoginButton");
 let adminToken = localStorage.getItem("cpAdminToken") || "";
 const APP_CONFIG = window.CP_DEVICE_CONFIG || {};
-const DEFAULT_BACKEND_BASE = "https://shied.onrender.com";
-const API_BASE = (APP_CONFIG.API_BASE_URL || DEFAULT_BACKEND_BASE).replace(/\/$/, "");
+const API_BASE = (APP_CONFIG.API_BASE_URL || window.location.origin).replace(/\/$/, "");
 const LIVE_BASE = (APP_CONFIG.LIVE_BASE_URL || API_BASE || window.location.origin).replace(/\/$/, "");
 const apiUrl = (path) => `${API_BASE}${path}`;
 const liveApiUrl = (path) => `${LIVE_BASE}${path}`;
@@ -84,6 +83,7 @@ const lostRing = document.getElementById("lostRing");
 const lostDisable = document.getElementById("lostDisable");
 const lostMessageForm = document.getElementById("lostMessageForm");
 const lostMessage = document.getElementById("lostMessage");
+const lostHideMessage = document.getElementById("lostHideMessage");
 const deviceFiles = document.getElementById("deviceFiles");
 const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
@@ -350,6 +350,7 @@ function refreshCapabilityGates() {
   setButtonGate(lostLock, commandGateMessage(target, "lock.device"));
   setButtonGate(lostRing, commandGateMessage(target, "lost.ring"));
   setButtonGate(lostDisable, commandGateMessage(target, "live.stop"));
+  setButtonGate(lostHideMessage, commandGateMessage(target, "lost.message"));
   if (lostMessageForm) {
     const submit = lostMessageForm.querySelector('button[type="submit"]');
     if (submit) setButtonGate(submit, commandGateMessage(target, "lost.message"));
@@ -539,6 +540,7 @@ function friendlyCommandLabel(type) {
     "lost.ring": "Lost Mode ring",
     "lost.message": "Lost Mode message",
     "lost.disable": "Disable lost mode",
+    "lost.message.hide": "Hide owner message",
     "live.stop": "Stop live session",
     "mobile.data.on": "Turn on mobile data",
     "device.info.refresh": "Refresh device info",
@@ -571,7 +573,7 @@ function renderCommandResultText(command, result) {
     return result.ok ? "Live session started." : "Live session requested.";
   }
   if (command.type === "lock.device") return result.ok ? "Lock command sent." : "Lock command requested.";
-  if (["lost.ring", "lost.message", "lost.disable"].includes(command.type)) return result.output && typeof result.output === "string" ? result.output : "Lost Mode command completed.";
+  if (["lost.ring", "lost.message", "lost.message.hide", "lost.disable"].includes(command.type)) return result.output && typeof result.output === "string" ? result.output : "Lost Mode command completed.";
   if (command.type === "mobile.data.on") return result.ok ? "Mobile data toggle requested." : "Mobile data request queued.";
   if (result.output && typeof result.output === "string") return result.output;
   if (result.output && typeof result.output === "object") {
@@ -1550,6 +1552,7 @@ if (lostLocate) lostLocate.addEventListener("click", () => sendLostModeCommand("
 if (lostLock) lostLock.addEventListener("click", () => sendLostModeCommand("lock.device").catch((error) => (log.textContent = error.message)));
 if (lostRing) lostRing.addEventListener("click", () => sendLostModeCommand("lost.ring").catch((error) => (log.textContent = error.message)));
 if (lostDisable) lostDisable.addEventListener("click", () => stopLiveSession().catch((error) => (log.textContent = error.message)));
+if (lostHideMessage) lostHideMessage.addEventListener("click", () => sendLostModeCommand("lost.message.hide").catch((error) => (log.textContent = error.message)));
 if (lostMessageForm) {
   lostMessageForm.addEventListener("submit", (event) => {
     event.preventDefault();

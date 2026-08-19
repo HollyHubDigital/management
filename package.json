@@ -1,0 +1,9 @@
+{
+  "name": "aegis-eye-admin-interface",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/generate-admin-config.js",
+    "check": "node --check public/app.js"
+  }
+}
