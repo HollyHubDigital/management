@@ -285,7 +285,7 @@ async function enrollCurrentDevice() {
   selectedDeviceIds = [enrollment.deviceId];
   pendingEnrollmentLink = buildAgentEnrollmentLink(enrollment);
   await refresh();
-  screenText.textContent = `${details.name} enrolled. Install Shield Device Agent, then tap Open Agent to approve Device Admin.`;
+  screenText.textContent = `${details.name} enrolled. Install Aegis Eye Agent, then tap Open Agent to approve Device Admin.`;
   return { details, enrollment, enrollmentLink: pendingEnrollmentLink };
 }
 
@@ -310,10 +310,10 @@ function commandGateMessage(device, type) {
   if (capabilities.browserEnrollment && !capabilities.nativeAgent && !capabilities.appleMdm) return "Install the native agent or complete Apple MDM enrollment first.";
   if (device.platform === "android") {
     if (type === "shell" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Android Device Owner or OEM/system privileges.";
-    if (type === "screen.tap" && !capabilities.accessibility) return "Requires Shield Device Agent Accessibility service.";
+    if (type === "screen.tap" && !capabilities.accessibility) return "Requires Aegis Eye Agent Accessibility service.";
     if (["camera.stream.request", "camera.switch"].includes(type) && !capabilities.camera) return "Requires camera permission in the Android agent.";
     if (["camera.stream.request", "camera.switch"].includes(type) && capabilities.microphone === false) return "Requires microphone permission in the Android agent for camera audio.";
-    if (type === "lock.device" && !capabilities.nativeAgent && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Shield Device Agent with Device Admin or Device Owner.";
+    if (type === "lock.device" && !capabilities.nativeAgent && !capabilities.deviceAdmin && !capabilities.deviceOwner) return "Requires Aegis Eye Agent with Device Admin or Device Owner.";
     if (type === "mobile.data.on" && !capabilities.oemPrivileged) return "Requires OEM/system privileges.";
     if (type === "firmware.update" && !capabilities.deviceOwner && !capabilities.oemPrivileged) return "Requires Device Owner system-update policy or OEM/system updater integration.";
   }
@@ -1483,7 +1483,7 @@ if (focusTerminal && terminalCommand) {
 if (enrollDevice) {
   enrollDevice.addEventListener("click", () => {
     if (enrollInstructions) {
-      enrollInstructions.textContent = "Click Download to install Shield Device Agent. After Android installs it, provision Shield Device Agent as Android Device Owner for theft-resistant protection, then open the agent to finish permissions.";
+      enrollInstructions.textContent = "Click Download to install Aegis Eye Agent. After Android installs it, provision Aegis Eye Agent as Android Device Owner for theft-resistant protection, then open the agent to finish permissions.";
     }
     if (enrollModal) enrollModal.showModal();
   });
@@ -1506,13 +1506,13 @@ if (downloadAgent) {
     const downloadUrl = details.platform === "ios" ? apiUrl("/api/enrollment/ios-profile") : apiUrl("/api/enrollment/android-agent");
     const link = document.createElement("a");
     link.href = downloadUrl;
-    link.download = details.platform === "ios" ? "cp-device-enrollment.mobileconfig" : "cp-device-agent.apk";
+    link.download = details.platform === "ios" ? "aegis-eye-enrollment.mobileconfig" : "aegis-eye-agent.apk";
     document.body.appendChild(link);
     link.click();
     link.remove();
     if (enrollInstructions) {
       enrollInstructions.textContent = details.platform === "android"
-        ? "After Android installs Shield Device Agent, provision it as Android Device Owner for theft-resistant protection, then tap Open Agent to finish enrollment and permissions."
+        ? "After Android installs Aegis Eye Agent, provision it as Android Device Owner for theft-resistant protection, then tap Open Agent to finish enrollment and permissions."
         : "Install the downloaded iOS profile in Settings to complete MDM enrollment.";
     }
   });

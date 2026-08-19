@@ -1,8 +1,10 @@
 <resources>
-    <string name="app_name">Shield Device</string>
-    <string name="device_admin_label">Shield Device Admin</string>
-    <string name="device_admin_description">Allows approved Shield Device management actions for this enrolled device, including locking the device when requested by the authorized account.</string>
-    <string name="accessibility_description">Allows user-approved Shield Device remote touch actions only during active support/control sessions for an enrolled device.</string>
+    <string name="app_name">Aegis</string>
+    <string name="app_full_name">Aegis Eye Agent</string>
+    <string name="app_tagline">Your devices. Always in sight.</string>
+    <string name="device_admin_label">Aegis Eye Admin</string>
+    <string name="device_admin_description">Allows approved Aegis Eye Agent management actions for this enrolled device, including locking the device when requested by the authorized account.</string>
+    <string name="accessibility_description">Allows user-approved Aegis Eye Agent remote touch actions only during active support/control sessions for an enrolled device.</string>
     <string name="enterprise_disclosure_title">Enterprise device management disclosure</string>
-    <string name="enterprise_disclosure_body">Shield Device is for authorized management of devices you own or are permitted to administer. It may request Android Device Owner provisioning for theft-resistant management, Device Admin for lock actions, Accessibility for remote touch control, Camera for live camera sessions, Screen Capture for live screen viewing, Location for device location, and Files access for requested file transfer. Continue only if you consent to enroll this device.</string>
+    <string name="enterprise_disclosure_body">Aegis Eye Agent is for authorized management of devices you own or are permitted to administer. It may request Android Device Owner provisioning for theft-resistant management, Device Admin for lock actions, Accessibility for remote touch control, Camera for live camera sessions, Screen Capture for live screen viewing, Location for device location, and Files access for requested file transfer. Continue only if you consent to enroll this device.</string>
 </resources>

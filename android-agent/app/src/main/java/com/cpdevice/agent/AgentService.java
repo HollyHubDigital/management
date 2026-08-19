@@ -59,7 +59,7 @@ public class AgentService extends Service {
         super.onCreate();
         prefs = getSharedPreferences("cp-device", Context.MODE_PRIVATE);
         createChannel();
-        startForeground(10, notification("Shield Device", "Connected to control server"));
+        startForeground(10, notification("Aegis Eye", "Connected to control server"));
         running = true;
         new Thread(this::loop).start();
     }
@@ -140,8 +140,8 @@ public class AgentService extends Service {
         if ("device.info.refresh".equals(type)) return collectDeviceDetails();
         if ("shell".equals(type)) return owner ? "Device Owner active. Root shell still requires OEM/system/root integration." : (admin ? "Device Admin active. Android does not expose arbitrary root shell to normal APKs." : "Device Admin is not active.");
         if ("app.install".equals(type)) return installApk(textValue(commandJson, "apkUrl", commandStart, ""));
-        if ("file.list".equals(type)) { showLiveActionNotification("Device file browse active", "Shield Device is listing device files."); return listFiles(textValue(commandJson, "path", commandStart, "/sdcard")); }
-        if ("file.pull".equals(type)) { showLiveActionNotification("Device file export active", "Shield Device is exporting a selected file."); return exportFile(textValue(commandJson, "path", commandStart, ""), textValue(commandJson, "id", commandStart, "manual")); }
+        if ("file.list".equals(type)) { showLiveActionNotification("Device file browse active", "Aegis Eye is listing device files."); return listFiles(textValue(commandJson, "path", commandStart, "/sdcard")); }
+        if ("file.pull".equals(type)) { showLiveActionNotification("Device file export active", "Aegis Eye is exporting a selected file."); return exportFile(textValue(commandJson, "path", commandStart, ""), textValue(commandJson, "id", commandStart, "manual")); }
         if ("locate.device".equals(type)) return locateDevice();
         if ("lock.device".equals(type)) { if (admin || owner) { showLiveActionNotification("Lost Mode lock requested", "This enrolled device is being locked from the dashboard."); dpm.lockNow(); return "Device locked."; } return "Device Admin or Device Owner is required to lock device."; }
         if ("lost.ring".equals(type)) return lostRing();
@@ -270,7 +270,7 @@ public class AgentService extends Service {
                 try { dpm.removeActiveAdmin(receiver); } catch (Exception ignored) { }
             }
             stopSelf();
-            return "Shield Device management released. Device Admin/Owner restrictions were cleared where Android permits; the app can now be uninstalled by the device user.";
+            return "Aegis Eye management released. Device Admin/Owner restrictions were cleared where Android permits; the app can now be uninstalled by the device user.";
         } catch (Exception error) {
             return "Unenroll failed: " + safe(error.getMessage());
         }
@@ -418,9 +418,9 @@ public class AgentService extends Service {
             Location location = fresh[0];
             if (location == null) location = manager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (location == null) location = manager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-            if (location == null) return "Location unavailable. Turn on Android Location services and set Shield Device Location permission to Allow all the time or Allow while using, then try Locate again.";
+            if (location == null) return "Location unavailable. Turn on Android Location services and set Aegis Eye Location permission to Allow all the time or Allow while using, then try Locate again.";
             return "{\"lat\":" + location.getLatitude() + ",\"lng\":" + location.getLongitude() + ",\"accuracy\":" + location.getAccuracy() + ",\"mapUrl\":\"https://www.google.com/maps?q=" + location.getLatitude() + "," + location.getLongitude() + "\"}";
-        } catch (SecurityException error) { return "Location permission is required. Enable Location permission for Shield Device."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
+        } catch (SecurityException error) { return "Location permission is required. Enable Location permission for Aegis Eye."; } catch (Exception error) { return "Locate failed: " + safe(error.getMessage()); }
     }
 
     private void openLocationSettings() {
@@ -505,7 +505,7 @@ public class AgentService extends Service {
             if (!dir.isDirectory()) return "{\"files\":[],\"error\":\"Path is not a folder: " + safe(dir.getAbsolutePath()) + "\"}";
             File[] files = dir.listFiles();
             StringBuilder json = new StringBuilder("{\"files\":[");
-            if (files == null) return "{\"files\":[],\"error\":\"Folder is not readable. Open Shield Device Agent and tap Allow File Access, then grant All files access.\"}";
+            if (files == null) return "{\"files\":[],\"error\":\"Folder is not readable. Open Aegis Eye Agent and tap Allow File Access, then grant All files access.\"}";
             if (files != null) {
                 int count = 0;
                 for (File file : files) {
@@ -638,7 +638,7 @@ public class AgentService extends Service {
 
     private void createChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel channel = new NotificationChannel("cp-device", "Shield Device", NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationChannel channel = new NotificationChannel("cp-device", "Aegis Eye", NotificationManager.IMPORTANCE_DEFAULT);
             getSystemService(NotificationManager.class).createNotificationChannel(channel);
         }
     }

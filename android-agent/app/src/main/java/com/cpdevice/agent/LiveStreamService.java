@@ -90,7 +90,7 @@ public class LiveStreamService extends Service {
             reader.setOnImageAvailableListener(this::onImage, new Handler(thread.getLooper()));
             MediaProjectionManager manager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
             projection = manager.getMediaProjection(resultCode, data);
-            display = projection.createVirtualDisplay("Shield Device Live", width, height, density, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, null);
+            display = projection.createVirtualDisplay("Aegis Eye Live", width, height, density, DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR, reader.getSurface(), null, null);
         } catch (Exception ignored) { stopSelf(); }
     }
 
@@ -179,11 +179,11 @@ public class LiveStreamService extends Service {
         return (live == null || live.length() == 0 ? fallback : live).replaceAll("/$", "");
     }
     private void createChannel() {
-        if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "Shield Device Live", NotificationManager.IMPORTANCE_DEFAULT));
+        if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-live", "Aegis Eye Live", NotificationManager.IMPORTANCE_DEFAULT));
     }
 
     private Notification notification() {
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-live") : new Notification.Builder(this);
-        return builder.setContentTitle("Shield Device Live Control").setContentText("Screen streaming is active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build();
+        return builder.setContentTitle("Aegis Eye Live Control").setContentText("Screen streaming is active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build();
     }
 }

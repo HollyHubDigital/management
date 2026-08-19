@@ -16,6 +16,7 @@ import android.view.Gravity;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
@@ -29,14 +30,22 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(false);
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(32, 32, 32, 32);
+        layout.setPadding(32, 32, 32, 96);
         layout.setGravity(Gravity.CENTER_HORIZONTAL);
         TextView title = new TextView(this);
-        title.setText("Shield Device Enrollment");
+        title.setText(getString(com.cpdevice.agent.R.string.app_full_name));
         title.setTextSize(22);
         layout.addView(title);
+        TextView tagline = new TextView(this);
+        tagline.setText(getString(com.cpdevice.agent.R.string.app_tagline));
+        tagline.setTextSize(16);
+        tagline.setGravity(Gravity.CENTER_HORIZONTAL);
+        tagline.setPadding(0, 4, 0, 24);
+        layout.addView(tagline);
         TextView disclosureTitle = new TextView(this);
         disclosureTitle.setText(getString(com.cpdevice.agent.R.string.enterprise_disclosure_title));
         disclosureTitle.setTextSize(18);
@@ -68,7 +77,12 @@ public class MainActivity extends Activity {
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
         layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(phoneInfo); layout.addView(files); layout.addView(battery); layout.addView(screen); layout.addView(start);
-        setContentView(layout);
+        Button site = button("Go to site", view -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://android-device-management.vercel.app"))));
+        LinearLayout.LayoutParams siteParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        siteParams.setMargins(0, 24, 0, 72);
+        layout.addView(site, siteParams);
+        scrollView.addView(layout);
+        setContentView(scrollView);
         handleIntent(getIntent());
     }
 
@@ -106,7 +120,7 @@ public class MainActivity extends Activity {
         if (dpm != null && dpm.isAdminActive(receiver)) { status.setText("Device Admin is active, but Android still allows manual removal unless this app is Device Owner."); return; }
         Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
         intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, receiver);
-        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable Shield Device management for this authorized device. Device Admin can lock the device, but theft-resistant protection requires Android Device Owner provisioning.");
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Enable Aegis Eye Agent management for this authorized device. Device Admin can lock the device, but theft-resistant protection requires Android Device Owner provisioning.");
         startActivity(intent);
     }
 

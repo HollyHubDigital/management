@@ -22,5 +22,5 @@ finally {
 
 $apk = "android-agent/app/build/outputs/apk/release/app-release.apk"
 if (-not (Test-Path $apk)) { throw "Release APK was not produced at $apk" }
-Copy-Item $apk "artifacts/cp-device-agent.apk" -Force
-Write-Host "Signed APK copied to artifacts/cp-device-agent.apk"
+Copy-Item $apk "artifacts/aegis-eye-agent.apk" -Force
+Write-Host "Signed APK copied to artifacts/aegis-eye-agent.apk"

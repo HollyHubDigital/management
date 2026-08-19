@@ -1,4 +1,4 @@
-# Shield Device Agent Environment Variables
+# Aegis Eye Agent Environment Variables
 
 ## Admin + Backend Vercel Project
 

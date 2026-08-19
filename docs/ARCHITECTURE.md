@@ -1,6 +1,6 @@
-# Shield Device Agent Production Architecture
+# Aegis Eye Agent Production Architecture
 
-Shield Device Agent is a consent-based MDM control plane for enrolled Android and iOS devices.
+Aegis Eye Agent is a consent-based MDM control plane for enrolled Android and iOS devices.
 
 ## Security boundaries
 
@@ -59,12 +59,12 @@ The response returns `deviceId` and a one-time device token. Store that token on
 
 The dashboard `Enroll` button opens a consent modal and then downloads the platform enrollment artifact:
 
-- Android: `artifacts/cp-device-agent.apk`, served by `/api/enrollment/android-agent`.
-- iOS: `artifacts/cp-device-enrollment.mobileconfig`, served by `/api/enrollment/ios-profile`.
+- Android: `artifacts/aegis-eye-agent.apk`, served by `/api/enrollment/android-agent`.
+- iOS: `artifacts/aegis-eye-enrollment.mobileconfig`, served by `/api/enrollment/ios-profile`.
 
 A web page cannot silently install software, grant Device Admin, become Device Owner, read IMEI/serial, or obtain remote-control permissions. Production enrollment must use OS-approved flows:
 
 - Android Enterprise QR enrollment, zero-touch enrollment, OEMConfig, managed Google Play, ADB provisioning, or user-approved APK install plus Device Admin where applicable.
 - iOS/iPadOS Apple MDM enrollment using a signed `.mobileconfig`, Apple Business Manager/School Manager, APNs MDM certificate, and supervised-device enrollment for advanced controls.
 
-The Shield Device Agent web flow records browser-visible details immediately, then the downloaded signed agent/profile completes privileged enrollment after the user/organization approves it.
+The Aegis Eye Agent web flow records browser-visible details immediately, then the downloaded signed agent/profile completes privileged enrollment after the user/organization approves it.

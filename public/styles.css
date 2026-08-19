@@ -173,3 +173,5 @@ button:disabled::before { color: currentColor; text-shadow: none; }
 }
 .screen.loading #screenText { display: block; grid-area: 1 / 1; align-self: end; margin-top: 72px; }
 @keyframes live-spin { to { transform: rotate(360deg); } }
+
+.tagline { display: inline-block; margin-top: 5px; padding: 4px 7px; border-radius: 8px; background: var(--support); color: var(--text); font-weight: 800; }

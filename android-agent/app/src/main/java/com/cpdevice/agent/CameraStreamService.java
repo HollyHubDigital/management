@@ -317,6 +317,6 @@ public class CameraStreamService extends Service {
         String live = prefs.getString("liveServerUrl", fallback);
         return (live == null || live.length() == 0 ? fallback : live).replaceAll("/$", "");
     }
-    private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Shield Device Camera", NotificationManager.IMPORTANCE_DEFAULT)); }
-    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Shield Device Camera").setContentText("Camera and microphone streaming are active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build(); }
+    private void createChannel() { if (Build.VERSION.SDK_INT >= 26) getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel("cp-camera", "Aegis Eye Camera", NotificationManager.IMPORTANCE_DEFAULT)); }
+    private Notification notification() { Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, "cp-camera") : new Notification.Builder(this); return b.setContentTitle("Aegis Eye Camera").setContentText("Camera and microphone streaming are active and visible").setSmallIcon(android.R.drawable.presence_video_online).setOngoing(true).build(); }
 }
