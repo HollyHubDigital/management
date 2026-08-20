@@ -10,6 +10,16 @@ const adminTokenInput = document.getElementById("adminToken");
 const adminLogin = document.getElementById("adminLogin");
 const adminPassword = document.getElementById("adminPassword");
 const adminLoginButton = document.getElementById("adminLoginButton");
+const adminChatOpen = document.getElementById("adminChatOpen");
+const adminChatOverlay = document.getElementById("adminChatOverlay");
+const adminChatClose = document.getElementById("adminChatClose");
+const adminChatList = document.getElementById("adminChatList");
+const adminChatCount = document.getElementById("adminChatCount");
+const adminChatTitle = document.getElementById("adminChatTitle");
+const adminChatSubtitle = document.getElementById("adminChatSubtitle");
+const adminChatMessages = document.getElementById("adminChatMessages");
+const adminChatForm = document.getElementById("adminChatForm");
+const adminChatInput = document.getElementById("adminChatInput");
 let adminToken = localStorage.getItem("cpAdminToken") || "";
 const APP_CONFIG = window.CP_DEVICE_CONFIG || {};
 const API_BASE = (APP_CONFIG.API_BASE_URL || "").replace(/\/$/, "");
@@ -363,6 +373,133 @@ function appendTerminal(message) {
   terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
+
+let adminChatPollTimer = null;
+let adminChatOpenState = false;
+let adminChatActiveUserId = "";
+let adminChatSummaries = [];
+
+function adminChatTime(value) {
+  const time = Date.parse(value || "");
+  return Number.isFinite(time) ? new Date(time).toLocaleString() : "";
+}
+
+function renderAdminChatList(chats = []) {
+  if (!adminChatList) return;
+  adminChatSummaries = chats;
+  if (adminChatCount) adminChatCount.textContent = `${chats.length} conversation${chats.length === 1 ? "" : "s"}`;
+  adminChatList.innerHTML = "";
+  if (!chats.length) {
+    const empty = document.createElement("p");
+    empty.className = "chat-empty";
+    empty.textContent = "No user messages yet.";
+    adminChatList.appendChild(empty);
+    return;
+  }
+  chats.forEach((chat) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `admin-chat-user ${chat.userId === adminChatActiveUserId ? "active" : ""}`;
+    const name = document.createElement("strong");
+    name.textContent = chat.userName || chat.userEmail || chat.userId;
+    const email = document.createElement("span");
+    email.textContent = chat.userEmail || "User account";
+    const preview = document.createElement("small");
+    preview.textContent = chat.lastMessage ? `${chat.lastMessage.from === "admin" ? "Admin" : "User"}: ${chat.lastMessage.text}` : "No messages yet";
+    button.appendChild(name);
+    button.appendChild(email);
+    button.appendChild(preview);
+    if (chat.unreadCount) {
+      const badge = document.createElement("em");
+      badge.textContent = chat.unreadCount;
+      button.appendChild(badge);
+    }
+    button.onclick = () => selectAdminChat(chat.userId).catch((error) => { if (log) log.textContent = error.message; });
+    adminChatList.appendChild(button);
+  });
+}
+
+function renderAdminChatMessages(messages = []) {
+  if (!adminChatMessages) return;
+  adminChatMessages.innerHTML = "";
+  if (!messages.length) {
+    const empty = document.createElement("p");
+    empty.className = "chat-empty";
+    empty.textContent = "No messages in this conversation yet.";
+    adminChatMessages.appendChild(empty);
+    return;
+  }
+  messages.forEach((message) => {
+    const bubble = document.createElement("div");
+    bubble.className = `chat-bubble ${message.from === "admin" ? "chat-bubble-admin-self" : "chat-bubble-user"}`;
+    const text = document.createElement("p");
+    text.textContent = message.text || "";
+    const meta = document.createElement("span");
+    meta.textContent = `${message.from === "admin" ? "Admin" : "User"} - ${adminChatTime(message.createdAt || message.timestamp)}`;
+    bubble.appendChild(text);
+    bubble.appendChild(meta);
+    adminChatMessages.appendChild(bubble);
+  });
+  adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
+}
+
+async function loadAdminChatList() {
+  if (!adminToken || !adminChatList) return;
+  const response = await api("/api/admin/chats");
+  renderAdminChatList(response.chats || []);
+}
+
+async function selectAdminChat(userId) {
+  if (!userId) return;
+  adminChatActiveUserId = userId;
+  const response = await api(`/api/admin/chats/${encodeURIComponent(userId)}`);
+  const chat = response.chat || {};
+  if (adminChatTitle) adminChatTitle.textContent = chat.userName || chat.userEmail || "User";
+  if (adminChatSubtitle) adminChatSubtitle.textContent = chat.userEmail || chat.userId || "Private user chat";
+  renderAdminChatMessages(chat.messages || []);
+  await api(`/api/admin/chats/${encodeURIComponent(userId)}/mark-read`, { method: "POST" }).catch(() => {});
+  await loadAdminChatList().catch(() => {});
+}
+
+function scheduleAdminChatPoll() {
+  if (adminChatPollTimer) clearTimeout(adminChatPollTimer);
+  if (!adminChatOpenState) return;
+  adminChatPollTimer = setTimeout(async () => {
+    try {
+      await loadAdminChatList();
+      if (adminChatActiveUserId) await selectAdminChat(adminChatActiveUserId);
+    } catch (error) {
+      console.warn("Admin chat refresh failed:", error);
+    }
+    scheduleAdminChatPoll();
+  }, 3000);
+}
+
+function openAdminChat() {
+  if (!adminToken || !adminChatOverlay) return;
+  adminChatOpenState = true;
+  adminChatOverlay.classList.remove("hidden");
+  loadAdminChatList().catch((error) => { if (log) log.textContent = error.message; });
+  scheduleAdminChatPoll();
+}
+
+function closeAdminChat() {
+  adminChatOpenState = false;
+  if (adminChatPollTimer) clearTimeout(adminChatPollTimer);
+  adminChatPollTimer = null;
+  if (adminChatOverlay) adminChatOverlay.classList.add("hidden");
+}
+
+async function sendAdminChatMessage(event) {
+  event.preventDefault();
+  if (!adminChatActiveUserId) return;
+  const text = (adminChatInput && adminChatInput.value.trim()) || "";
+  if (!text) return;
+  if (adminChatInput) adminChatInput.value = "";
+  const response = await api(`/api/admin/chats/${encodeURIComponent(adminChatActiveUserId)}/message`, { method: "POST", body: JSON.stringify({ text }) });
+  renderAdminChatMessages((response.chat && response.chat.messages) || []);
+  await loadAdminChatList().catch(() => {});
+}
 function renderTerminalResults() {
   const lines = [];
   for (const commandId of terminalCommandIds) {
@@ -1592,6 +1729,10 @@ if (liveCommandButtons.length) {
   });
 }
 
+if (adminChatOpen) adminChatOpen.addEventListener("click", openAdminChat);
+if (adminChatClose) adminChatClose.addEventListener("click", closeAdminChat);
+if (adminChatForm) adminChatForm.addEventListener("submit", (event) => sendAdminChatMessage(event).catch((error) => { if (log) log.textContent = error.message || "Message failed"; }));
+
 if (adminLoginButton) {
   adminLoginButton.addEventListener("click", () => loginAdmin().catch((error) => showAdminGate(error.message)));
 }
@@ -1599,6 +1740,7 @@ if (adminLogout) {
   adminLogout.addEventListener("click", async () => {
     const token = adminToken;
     adminToken = "";
+    closeAdminChat();
     localStorage.removeItem("cpAdminToken");
     state = { devices: {}, commands: {} };
     try {

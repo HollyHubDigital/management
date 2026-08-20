@@ -360,6 +360,9 @@ public class AgentService extends Service {
     }
 
     private String hideOwnerMessageOverlay() {
+        prefs.edit().putBoolean("ownerMessageActive", false).remove("ownerMessageText").apply();
+        ownerMessageText = "";
+        clearOwnerLockScreenMessage();
         new android.os.Handler(Looper.getMainLooper()).post(() -> {
             try {
                 WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
