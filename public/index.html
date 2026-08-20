@@ -17,7 +17,7 @@
           </div>
           <div class="top-actions">
             <button id="enrollDevice" class="enroll-button">Enroll</button>
-            <button id="adminChatOpen" class="secondary admin-chat-open" type="button">Chats</button>
+            <button id="adminChatOpen" class="secondary admin-chat-open" type="button" aria-label="Open admin chat"><img src="/chat-icon.png" alt="" /><span>Chats</span></button>
             <button id="adminLogout" class="secondary">Logout</button>
           </div>
         </header>
@@ -154,6 +154,34 @@
         </div>
       </form>
     </dialog>
+
+    <div id="adminChatOverlay" class="admin-chat-overlay hidden" aria-label="User support chats">
+      <section class="admin-chat-dialog">
+        <aside class="admin-chat-sidebar">
+          <div class="admin-chat-sidebar-head">
+            <strong>User Chats</strong>
+            <span id="adminChatCount">0 conversations</span>
+          </div>
+          <div id="adminChatList" class="admin-chat-list"></div>
+        </aside>
+        <main class="admin-chat-main">
+          <header class="admin-chat-main-head">
+            <div>
+              <strong id="adminChatTitle">Select a user</strong>
+              <span id="adminChatSubtitle">Reply to user messages privately</span>
+            </div>
+            <button id="adminChatClose" type="button" aria-label="Close chat">x</button>
+          </header>
+          <div id="adminChatMessages" class="admin-chat-messages">
+            <p class="chat-empty">Choose a user chat from the list.</p>
+          </div>
+          <form id="adminChatForm" class="admin-chat-composer">
+            <input id="adminChatInput" type="text" maxlength="4000" placeholder="Type admin reply..." autocomplete="off" />
+            <button type="submit">Reply</button>
+          </form>
+        </main>
+      </section>
+    </div>
     <script src="/config.js"></script>
     <script src="/app.js"></script>
   </body>

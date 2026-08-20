@@ -476,13 +476,20 @@ function scheduleAdminChatPoll() {
 }
 
 function openAdminChat() {
-  if (!adminToken || !adminChatOverlay) return;
+  if (!adminChatOverlay) {
+    if (log) log.textContent = "Admin chat container is missing from this page.";
+    return;
+  }
   adminChatOpenState = true;
   adminChatOverlay.classList.remove("hidden");
+  if (!adminToken) {
+    renderAdminChatList([]);
+    if (adminChatMessages) adminChatMessages.innerHTML = '<p class="chat-empty">Login as admin to load user chats.</p>';
+    return;
+  }
   loadAdminChatList().catch((error) => { if (log) log.textContent = error.message; });
   scheduleAdminChatPoll();
 }
-
 function closeAdminChat() {
   adminChatOpenState = false;
   if (adminChatPollTimer) clearTimeout(adminChatPollTimer);
