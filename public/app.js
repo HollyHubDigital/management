@@ -12,11 +12,12 @@ const adminPassword = document.getElementById("adminPassword");
 const adminLoginButton = document.getElementById("adminLoginButton");
 let adminToken = localStorage.getItem("cpAdminToken") || "";
 const APP_CONFIG = window.CP_DEVICE_CONFIG || {};
-const API_BASE = (APP_CONFIG.API_BASE_URL || window.location.origin).replace(/\/$/, "");
-const LIVE_BASE = (APP_CONFIG.LIVE_BASE_URL || API_BASE || window.location.origin).replace(/\/$/, "");
-const apiUrl = (path) => `${API_BASE}${path}`;
-const liveApiUrl = (path) => `${LIVE_BASE}${path}`;
-const liveWsUrl = (path) => `${LIVE_BASE.replace("https://", "wss://").replace("http://", "ws://")}${path}`;
+const API_BASE = (APP_CONFIG.API_BASE_URL || "").replace(/\/$/, "");
+const LIVE_BASE = (APP_CONFIG.LIVE_BASE_URL || API_BASE).replace(/\/$/, "");
+function requireApiBase() { if (!API_BASE) throw new Error("Backend API URL is not configured. Set API_BASE_URL in the Vercel project environment and redeploy."); return API_BASE; }
+const apiUrl = (path) => `${requireApiBase()}${path}`;
+const liveApiUrl = (path) => `${LIVE_BASE || requireApiBase()}${path}`;
+const liveWsUrl = (path) => `${(LIVE_BASE || requireApiBase()).replace("https://", "wss://").replace("http://", "ws://")}${path}`;
 const persistentLiveConfigured = () => LIVE_BASE !== window.location.origin && !LIVE_BASE.includes("vercel.app");
 const adminAuthPage = window.location.pathname.endsWith("admin-auth.html");
 const adminDashboardPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";

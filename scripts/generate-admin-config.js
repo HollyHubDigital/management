@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const apiBaseUrl = (process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/$/, "");
+const apiBaseUrl = (process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/$/, "");
 const liveBaseUrl = (process.env.LIVE_BASE_URL || process.env.NEXT_PUBLIC_LIVE_BASE_URL || apiBaseUrl).replace(/\/$/, "");
 
 const config = `window.CP_DEVICE_CONFIG = Object.freeze({\n  API_BASE_URL: ${JSON.stringify(apiBaseUrl)},\n  LIVE_BASE_URL: ${JSON.stringify(liveBaseUrl)}\n});\n`;
