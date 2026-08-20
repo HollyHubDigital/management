@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aegis Eye Agent Data Room</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="adminApp" class="desktop-app hidden">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Aegis Eye Agent</p>
+            <h1>Admin Data Room</h1>
+            <small class="tagline">Search by User-ID before any private user data is shown.</small>
+          </div>
+          <div class="top-actions">
+            <button id="adminDashboardOpen" class="secondary" type="button">Dashboard</button>
+            <button id="adminLogout" class="secondary">Logout</button>
+          </div>
+        </header>
+
+        <section class="panel data-room-panel">
+          <div class="panel-heading data-room-heading">
+            <div>
+              <p class="eyebrow">Protected</p>
+              <h2>User Data Lookup</h2>
+            </div>
+            <span class="badge">Admin only</span>
+          </div>
+          <div class="data-room-search">
+            <label class="field-label">User-ID
+              <input id="dataRoomUserId" type="text" placeholder="usr_123456789" autocomplete="off" />
+            </label>
+            <label class="field-label">Filter by
+              <select id="dataRoomFilter">
+                <option value="all">Full information</option>
+                <option value="bankName">Bank name</option>
+                <option value="bankAccountName">Bank account name</option>
+                <option value="bankAccountNumber">Bank account number</option>
+                <option value="amountDeposited">Amount deposited</option>
+                <option value="deviceName">Device name</option>
+                <option value="enrolledAt">Date of enroll</option>
+              </select>
+            </label>
+            <button id="dataRoomSearch" type="button">Search</button>
+          </div>
+          <p id="dataRoomStatus" class="modal-note">Enter a User-ID and click Search. No user records are displayed by default.</p>
+          <div id="dataRoomResult" class="data-room-result hidden"></div>
+        </section>
+      </section>
+
+      <section id="adminGate" class="admin-gate hidden">
+        <h1>Admin Login Required</h1>
+        <p class="gate-copy" id="loginStatus">Please login as admin.</p>
+        <button type="button" onclick="window.location.href='admin-auth.html'">Go to Login</button>
+      </section>
+    </main>
+    <script src="/config.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>

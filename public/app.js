@@ -6,6 +6,13 @@ const adminGate = document.getElementById("adminGate");
 const adminApp = document.getElementById("adminApp");
 const loginStatus = document.getElementById("loginStatus");
 const adminLogout = document.getElementById("adminLogout");
+const adminSettingsOpen = document.getElementById("adminSettingsOpen");
+const adminDashboardOpen = document.getElementById("adminDashboardOpen");
+const dataRoomUserId = document.getElementById("dataRoomUserId");
+const dataRoomFilter = document.getElementById("dataRoomFilter");
+const dataRoomSearch = document.getElementById("dataRoomSearch");
+const dataRoomStatus = document.getElementById("dataRoomStatus");
+const dataRoomResult = document.getElementById("dataRoomResult");
 const adminTokenInput = document.getElementById("adminToken");
 const adminLogin = document.getElementById("adminLogin");
 const adminPassword = document.getElementById("adminPassword");
@@ -30,6 +37,7 @@ const liveApiUrl = (path) => `${LIVE_BASE || requireApiBase()}${path}`;
 const liveWsUrl = (path) => `${(LIVE_BASE || requireApiBase()).replace("https://", "wss://").replace("http://", "ws://")}${path}`;
 const persistentLiveConfigured = () => LIVE_BASE !== window.location.origin && !LIVE_BASE.includes("vercel.app");
 const adminAuthPage = window.location.pathname.endsWith("admin-auth.html");
+const adminSettingsPage = window.location.pathname.endsWith("admin-settings.html");
 const adminDashboardPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
 if (adminTokenInput && adminToken) adminTokenInput.value = adminToken;
 const devices = document.getElementById("devices");
@@ -210,6 +218,8 @@ async function verifyAdminSession() {
         console.warn("Admin refresh failed:", refreshError);
         if (log) log.textContent = refreshError.message || "Failed to load admin data";
       }
+    } else if (adminSettingsPage) {
+      showAdminApp();
     } else {
       redirectToAdminDashboard();
     }
@@ -378,6 +388,7 @@ let adminChatPollTimer = null;
 let adminChatOpenState = false;
 let adminChatActiveUserId = "";
 let adminChatSummaries = [];
+let adminChatMessageCache = {};
 
 function adminChatTime(value) {
   const time = Date.parse(value || "");
@@ -419,23 +430,43 @@ function renderAdminChatList(chats = []) {
   });
 }
 
-function renderAdminChatMessages(messages = []) {
+function mergeAdminChatMessages(userId, incoming = []) {
+  const current = adminChatMessageCache[userId] || [];
+  const merged = [...current];
+  for (const message of incoming) {
+    const existingIndex = merged.findIndex((item) => item.id && item.id === message.id);
+    if (existingIndex >= 0) {
+      merged[existingIndex] = message;
+      continue;
+    }
+    const messageTime = Date.parse(message.createdAt || message.timestamp || "") || Date.now();
+    const pendingIndex = merged.findIndex((item) => item.pending && item.from === message.from && item.text === message.text && Math.abs((Date.parse(item.createdAt || "") || messageTime) - messageTime) < 120000);
+    if (pendingIndex >= 0) merged[pendingIndex] = message;
+    else merged.push(message);
+  }
+  return merged.sort((a, b) => (Date.parse(a.createdAt || a.timestamp || "") || 0) - (Date.parse(b.createdAt || b.timestamp || "") || 0));
+}
+
+function renderAdminChatMessages(messages = [], { merge = false, userId = adminChatActiveUserId } = {}) {
   if (!adminChatMessages) return;
+  const visibleMessages = merge && userId ? mergeAdminChatMessages(userId, messages) : messages;
+  if (userId) adminChatMessageCache[userId] = visibleMessages;
   adminChatMessages.innerHTML = "";
-  if (!messages.length) {
+  if (!visibleMessages.length) {
     const empty = document.createElement("p");
     empty.className = "chat-empty";
     empty.textContent = "No messages in this conversation yet.";
     adminChatMessages.appendChild(empty);
     return;
   }
-  messages.forEach((message) => {
+  visibleMessages.forEach((message) => {
     const bubble = document.createElement("div");
-    bubble.className = `chat-bubble ${message.from === "admin" ? "chat-bubble-admin-self" : "chat-bubble-user"}`;
+    bubble.className = `chat-bubble ${message.from === "admin" ? "chat-bubble-admin-self" : "chat-bubble-user"}${message.pending ? " chat-bubble-pending" : ""}${message.failed ? " chat-bubble-failed" : ""}`;
     const text = document.createElement("p");
     text.textContent = message.text || "";
     const meta = document.createElement("span");
-    meta.textContent = `${message.from === "admin" ? "Admin" : "User"} - ${adminChatTime(message.createdAt || message.timestamp)}`;
+    const status = message.failed ? " - failed" : message.pending ? " - sending..." : "";
+    meta.textContent = `${message.from === "admin" ? "Admin" : "User"} - ${adminChatTime(message.createdAt || message.timestamp)}${status}`;
     bubble.appendChild(text);
     bubble.appendChild(meta);
     adminChatMessages.appendChild(bubble);
@@ -456,7 +487,7 @@ async function selectAdminChat(userId) {
   const chat = response.chat || {};
   if (adminChatTitle) adminChatTitle.textContent = chat.userName || chat.userEmail || "User";
   if (adminChatSubtitle) adminChatSubtitle.textContent = chat.userEmail || chat.userId || "Private user chat";
-  renderAdminChatMessages(chat.messages || []);
+  renderAdminChatMessages(chat.messages || [], { merge: true, userId });
   await api(`/api/admin/chats/${encodeURIComponent(userId)}/mark-read`, { method: "POST" }).catch(() => {});
   await loadAdminChatList().catch(() => {});
 }
@@ -472,7 +503,7 @@ function scheduleAdminChatPoll() {
       console.warn("Admin chat refresh failed:", error);
     }
     scheduleAdminChatPoll();
-  }, 3000);
+  }, 1000);
 }
 
 function openAdminChat() {
@@ -500,12 +531,92 @@ function closeAdminChat() {
 async function sendAdminChatMessage(event) {
   event.preventDefault();
   if (!adminChatActiveUserId) return;
+  const activeUserId = adminChatActiveUserId;
   const text = (adminChatInput && adminChatInput.value.trim()) || "";
   if (!text) return;
   if (adminChatInput) adminChatInput.value = "";
-  const response = await api(`/api/admin/chats/${encodeURIComponent(adminChatActiveUserId)}/message`, { method: "POST", body: JSON.stringify({ text }) });
-  renderAdminChatMessages((response.chat && response.chat.messages) || []);
-  await loadAdminChatList().catch(() => {});
+  const currentMessages = adminChatMessageCache[activeUserId] || [];
+  const optimistic = { id: `local_${Date.now()}`, from: "admin", text, createdAt: new Date().toISOString(), pending: true };
+  renderAdminChatMessages([...currentMessages, optimistic], { userId: activeUserId });
+  try {
+    const response = await api(`/api/admin/chats/${encodeURIComponent(activeUserId)}/message`, { method: "POST", body: JSON.stringify({ text }) });
+    renderAdminChatMessages((response.chat && response.chat.messages) || [], { merge: true, userId: activeUserId });
+    await loadAdminChatList().catch(() => {});
+  } catch (error) {
+    optimistic.pending = false;
+    optimistic.failed = true;
+    renderAdminChatMessages((adminChatMessageCache[activeUserId] || []).map((message) => message.id === optimistic.id ? optimistic : message), { userId: activeUserId });
+    throw error;
+  }
+}
+function dataRoomValue(value) {
+  if (value === null || value === undefined || value === "") return "Not saved";
+  if (typeof value === "object") return escapeHtml(JSON.stringify(value));
+  return escapeHtml(String(value));
+}
+
+function dataRoomRows(title, rows) {
+  if (!rows || !rows.length) return `<section class="data-room-card"><h3>${escapeHtml(title)}</h3><p class="hint-box">No records.</p></section>`;
+  return `<section class="data-room-card"><h3>${escapeHtml(title)}</h3>${rows.map((row) => `<div class="data-room-row">${Object.entries(row).map(([key, value]) => `<span><b>${escapeHtml(key)}</b>${dataRoomValue(value)}</span>`).join("")}</div>`).join("")}</section>`;
+}
+
+function renderDataRoom(data) {
+  if (!dataRoomResult) return;
+  if (!data) {
+    dataRoomResult.classList.add("hidden");
+    dataRoomResult.innerHTML = "";
+    return;
+  }
+  const user = data.user || {};
+  const subscription = data.subscription || {};
+  dataRoomResult.classList.remove("hidden");
+  dataRoomResult.innerHTML = `
+    <section class="data-room-card data-room-user-card">
+      <div>
+        <p class="eyebrow">User record</p>
+        <h2>${escapeHtml(user.username || user.email || user.id || "User")}</h2>
+      </div>
+      <div class="data-room-row">
+        <span><b>User-ID</b>${dataRoomValue(user.id)}</span>
+        <span><b>Email</b>${dataRoomValue(user.email)}</span>
+        <span><b>Name</b>${dataRoomValue(user.username)}</span>
+        <span><b>Phone</b>${dataRoomValue(user.phone)}</span>
+        <span><b>Signup date</b>${dataRoomValue(user.createdAt)}</span>
+        <span><b>Plan</b>${dataRoomValue(subscription.plan)}</span>
+        <span><b>Expires</b>${dataRoomValue(subscription.expiresAt)}</span>
+      </div>
+      <button id="dataRoomDeleteUser" class="danger" type="button">Delete User</button>
+    </section>
+    ${dataRoomRows("Enrolled Devices", data.devices || [])}
+    ${dataRoomRows("Payments / Bank Details", data.payments || [])}
+  `;
+  const deleteButton = document.getElementById("dataRoomDeleteUser");
+  if (deleteButton) deleteButton.onclick = () => deleteDataRoomUser(user.id);
+}
+
+async function searchDataRoomUser() {
+  if (!dataRoomUserId || !dataRoomStatus) return;
+  const userId = dataRoomUserId.value.trim();
+  if (!userId) {
+    dataRoomStatus.textContent = "Enter a User-ID before searching.";
+    renderDataRoom(null);
+    return;
+  }
+  dataRoomStatus.textContent = "Searching secure records...";
+  const filter = dataRoomFilter ? dataRoomFilter.value : "all";
+  const response = await api(`/api/admin/user-data?userId=${encodeURIComponent(userId)}&filter=${encodeURIComponent(filter)}`);
+  renderDataRoom(response.data);
+  dataRoomStatus.textContent = `Showing ${filter === "all" ? "full information" : filter} for User-ID ${userId}.`;
+}
+
+async function deleteDataRoomUser(userId) {
+  if (!userId) return;
+  if (!confirm(`Delete user ${userId} and clear their saved backend records? This cannot be undone.`)) return;
+  if (dataRoomStatus) dataRoomStatus.textContent = "Deleting user records...";
+  await api(`/api/admin/user-data/${encodeURIComponent(userId)}`, { method: "DELETE" });
+  if (dataRoomUserId) dataRoomUserId.value = "";
+  renderDataRoom(null);
+  if (dataRoomStatus) dataRoomStatus.textContent = `Deleted User-ID ${userId}.`;
 }
 function renderTerminalResults() {
   const lines = [];
@@ -1736,6 +1847,18 @@ if (liveCommandButtons.length) {
   });
 }
 
+if (adminSettingsOpen) adminSettingsOpen.addEventListener("click", () => { window.location.href = "admin-settings.html"; });
+if (adminDashboardOpen) adminDashboardOpen.addEventListener("click", () => { window.location.href = "index.html"; });
+if (dataRoomSearch) dataRoomSearch.addEventListener("click", () => searchDataRoomUser().catch((error) => {
+  if (dataRoomStatus) dataRoomStatus.textContent = error.message || "Search failed";
+  renderDataRoom(null);
+}));
+if (dataRoomUserId) dataRoomUserId.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    if (dataRoomSearch) dataRoomSearch.click();
+  }
+});
 if (adminChatOpen) adminChatOpen.addEventListener("click", openAdminChat);
 if (adminChatClose) adminChatClose.addEventListener("click", closeAdminChat);
 if (adminChatForm) adminChatForm.addEventListener("submit", (event) => sendAdminChatMessage(event).catch((error) => { if (log) log.textContent = error.message || "Message failed"; }));
@@ -1759,7 +1882,7 @@ if (adminLogout) {
 }
 showAdminAuthFlashMessage();
 verifyAdminSession();
-setInterval(() => refresh().catch(() => {}), 2000);
+if (adminDashboardPage) setInterval(() => refresh().catch(() => {}), 2000);
 
 
 
