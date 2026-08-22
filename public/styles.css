@@ -433,3 +433,14 @@ button:disabled::before { color: currentColor; text-shadow: none; }
 .data-room-row b { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; overflow-wrap: anywhere; }
 .hint-box { margin: 0; padding: 12px; border-radius: 12px; background: var(--red); color: var(--text); text-align: center; overflow-wrap: anywhere; }
 @media (max-width: 899px) { .data-room-search { grid-template-columns: 1fr; } .data-room-search button { width: 100%; } }
+.owner-message-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
+.owner-message-controls #lostHideMessage, .owner-message-controls button { min-width: 0; width: 100%; }
+.owner-message-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 132px; padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--red); color: var(--text); font-weight: 900; cursor: pointer; user-select: none; }
+.owner-message-toggle input { width: 18px; height: 18px; accent-color: #22c55e; }
+.owner-message-toggle:has(input:not(:checked)) { background: #4b1111; }
+.owner-message-toggle:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+@media (max-width: 899px) { .owner-message-controls { grid-template-columns: 1fr; } .owner-message-toggle { width: 100%; } }
+
+.owner-message-edit-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.owner-message-edit-actions button { width: 100%; margin: 0; }
+@media (max-width: 899px) { .owner-message-edit-actions { grid-template-columns: 1fr; } }

@@ -156,6 +156,7 @@ public class AgentService extends Service {
         if ("lost.ring".equals(type)) return lostRing();
         if ("lost.message".equals(type)) return showOwnerMessageOverlay(textValue(commandJson, "message", commandStart, "This device is lost. Please contact the owner."));
         if ("lost.message.hide".equals(type)) return hideOwnerMessageOverlay();
+        if ("lost.message.toggle".equals(type)) return toggleOwnerMessageOverlay(booleanValue(commandJson, "enabled", commandStart, true), textValue(commandJson, "message", commandStart, prefs.getString("ownerMessageText", "This device is lost. Please contact the owner.")));
         if ("live.stop".equals(type)) return stopLiveServices();
         if ("lost.disable".equals(type)) return lostDisable(dpm, admin);
         if ("mobile.data.on".equals(type)) return owner ? "Device Owner active, but Android public APIs still do not expose mobile data toggle. Requires OEM/system API." : "Android does not allow normal or Device Admin apps to toggle mobile data. Requires OEM/system privileges.";
@@ -360,6 +361,20 @@ public class AgentService extends Service {
     }
 
     private String hideOwnerMessageOverlay() {
+        ownerMessageText = "";
+        new android.os.Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+                if (manager != null && ownerMessageView != null) manager.removeView(ownerMessageView);
+            } catch (Exception ignored) { } finally {
+                ownerMessageView = null;
+            }
+        });
+        showLiveActionNotification("Lost Mode owner message hidden", "The dashboard temporarily hid the owner message banner.");
+        return "Owner message banner hidden until the agent restarts or the dashboard shows it again.";
+    }
+
+    private String disableOwnerMessageOverlay() {
         prefs.edit().putBoolean("ownerMessageActive", false).remove("ownerMessageText").apply();
         ownerMessageText = "";
         clearOwnerLockScreenMessage();
@@ -371,8 +386,13 @@ public class AgentService extends Service {
                 ownerMessageView = null;
             }
         });
-        showLiveActionNotification("Lost Mode owner message hidden", "The dashboard hid the owner message banner.");
-        return "Owner message banner hidden.";
+        showLiveActionNotification("Lost Mode owner message disabled", "The dashboard disabled the saved owner message overlay.");
+        return "Owner message overlay disabled.";
+    }
+
+    private String toggleOwnerMessageOverlay(boolean enabled, String message) {
+        if (!enabled) return disableOwnerMessageOverlay();
+        return showOwnerMessageOverlay(message);
     }
     private String collectDeviceDetails() {
         StringBuilder json = new StringBuilder("{");
@@ -686,6 +706,19 @@ public class AgentService extends Service {
                 value.append(current);
             }
             return value.toString();
+        }
+        return fallback;
+    }
+
+    private boolean booleanValue(String text, String key, int from, boolean fallback) {
+        String[] markers = new String[]{"\"" + key + "\":", "\\\"" + key + "\\\":"};
+        for (String marker : markers) {
+            int index = text.indexOf(marker, from);
+            if (index < 0) continue;
+            int start = index + marker.length();
+            while (start < text.length() && Character.isWhitespace(text.charAt(start))) start++;
+            if (text.startsWith("true", start)) return true;
+            if (text.startsWith("false", start)) return false;
         }
         return fallback;
     }

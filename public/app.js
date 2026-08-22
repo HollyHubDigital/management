@@ -103,6 +103,9 @@ const lostDisable = document.getElementById("lostDisable");
 const lostMessageForm = document.getElementById("lostMessageForm");
 const lostMessage = document.getElementById("lostMessage");
 const lostHideMessage = document.getElementById("lostHideMessage");
+const lostMessageToggle = document.getElementById("lostMessageToggle");
+const lostEditMessage = document.getElementById("lostEditMessage");
+const lostSaveMessage = document.getElementById("lostSaveMessage");
 const deviceFiles = document.getElementById("deviceFiles");
 const firmwareUrl = document.getElementById("firmwareUrl");
 const firmwareUpgrade = document.getElementById("firmwareUpgrade");
@@ -372,9 +375,34 @@ function refreshCapabilityGates() {
   setButtonGate(lostRing, commandGateMessage(target, "lost.ring"));
   setButtonGate(lostDisable, commandGateMessage(target, "live.stop"));
   setButtonGate(lostHideMessage, commandGateMessage(target, "lost.message"));
+  setButtonGate(lostMessageToggle, commandGateMessage(target, "lost.message"));
+  setButtonGate(lostEditMessage, commandGateMessage(target, "lost.message"));
+  setButtonGate(lostSaveMessage, commandGateMessage(target, "lost.message"));
   if (lostMessageForm) {
     const submit = lostMessageForm.querySelector('button[type="submit"]');
     if (submit) setButtonGate(submit, commandGateMessage(target, "lost.message"));
+  }
+}
+function ownerMessageStateForDevice(device) {
+  return (device && device.lostMode && device.lostMode.ownerMessage) || {};
+}
+
+function syncLostOwnerMessageControls() {
+  const target = targetDevice();
+  const ownerMessage = ownerMessageStateForDevice(target);
+  const savedMessage = String(ownerMessage.message || "");
+  if (lostMessage) {
+    lostMessage.value = savedMessage;
+    lostMessage.readOnly = Boolean(savedMessage);
+    lostMessage.title = savedMessage ? "Saved owner message. Editing will be added from settings later." : "Enter owner message for this selected device.";
+    lostMessage.placeholder = savedMessage ? "Saved owner message" : "This device is lost. Please contact the owner.";
+  }
+  if (lostEditMessage) lostEditMessage.disabled = !target || !savedMessage || Boolean(commandGateMessage(target, "lost.message"));
+  if (lostSaveMessage) lostSaveMessage.disabled = true;
+  if (lostMessageToggle) {
+    lostMessageToggle.checked = Boolean(savedMessage) && ownerMessage.enabled !== false && ownerMessage.active !== false;
+    lostMessageToggle.disabled = !target || !savedMessage || Boolean(commandGateMessage(target, "lost.message"));
+    lostMessageToggle.title = savedMessage ? "Turn the saved owner overlay on or off for this device." : "Show an owner message first before using this toggle.";
   }
 }
 function appendTerminal(message) {
@@ -797,6 +825,7 @@ function friendlyCommandLabel(type) {
     "lost.message": "Lost Mode message",
     "lost.disable": "Disable lost mode",
     "lost.message.hide": "Hide owner message",
+    "lost.message.toggle": "Owner message overlay toggle",
     "live.stop": "Stop live session",
     "mobile.data.on": "Turn on mobile data",
     "device.info.refresh": "Refresh device info",
@@ -829,7 +858,7 @@ function renderCommandResultText(command, result) {
     return result.ok ? "Live session started." : "Live session requested.";
   }
   if (command.type === "lock.device") return result.ok ? "Lock command sent." : "Lock command requested.";
-  if (["lost.ring", "lost.message", "lost.message.hide", "lost.disable"].includes(command.type)) return result.output && typeof result.output === "string" ? result.output : "Lost Mode command completed.";
+  if (["lost.ring", "lost.message", "lost.message.hide", "lost.message.toggle", "lost.disable"].includes(command.type)) return result.output && typeof result.output === "string" ? result.output : "Lost Mode command completed.";
   if (command.type === "mobile.data.on") return result.ok ? "Mobile data toggle requested." : "Mobile data request queued.";
   if (result.output && typeof result.output === "string") return result.output;
   if (result.output && typeof result.output === "object") {
@@ -1809,11 +1838,46 @@ if (lostLock) lostLock.addEventListener("click", () => sendLostModeCommand("lock
 if (lostRing) lostRing.addEventListener("click", () => sendLostModeCommand("lost.ring").catch((error) => (log.textContent = error.message)));
 if (lostDisable) lostDisable.addEventListener("click", () => stopLiveSession().catch((error) => (log.textContent = error.message)));
 if (lostHideMessage) lostHideMessage.addEventListener("click", () => sendLostModeCommand("lost.message.hide").catch((error) => (log.textContent = error.message)));
+if (lostEditMessage) lostEditMessage.addEventListener("click", () => {
+  if (!targetDevice()) return (log.textContent = "Select exactly one target device for Lost Mode");
+  if (!lostMessage || !lostMessage.value.trim()) return (log.textContent = "No saved owner message to edit yet.");
+  lostMessage.readOnly = false;
+  lostMessage.focus();
+  if (lostSaveMessage) lostSaveMessage.disabled = false;
+  if (log) log.textContent = "Editing saved owner message. Click Save Message to persist it.";
+});
+if (lostSaveMessage) lostSaveMessage.addEventListener("click", async () => {
+  const target = targetDevice();
+  if (!target) return (log.textContent = "Select exactly one target device for Lost Mode");
+  const message = lostMessage && lostMessage.value.trim() ? lostMessage.value.trim() : "";
+  if (!message) return (log.textContent = "Owner message text is required.");
+  try {
+    lostSaveMessage.disabled = true;
+    await api(`/api/devices/${encodeURIComponent(target.id)}/owner-message`, { method: "PUT", body: JSON.stringify({ message }) });
+    if (log) log.textContent = "Owner message saved for " + formatDeviceDisplayName(target) + ".";
+    await refresh();
+  } catch (error) {
+    lostSaveMessage.disabled = false;
+    if (log) log.textContent = error.message;
+  }
+});
+if (lostMessageToggle) lostMessageToggle.addEventListener("change", () => {
+  const message = lostMessage && lostMessage.value.trim() ? lostMessage.value.trim() : "";
+  if (!message) {
+    lostMessageToggle.checked = false;
+    if (log) log.textContent = "Show and save an owner message before using the overlay toggle.";
+    return;
+  }
+  sendLostModeCommand("lost.message.toggle", { enabled: lostMessageToggle.checked, message }).catch((error) => {
+    lostMessageToggle.checked = !lostMessageToggle.checked;
+    if (log) log.textContent = error.message;
+  });
+});
 if (lostMessageForm) {
   lostMessageForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const message = lostMessage && lostMessage.value.trim() ? lostMessage.value.trim() : "This device is lost. Please contact the owner.";
-    sendLostModeCommand("lost.message", { message }).catch((error) => (log.textContent = error.message));
+    sendLostModeCommand("lost.message", { message }).then(() => syncLostOwnerMessageControls()).catch((error) => (log.textContent = error.message));
   });
 }
 if (frontCamera) frontCamera.addEventListener("click", () => switchCamera("front").catch((error) => (log.textContent = error.message)));
