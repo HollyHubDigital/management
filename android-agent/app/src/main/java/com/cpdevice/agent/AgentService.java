@@ -96,6 +96,7 @@ public class AgentService extends Service {
                 long now = System.currentTimeMillis();
                 if (now - lastHeartbeatAt > 10000) {
                     heartbeat();
+                    syncOwnerMessageState();
                     lastHeartbeatAt = now;
                 }
                 String commandsJson = request("GET", "/api/device/" + deviceId() + "/commands", null);
@@ -124,6 +125,28 @@ public class AgentService extends Service {
         request("POST", "/api/device/" + deviceId() + "/heartbeat", body);
     }
 
+    private void syncOwnerMessageState() {
+        try {
+            String json = request("GET", "/api/device/" + deviceId() + "/owner-message", null);
+            if (json == null) return;
+            if (json.indexOf("\"ownerMessage\":null") >= 0) {
+                if (prefs.getBoolean("ownerMessageActive", false) || ownerMessageView != null) disableOwnerMessageOverlay();
+                return;
+            }
+            int ownerStart = json.indexOf("\"ownerMessage\":");
+            if (ownerStart < 0) return;
+            boolean enabled = booleanValue(json, "enabled", ownerStart, true);
+            boolean active = booleanValue(json, "active", ownerStart, false);
+            String message = textValue(json, "message", ownerStart, "");
+            if (!enabled) {
+                if (prefs.getBoolean("ownerMessageActive", false) || ownerMessageView != null) disableOwnerMessageOverlay();
+                return;
+            }
+            if (active && message.trim().length() > 0 && ownerMessageView == null && !prefs.getBoolean("ownerMessageActive", false)) {
+                showOwnerMessageOverlay(message);
+            }
+        } catch (Exception ignored) { }
+    }
     private void processCommands(String commandsJson) throws Exception {
         int index = 0;
         while ((index = commandsJson.indexOf("\"id\":\"", index)) >= 0) {
@@ -781,3 +804,4 @@ public class AgentService extends Service {
         return builder.setContentTitle(title).setContentText(text).setSmallIcon(android.R.drawable.stat_sys_upload_done).setOngoing(true).setContentIntent(pending).build();
     }
 }
+

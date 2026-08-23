@@ -600,9 +600,12 @@ function renderDataRoom(data) {
   dataRoomResult.classList.remove("hidden");
   dataRoomResult.innerHTML = `
     <section class="data-room-card data-room-user-card">
-      <div>
-        <p class="eyebrow">User record</p>
-        <h2>${escapeHtml(user.username || user.email || user.id || "User")}</h2>
+      <div class="data-room-user-head">
+        <div class="data-room-profile-photo" id="dataRoomProfilePhoto"><span>${escapeHtml(String(user.username || user.email || user.id || "AE").slice(0, 2).toUpperCase())}</span></div>
+        <div>
+          <p class="eyebrow">User record</p>
+          <h2>${escapeHtml(user.username || user.email || user.id || "User")}</h2>
+        </div>
       </div>
       <div class="data-room-row">
         <span><b>User-ID</b>${dataRoomValue(user.id)}</span>
@@ -620,8 +623,23 @@ function renderDataRoom(data) {
   `;
   const deleteButton = document.getElementById("dataRoomDeleteUser");
   if (deleteButton) deleteButton.onclick = () => deleteDataRoomUser(user.id);
+  loadDataRoomProfilePhoto(user).catch(() => {});
 }
 
+async function loadDataRoomProfilePhoto(user) {
+  const host = document.getElementById("dataRoomProfilePhoto");
+  if (!host || !user || !user.profilePhoto || !user.profilePhoto.url) return;
+  const response = await fetch(apiUrl(user.profilePhoto.url), { headers: { Authorization: `Bearer ${adminToken}` }, cache: "no-store" });
+  if (!response.ok) return;
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  host.innerHTML = "";
+  const img = document.createElement("img");
+  img.src = objectUrl;
+  img.alt = `${user.username || user.email || user.id || "User"} profile photo`;
+  img.onload = () => setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+  host.appendChild(img);
+}
 async function searchDataRoomUser() {
   if (!dataRoomUserId || !dataRoomStatus) return;
   const userId = dataRoomUserId.value.trim();
