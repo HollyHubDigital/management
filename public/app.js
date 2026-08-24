@@ -750,6 +750,7 @@ function render() {
   renderLocationResults();
   renderRecordings();
   refreshCapabilityGates();
+  syncLostOwnerMessageControls();
 }
 
 function escapeHtml(str) {
@@ -1880,14 +1881,23 @@ if (lostSaveMessage) lostSaveMessage.addEventListener("click", async () => {
   }
 });
 if (lostMessageToggle) lostMessageToggle.addEventListener("change", () => {
+  const target = targetDevice();
+  const enabled = lostMessageToggle.checked;
   const message = lostMessage && lostMessage.value.trim() ? lostMessage.value.trim() : "";
   if (!message) {
     lostMessageToggle.checked = false;
     if (log) log.textContent = "Show and save an owner message before using the overlay toggle.";
     return;
   }
-  sendLostModeCommand("lost.message.toggle", { enabled: lostMessageToggle.checked, message }).catch((error) => {
-    lostMessageToggle.checked = !lostMessageToggle.checked;
+  sendLostModeCommand("lost.message.toggle", { enabled, message }).then(() => {
+    if (target) {
+      target.lostMode = target.lostMode || {};
+      target.lostMode.ownerMessage = { ...(target.lostMode.ownerMessage || {}), active: enabled, enabled, hidden: !enabled, message };
+    }
+    syncLostOwnerMessageControls();
+  }).catch((error) => {
+    lostMessageToggle.checked = !enabled;
+    syncLostOwnerMessageControls();
     if (log) log.textContent = error.message;
   });
 });
@@ -1978,3 +1988,4 @@ if (adminDashboardPage) setInterval(() => refresh().catch(() => {}), 2000);
 if (refreshDeviceInfo) {
   refreshDeviceInfo.addEventListener("click", () => refreshSelectedDeviceInfo().catch((error) => { if (log) log.textContent = error.message; }));
 }
+
