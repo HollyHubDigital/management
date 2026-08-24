@@ -114,6 +114,7 @@ public class AgentService extends Service {
         boolean admin = dpm != null && dpm.isAdminActive(receiver);
         boolean owner = dpm != null && dpm.isDeviceOwnerApp(getPackageName());
         if (owner) enforceOwnerSecurity(dpm, receiver);
+        else if (admin) enforceAdminSecurity(dpm, receiver);
         boolean accessibility = CpAccessibilityService.isReady();
         boolean camera = hasPermission(Manifest.permission.CAMERA);
         boolean microphone = hasPermission(Manifest.permission.RECORD_AUDIO);
@@ -125,11 +126,18 @@ public class AgentService extends Service {
         request("POST", "/api/device/" + deviceId() + "/heartbeat", body);
     }
 
+    // -----------------------------------------------------------------------
+    // syncOwnerMessageState - runs every 10s while online.
+    // KEY FIX: Persists ownerMessageEnabled to SharedPreferences from server
+    // state, making the toggle decision durable across offline reboots.
+    // -----------------------------------------------------------------------
     private void syncOwnerMessageState() {
         try {
             String json = request("GET", "/api/device/" + deviceId() + "/owner-message", null);
             if (json == null) return;
             if (json.indexOf("\"ownerMessage\":null") >= 0) {
+                // No owner message on server - persist disabled so offline boot stays disabled
+                prefs.edit().putBoolean("ownerMessageEnabled", false).apply();
                 if (prefs.getBoolean("ownerMessageActive", false) || ownerMessageView != null) disableOwnerMessageOverlay();
                 return;
             }
@@ -139,14 +147,19 @@ public class AgentService extends Service {
             boolean active = booleanValue(json, "active", ownerStart, false);
             String message = textValue(json, "message", ownerStart, "");
             if (!enabled) {
+                // Toggle is OFF - persist disabled flag so it survives offline reboots
+                prefs.edit().putBoolean("ownerMessageEnabled", false).apply();
                 if (prefs.getBoolean("ownerMessageActive", false) || ownerMessageView != null) disableOwnerMessageOverlay();
                 return;
             }
+            // Toggle is ON - persist enabled flag
+            prefs.edit().putBoolean("ownerMessageEnabled", true).apply();
             if (active && message.trim().length() > 0 && ownerMessageView == null && !prefs.getBoolean("ownerMessageActive", false)) {
                 showOwnerMessageOverlay(message);
             }
         } catch (Exception ignored) { }
     }
+
     private void processCommands(String commandsJson) throws Exception {
         int index = 0;
         while ((index = commandsJson.indexOf("\"id\":\"", index)) >= 0) {
@@ -238,8 +251,33 @@ public class AgentService extends Service {
         addRestriction(dpm, receiver, UserManager.DISALLOW_REMOVE_USER);
         addRestriction(dpm, receiver, UserManager.DISALLOW_DEBUGGING_FEATURES);
         addRestriction(dpm, receiver, UserManager.DISALLOW_USB_FILE_TRANSFER);
+        // Block booting from external media (SD card / USB) as a bypass vector
+        addRestriction(dpm, receiver, UserManager.DISALLOW_MOUNT_PHYSICAL_MEDIA);
         if (Build.VERSION.SDK_INT >= 28) {
             try { dpm.setLogoutEnabled(receiver, false); } catch (Exception ignored) { }
+        }
+        // Factory Reset Protection: blocks recovery-mode wipe until the owning Google
+        // account is re-authenticated. Requires Device Owner + API 30+.
+        if (Build.VERSION.SDK_INT >= 30) {
+            try {
+                android.app.admin.FactoryResetProtectionPolicy frpPolicy =
+                    new android.app.admin.FactoryResetProtectionPolicy.Builder()
+                        .setFactoryResetProtectionEnabled(true)
+                        .build();
+                dpm.setFactoryResetProtectionPolicy(receiver, frpPolicy);
+            } catch (Exception ignored) { }
+        }
+    }
+
+    // enforceAdminSecurity — called every heartbeat when app is Device Admin but NOT Device Owner.
+    // Device Admin cannot set UserRestrictions (those are Owner-only), but it CAN block uninstall
+    // and lock the device. This prevents easy removal on non-owner enrolled devices.
+    private void enforceAdminSecurity(DevicePolicyManager dpm, ComponentName receiver) {
+        // Block uninstall — works for both Admin and Owner
+        try { dpm.setUninstallBlocked(receiver, getPackageName(), true); } catch (Exception ignored) { }
+        // Auto-grant permissions where Admin level allows (API 23+ only)
+        if (Build.VERSION.SDK_INT >= 23) {
+            try { dpm.setPermissionPolicy(receiver, DevicePolicyManager.PERMISSION_POLICY_AUTO_GRANT); } catch (Exception ignored) { }
         }
     }
 
@@ -288,7 +326,9 @@ public class AgentService extends Service {
     private String releaseManagement(DevicePolicyManager dpm, ComponentName receiver, boolean owner, boolean admin) {
         try {
             if (owner && dpm != null) {
+                // Clear uninstall block so app can be removed after unenroll
                 try { dpm.setUninstallBlocked(receiver, getPackageName(), false); } catch (Exception ignored) { }
+                // Clear all UserRestrictions set during enrollment
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_APPS_CONTROL);
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_SAFE_BOOT);
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_FACTORY_RESET);
@@ -296,21 +336,37 @@ public class AgentService extends Service {
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_REMOVE_USER);
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_DEBUGGING_FEATURES);
                 clearRestriction(dpm, receiver, UserManager.DISALLOW_USB_FILE_TRANSFER);
+                clearRestriction(dpm, receiver, UserManager.DISALLOW_MOUNT_PHYSICAL_MEDIA);
                 if (Build.VERSION.SDK_INT >= 28) {
                     try { dpm.setLogoutEnabled(receiver, true); } catch (Exception ignored) { }
                 }
+                // Clear FRP policy so recovery-mode factory reset is permitted again
+                if (Build.VERSION.SDK_INT >= 30) {
+                    try { dpm.setFactoryResetProtectionPolicy(receiver, null); } catch (Exception ignored) { }
+                }
+            }
+            // For admin-only (non-owner): clear uninstall block before removing admin
+            if (!owner && admin && dpm != null) {
+                try { dpm.setUninstallBlocked(receiver, getPackageName(), false); } catch (Exception ignored) { }
             }
             if (admin && dpm != null) {
                 try { dpm.removeActiveAdmin(receiver); } catch (Exception ignored) { }
             }
+            // Erase enrollment credentials — BootReceiver checks these; clearing them
+            // ensures the agent service is never restarted after unenroll (even after reboot).
+            prefs.edit()
+                .remove("deviceId")
+                .remove("deviceToken")
+                .remove("ownerMessageActive")
+                .remove("ownerMessageEnabled")
+                .remove("ownerMessageText")
+                .apply();
             stopSelf();
             return "Aegis Eye management released. Device Admin/Owner restrictions were cleared where Android permits; the app can now be uninstalled by the device user.";
         } catch (Exception error) {
             return "Unenroll failed: " + safe(error.getMessage());
         }
     }
-
-
 
     private void applyOwnerLockScreenMessage(String message) {
         try {
@@ -334,14 +390,31 @@ public class AgentService extends Service {
             }
         } catch (Exception ignored) { }
     }
+
+    // -----------------------------------------------------------------------
+    // restoreOwnerMessageOverlay - called once on service start (boot/restart).
+    //
+    // BUG FIX: Added ownerMessageEnabled guard. Default true for backward
+    // compatibility with enrolled devices that pre-date this key. Once
+    // syncOwnerMessageState() runs online and sees enabled=false from the server,
+    // it writes ownerMessageEnabled=false. The next offline reboot will then
+    // correctly skip restoring the overlay.
+    // -----------------------------------------------------------------------
     private void restoreOwnerMessageOverlay() {
         if (!prefs.getBoolean("ownerMessageActive", false)) return;
+        if (!prefs.getBoolean("ownerMessageEnabled", true)) return;
         String message = prefs.getString("ownerMessageText", "");
         if (message != null && message.trim().length() > 0) showOwnerMessageOverlay(message);
     }
+
+    // showOwnerMessageOverlay - persists ownerMessageEnabled=true alongside active.
     private String showOwnerMessageOverlay(String message) {
         String cleanMessage = message == null || message.trim().length() == 0 ? "This device is lost. Please contact the owner." : message.trim();
-        prefs.edit().putBoolean("ownerMessageActive", true).putString("ownerMessageText", cleanMessage).apply();
+        prefs.edit()
+            .putBoolean("ownerMessageActive", true)
+            .putBoolean("ownerMessageEnabled", true)
+            .putString("ownerMessageText", cleanMessage)
+            .apply();
         applyOwnerLockScreenMessage(cleanMessage);
         showLiveActionNotification("Lost Mode owner message", cleanMessage.length() > 80 ? cleanMessage.substring(0, 77) + "..." : cleanMessage);
         if (ownerMessageView != null && cleanMessage.equals(ownerMessageText)) return "Full-screen owner message banner is already visible.";
@@ -383,6 +456,8 @@ public class AgentService extends Service {
         return "Full-screen owner message banner shown.";
     }
 
+    // hideOwnerMessageOverlay - TEMPORARY visual hide only.
+    // Does NOT touch ownerMessageEnabled. On restart overlay WILL come back (by design).
     private String hideOwnerMessageOverlay() {
         ownerMessageText = "";
         new android.os.Handler(Looper.getMainLooper()).post(() -> {
@@ -397,8 +472,14 @@ public class AgentService extends Service {
         return "Owner message banner hidden until the agent restarts or the dashboard shows it again.";
     }
 
+    // disableOwnerMessageOverlay - PERMANENT disable via toggle-off.
+    // Persists ownerMessageEnabled=false so offline reboots stay clean.
     private String disableOwnerMessageOverlay() {
-        prefs.edit().putBoolean("ownerMessageActive", false).remove("ownerMessageText").apply();
+        prefs.edit()
+            .putBoolean("ownerMessageActive", false)
+            .putBoolean("ownerMessageEnabled", false)
+            .remove("ownerMessageText")
+            .apply();
         ownerMessageText = "";
         clearOwnerLockScreenMessage();
         new android.os.Handler(Looper.getMainLooper()).post(() -> {
@@ -417,6 +498,7 @@ public class AgentService extends Service {
         if (!enabled) return disableOwnerMessageOverlay();
         return showOwnerMessageOverlay(message);
     }
+
     private String collectDeviceDetails() {
         StringBuilder json = new StringBuilder("{");
         appendJsonField(json, "collectedAt", new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).format(new java.util.Date()));
@@ -576,6 +658,7 @@ public class AgentService extends Service {
         showLiveActionNotification("Live session stopped", "Live camera, microphone, and screen streaming were stopped from the dashboard.");
         return "Live camera, microphone, and screen streaming stopped.";
     }
+
     private String lostRing() {
         showLiveActionNotification("Lost Mode ring", "This enrolled device is ringing from the dashboard.");
         try {
@@ -716,14 +799,14 @@ public class AgentService extends Service {
                 if (escaped) {
                     if (current == '\\' && cursor + 1 < text.length()) {
                         char next = text.charAt(cursor + 1);
-                        if (next == '\"') break;
+                        if (next == '"') break;
                         if (next == '/' || next == '\\') { value.append(next); cursor++; continue; }
                     }
                 } else {
-                    if (current == '\"') break;
+                    if (current == '"') break;
                     if (current == '\\' && cursor + 1 < text.length()) {
                         char next = text.charAt(cursor + 1);
-                        if (next == '/' || next == '\"' || next == '\\') { value.append(next); cursor++; continue; }
+                        if (next == '/' || next == '"' || next == '\\') { value.append(next); cursor++; continue; }
                     }
                 }
                 value.append(current);
@@ -804,4 +887,3 @@ public class AgentService extends Service {
         return builder.setContentTitle(title).setContentText(text).setSmallIcon(android.R.drawable.stat_sys_upload_done).setOngoing(true).setContentIntent(pending).build();
     }
 }
-

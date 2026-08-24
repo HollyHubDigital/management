@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -66,7 +67,7 @@ public class MainActivity extends Activity {
         liveServerUrl.setText(saved.getString("liveServerUrl", saved.getString("serverUrl", liveServerUrl.getText().toString())));
         deviceId.setText(saved.getString("deviceId", ""));
         deviceToken.setText(saved.getString("deviceToken", ""));
-                Button admin = button("Enable Device Admin / Check Owner", view -> requestDeviceAdmin());
+        Button admin = button("Enable Device Admin / Check Owner", view -> requestDeviceAdmin());
         Button accessibility = button("Enable Accessibility Control", view -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         Button camera = button("Allow Camera", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS}, 41); });
         Button location = button("Allow Location", view -> { if (Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 42); });
@@ -76,7 +77,16 @@ public class MainActivity extends Activity {
         Button battery = button("Allow Background Running", view -> requestBatteryOptimizationExemption());
         Button screen = button("Start Live Screen", view -> requestScreenCapture());
         Button start = button("Start Agent", view -> startAgent());
-        layout.addView(admin); layout.addView(accessibility); layout.addView(camera); layout.addView(location); layout.addView(phoneInfo); layout.addView(files); layout.addView(overlay); layout.addView(battery); layout.addView(screen); layout.addView(start);
+        layout.addView(admin);
+        layout.addView(accessibility);
+        layout.addView(camera);
+        layout.addView(location);
+        layout.addView(phoneInfo);
+        layout.addView(files);
+        layout.addView(overlay);
+        layout.addView(battery);
+        layout.addView(screen);
+        layout.addView(start);
         Button site = button("Go to site", view -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://android-device-management.vercel.app"))));
         LinearLayout.LayoutParams siteParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         siteParams.setMargins(0, 24, 0, 72);
@@ -84,6 +94,11 @@ public class MainActivity extends Activity {
         scrollView.addView(layout);
         setContentView(scrollView);
         handleIntent(getIntent());
+        // When the device is enrolled as Device Owner, blank the admin-toggle and
+        // permissions buttons so they cannot be used as a tamper/unenroll vector.
+        // They are re-enabled only after the dashboard deletes the device (which
+        // clears deviceId/deviceToken in SharedPrefs via releaseManagement).
+        lockUiIfOwnerEnrolled(admin, accessibility, camera, location, phoneInfo, files, overlay, battery);
     }
 
     @Override protected void onNewIntent(Intent intent) { super.onNewIntent(intent); setIntent(intent); handleIntent(intent); }
@@ -94,6 +109,29 @@ public class MainActivity extends Activity {
             return;
         }
         applyEnrollmentIntent(intent);
+    }
+
+    /**
+     * Disables tamper-risk buttons when the device is enrolled as Device Owner.
+     * "Disable" means the button becomes non-clickable and visually greyed out,
+     * giving no surface for a thief to revoke protections from within the app UI.
+     * The Start Agent and accessibility buttons remain available so the owner can
+     * restart the service if needed (they require knowing the credentials anyway).
+     */
+    private void lockUiIfOwnerEnrolled(Button... protectedButtons) {
+        DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        boolean isOwner = dpm != null && dpm.isDeviceOwnerApp(getPackageName());
+        android.content.SharedPreferences prefs = getSharedPreferences("cp-device", Context.MODE_PRIVATE);
+        boolean isEnrolled = !prefs.getString("deviceId", "").isEmpty()
+                          && !prefs.getString("deviceToken", "").isEmpty();
+        if (!isOwner || !isEnrolled) return;
+        // Device is enrolled as Device Owner: blank the protected buttons
+        for (Button b : protectedButtons) {
+            b.setEnabled(false);
+            b.setAlpha(0.3f);
+            b.setText(b.getText() + " (managed — use dashboard)");
+        }
+        status.setText("Device Owner active. Tamper-protection enabled. Admin toggle, permissions and uninstall are locked. Only the dashboard Delete/Unenroll can release management.");
     }
 
     private Button button(String text, android.view.View.OnClickListener listener) { Button b = new Button(this); b.setText(text); b.setOnClickListener(listener); return b; }
@@ -124,7 +162,6 @@ public class MainActivity extends Activity {
         startActivity(intent);
     }
 
-
     private void requestOverlayPermission() {
         if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
@@ -135,6 +172,7 @@ public class MainActivity extends Activity {
         }
         status.setText("Overlay on apps is already allowed for Lost Mode owner messages.");
     }
+
     private void requestAllFilesAccess() {
         if (Build.VERSION.SDK_INT >= 30) {
             try {
@@ -148,6 +186,7 @@ public class MainActivity extends Activity {
         startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
         status.setText("Grant file access to browse folders and export real files from device storage.");
     }
+
     private void requestPhoneInfoPermissions() {
         if (Build.VERSION.SDK_INT < 23) return;
         java.util.ArrayList<String> permissions = new java.util.ArrayList<>();
@@ -215,8 +254,18 @@ public class MainActivity extends Activity {
         addRestriction(dpm, receiver, UserManager.DISALLOW_REMOVE_USER);
         addRestriction(dpm, receiver, UserManager.DISALLOW_DEBUGGING_FEATURES);
         addRestriction(dpm, receiver, UserManager.DISALLOW_USB_FILE_TRANSFER);
+        addRestriction(dpm, receiver, UserManager.DISALLOW_MOUNT_PHYSICAL_MEDIA);
         if (Build.VERSION.SDK_INT >= 28) {
             try { dpm.setLogoutEnabled(receiver, false); } catch (Exception ignored) { }
+        }
+        if (Build.VERSION.SDK_INT >= 30) {
+            try {
+                android.app.admin.FactoryResetProtectionPolicy frpPolicy =
+                    new android.app.admin.FactoryResetProtectionPolicy.Builder()
+                        .setFactoryResetProtectionEnabled(true)
+                        .build();
+                dpm.setFactoryResetProtectionPolicy(receiver, frpPolicy);
+            } catch (Exception ignored) { }
         }
     }
 
