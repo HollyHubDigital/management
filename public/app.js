@@ -27,6 +27,8 @@ const adminChatSubtitle = document.getElementById("adminChatSubtitle");
 const adminChatMessages = document.getElementById("adminChatMessages");
 const adminChatForm = document.getElementById("adminChatForm");
 const adminChatInput = document.getElementById("adminChatInput");
+const adminLiveDeviceStatus = document.getElementById("adminLiveDeviceStatus");
+const adminAgentAlerts = document.getElementById("adminAgentAlerts");
 let adminToken = localStorage.getItem("cpAdminToken") || "";
 const APP_CONFIG = window.CP_DEVICE_CONFIG || {};
 const API_BASE = (APP_CONFIG.API_BASE_URL || "").replace(/\/$/, "");
@@ -744,6 +746,8 @@ function render() {
   }
   const target = targetDevice();
   targetBadge.textContent = target ? `${target.name} � ${target.status}` : "No target";
+  renderAdminLiveDeviceStatus(target);
+  renderAdminAgentAlerts(target);
   renderAlerts();
   renderTerminalResults();
   renderDeviceFileBrowser();
@@ -751,6 +755,28 @@ function render() {
   renderRecordings();
   refreshCapabilityGates();
   syncLostOwnerMessageControls();
+}
+
+function renderAdminLiveDeviceStatus(target) {
+  if (!adminLiveDeviceStatus) return;
+  const label = adminLiveDeviceStatus.querySelector(".status-label");
+  const isOnline = Boolean(target && String(target.status || "").toLowerCase() === "online");
+  adminLiveDeviceStatus.classList.toggle("online", isOnline);
+  adminLiveDeviceStatus.classList.toggle("offline", Boolean(target) && !isOnline);
+  if (label) label.textContent = target ? (isOnline ? "Online" : "Offline") : "No device selected";
+}
+
+function renderAdminAgentAlerts(target) {
+  if (!adminAgentAlerts) return;
+  const devices = target ? [target] : Object.values(state.devices || {}).filter((device) => !device.pendingRemoval);
+  const alerts = devices.flatMap((device) => (Array.isArray(device.alerts) ? device.alerts : []).map((message) => ({ device, message }))).filter(({ message }) => String(message || "").trim());
+  adminAgentAlerts.innerHTML = alerts.length ? "" : "<p>No agent alerts reported.</p>";
+  alerts.forEach(({ device, message }) => {
+    const item = document.createElement("div");
+    item.className = "agent-alert-item";
+    item.innerHTML = `<span class="agent-alert-device">${escapeHtml(formatDeviceDisplayName(device))}</span><span class="agent-alert-message">${escapeHtml(message)}</span>`;
+    adminAgentAlerts.appendChild(item);
+  });
 }
 
 function escapeHtml(str) {

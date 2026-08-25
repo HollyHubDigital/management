@@ -48,6 +48,20 @@ pre { white-space: pre-wrap; color: var(--text); background: var(--support); bor
   .device-card .device-controls button { flex: 1 1 auto; min-width: 0; padding: 6px 10px; font-size: 11px; }
 }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.live-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.live-heading h2 { min-width: 0; }
+.live-device-status { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 28px; padding: 4px 9px; border: 2px solid var(--line); border-radius: 999px; background: var(--support); color: var(--text); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.status-icon { display: inline-block; width: 11px; height: 11px; flex: 0 0 11px; border-radius: 50%; background: currentColor; }
+.live-device-status.online { color: #34d399; }
+.live-device-status.online .status-icon { box-shadow: 0 0 0 3px rgba(52,211,153,.18), 0 0 10px rgba(52,211,153,.7); }
+.live-device-status.offline { color: #ff9b9b; }
+.live-device-status.offline .status-icon { background: #ff4d5d; box-shadow: 0 0 0 3px rgba(255,77,93,.18), 0 0 10px rgba(255,77,93,.62); }
+.agent-alerts-section { grid-column: 1 / -1; }
+.agent-alert-list { display: grid; gap: 8px; }
+.agent-alert-item { display: grid; gap: 3px; padding: 9px 11px; border-left: 3px solid #f58f20; border-radius: 8px; background: rgba(0,0,0,.22); }
+.agent-alert-device { color: #ffd19b; font-size: 11px; font-weight: 800; }
+.agent-alert-message { color: var(--text); line-height: 1.4; overflow-wrap: anywhere; }
+@media (max-width: 899px) { .live-heading { grid-template-columns: 1fr auto; } .live-heading h2 { grid-column: 1; } .live-heading .live-device-status { grid-column: 1 / -1; grid-row: 2; justify-self: center; } }
 .badge { border: 2px solid var(--line); border-radius: 999px; color: var(--text); padding: 5px 9px; font-size: 11px; background: var(--support); }
 .terminal-form { display: grid; gap: 7px; margin-top: 10px; color: var(--muted); font-weight: 700; }
 .terminal-row { display: grid; grid-template-columns: 1fr 86px; gap: 8px; }

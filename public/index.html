@@ -30,8 +30,9 @@
           </aside>
 
           <section class="panel live">
-            <div class="panel-heading">
+            <div class="panel-heading live-heading">
               <h2>Live Control</h2>
+              <span id="adminLiveDeviceStatus" class="live-device-status" aria-live="polite"><span class="status-icon" aria-hidden="true"></span><span class="status-label">No device selected</span></span>
               <span id="targetBadge" class="badge">No target</span>
             </div>
             <div class="screen" id="screen">
@@ -126,6 +127,10 @@
         <section class="panel">
           <h2>Operations & Alerts</h2>
           <pre id="log"></pre>
+        </section>
+        <section class="panel agent-alerts-section">
+          <h2>Agent Alerts</h2>
+          <div id="adminAgentAlerts" class="agent-alert-list"><p>Select a device to view agent alerts.</p></div>
         </section>
       </section>
     </main>
