@@ -43,6 +43,7 @@ const adminSettingsPage = window.location.pathname.endsWith("admin-settings.html
 const adminDashboardPage = window.location.pathname.endsWith("index.html") || window.location.pathname === "/";
 if (adminTokenInput && adminToken) adminTokenInput.value = adminToken;
 const devices = document.getElementById("devices");
+const adminDevicePlatformFilter = document.getElementById("adminDevicePlatformFilter");
 const log = document.getElementById("log");
 const screen = document.getElementById("screen");
 const screenText = document.getElementById("screenText");
@@ -91,6 +92,8 @@ const downloadAgent = document.getElementById("downloadAgent");
 const browserEnrollOnly = document.getElementById("browserEnrollOnly");
 const openAgent = document.getElementById("openAgent");
 const enrollInstructions = document.getElementById("enrollInstructions");
+let enrollmentPlatform = "";
+let enrollmentAction = "download";
 const apkUrl = document.getElementById("apkUrl");
 const apkFile = document.getElementById("apkFile");
 const installApp = document.getElementById("installApp");
@@ -273,8 +276,8 @@ async function browserFingerprint() {
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 24).toUpperCase();
 }
 
-async function collectBrowserDeviceDetails() {
-  const platform = detectPlatform();
+async function collectBrowserDeviceDetails(selectedPlatform = detectPlatform()) {
+  const platform = ["android", "ios", "windows", "linux"].includes(selectedPlatform) ? selectedPlatform : detectPlatform();
   const serial = `WEB-${await browserFingerprint()}`;
   const userAgentData = navigator.userAgentData ? await navigator.userAgentData.getHighEntropyValues(["architecture", "bitness", "model", "platform", "platformVersion", "uaFullVersion"]).catch(() => ({})) : {};
   return {
@@ -304,21 +307,21 @@ async function collectBrowserDeviceDetails() {
   };
 }
 
-async function enrollCurrentDevice() {
+async function enrollCurrentDevice(platform = detectPlatform()) {
   if (!adminToken) throw new Error("Enter Admin Token first, then tap Enroll");
-  const details = await collectBrowserDeviceDetails();
+  const details = await collectBrowserDeviceDetails(platform);
   const enrollment = await api("/api/admin/enroll-browser", { method: "POST", body: JSON.stringify(details) });
   selectedDeviceIds = [enrollment.deviceId];
-  pendingEnrollmentLink = buildAgentEnrollmentLink(enrollment);
+  pendingEnrollmentLink = buildAgentEnrollmentLink(enrollment, platform);
   await refresh();
   screenText.textContent = `${details.name} enrolled. Install Aegis Eye Agent, then tap Open Agent to approve Device Admin.`;
   return { details, enrollment, enrollmentLink: pendingEnrollmentLink };
 }
 
-function buildAgentEnrollmentLink(enrollment) {
+function buildAgentEnrollmentLink(enrollment, platform = enrollmentPlatform || "android") {
   const serverUrl = API_BASE;
   const params = new URLSearchParams({ serverUrl, liveServerUrl: LIVE_BASE, deviceId: enrollment.deviceId, token: enrollment.token });
-  return `cpdevice://enroll?${params.toString()}`;
+  return `${platform === "android" ? "cpdevice" : "aegis-eye"}://enroll?${params.toString()}`;
 }
 
 function selectedDevices() {
@@ -349,6 +352,7 @@ function commandGateMessage(device, type) {
     if (["firmware.update", "app.install", "app.remove"].includes(type) && !capabilities.supervised) return "Requires a supervised Apple MDM device.";
     if (["shell", "screen.control.request", "camera.stream.request", "camera.switch", "file.list", "file.pull", "mobile.data.on"].includes(type)) return "Not supported by public Apple MDM APIs.";
   }
+  if (["windows", "linux"].includes(device.platform) && ["screen.control.request", "camera.stream.request", "camera.switch", "lock.device", "lost.ring", "live.stop", "mobile.data.on"].includes(type)) return `This control is not available for the ${device.platform} agent.`;
   return "";
 }
 
@@ -684,7 +688,8 @@ function renderTerminalResults() {
 }
 
 function render() {
-  const list = Object.values(state.devices).filter((device) => !device.pendingRemoval);
+  const platformFilter = adminDevicePlatformFilter ? adminDevicePlatformFilter.value : "all";
+  const list = Object.values(state.devices).filter((device) => !device.pendingRemoval && (platformFilter === "all" || device.platform === platformFilter));
   selectedDeviceIds = selectedDeviceIds.filter((id) => state.devices[id] && !state.devices[id].pendingRemoval);
   devices.innerHTML = list.length ? "" : "<p>No enrolled devices yet.</p>";
   for (const device of list) {
@@ -1026,14 +1031,15 @@ async function installSelectedApp() {
 
 async function browseDeviceFiles() {
   const target = targetDevice();
-  if (!target) throw new Error("Select exactly one Android device");
-  const command = await createCommand([target.id], "file.list", { path: "/sdcard", requestedAt: new Date().toISOString() });
+  if (!target) throw new Error("Select exactly one device");
+  const filePath = ["windows", "linux"].includes(target.platform) ? "" : "/sdcard";
+  const command = await createCommand([target.id], "file.list", { path: filePath, requestedAt: new Date().toISOString() });
   activeFileBrowserCommandId = command.id;
   const modal = deviceFilesModal || document.getElementById("deviceFilesModal");
   const content = deviceFilesContent || document.getElementById("deviceFilesContent");
   if (content) content.innerHTML = `<p>Browse requested. Waiting for ${escapeHtml(formatDeviceDisplayName(target))}...</p>`;
   if (modal && typeof modal.showModal === "function" && !modal.open) modal.showModal();
-  await pollAdminFileCommand(command.id, target.id, `Browsing /sdcard on ${formatDeviceDisplayName(target)}...`);
+  await pollAdminFileCommand(command.id, target.id, `Browsing ${filePath || "the configured desktop root"} on ${formatDeviceDisplayName(target)}...`);
   renderDeviceFileBrowser(command.id);
   return command;
 }
@@ -1408,7 +1414,7 @@ async function sendCommand(type) {
 async function sendTerminalCommand(commandText) {
   const target = targetDevice();
   if (!target) throw new Error("Select exactly one target device for remote terminal control");
-  if (target.platform !== "android") throw new Error("Remote shell is only available for Android managed agents. iOS uses MDM commands, not shell.");
+  if (!["android", "windows", "linux"].includes(target.platform)) throw new Error("Remote shell is not available for iPhone MDM devices.");
   if (!commandText.trim()) throw new Error("Enter a command to send");
   const command = await createCommand([target.id], "shell", { command: commandText.trim(), requestedAt: new Date().toISOString() });
   terminalCommandIds.push(command.id);
@@ -1812,19 +1818,35 @@ if (focusTerminal && terminalCommand) {
   focusTerminal.addEventListener("click", () => terminalCommand.focus());
 }
 
+if (adminDevicePlatformFilter) adminDevicePlatformFilter.addEventListener("change", render);
+
 if (enrollDevice) {
   enrollDevice.addEventListener("click", () => {
+    enrollmentAction = "download";
+    enrollmentPlatform = "";
     if (enrollInstructions) {
-      enrollInstructions.textContent = "Click Download to install Aegis Eye Agent. After Android installs it, provision Aegis Eye Agent as Android Device Owner for theft-resistant protection, then open the agent to finish permissions.";
+      enrollInstructions.textContent = "Select Android, iPhone, Windows, or Linux before downloading or opening the agent.";
     }
     if (enrollModal) enrollModal.showModal();
   });
 }
 
+document.querySelectorAll("[data-admin-enrollment-platform]").forEach((button) => {
+  button.addEventListener("click", () => {
+    enrollmentPlatform = button.dataset.adminEnrollmentPlatform;
+    if (enrollmentAction === "open") {
+      enrollModal.close();
+      if (!pendingEnrollmentLink) return (log.textContent = "Download/enroll the device first, then tap Open Agent.");
+      return (location.href = pendingEnrollmentLink);
+    }
+    if (enrollInstructions) enrollInstructions.textContent = `${enrollmentPlatform} selected. Choose Download to install the matching agent or Open Agent after installation.`;
+  });
+});
+
 if (browserEnrollOnly && enrollModal) {
   browserEnrollOnly.addEventListener("click", () => {
     enrollModal.close();
-    enrollCurrentDevice().catch((error) => (log.textContent = error.message));
+    enrollCurrentDevice(enrollmentPlatform || detectPlatform()).catch((error) => (log.textContent = error.message));
   });
 }
 
@@ -1834,29 +1856,36 @@ if (downloadAgent) {
       log.textContent = "Enter Admin Token first, then tap Enroll > Download";
       return;
     }
-    const { details } = await enrollCurrentDevice();
-    const downloadUrl = details.platform === "ios" ? apiUrl("/api/enrollment/ios-profile") : apiUrl("/api/enrollment/android-agent");
+    const platform = enrollmentPlatform || detectPlatform();
+    const { details } = await enrollCurrentDevice(platform);
+    const downloads = {
+      android: ["/api/enrollment/android-agent", "aegis-eye-agent.apk"],
+      ios: ["/api/enrollment/ios-profile", "aegis-eye-enrollment.mobileconfig"],
+      windows: ["/api/enrollment/windows-agent", "aegis-eye-agent-win-x64.exe"],
+      linux: ["/api/enrollment/linux-agent", "aegis-eye-agent-linux-x64"]
+    };
+    const [downloadPath, downloadName] = downloads[details.platform];
     const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = details.platform === "ios" ? "aegis-eye-enrollment.mobileconfig" : "aegis-eye-agent.apk";
+    link.href = apiUrl(downloadPath);
+    link.download = downloadName;
     document.body.appendChild(link);
     link.click();
     link.remove();
     if (enrollInstructions) {
       enrollInstructions.textContent = details.platform === "android"
         ? "After Android installs Aegis Eye Agent, provision it as Android Device Owner for theft-resistant protection, then tap Open Agent to finish enrollment and permissions."
-        : "Install the downloaded iOS profile in Settings to complete MDM enrollment.";
+        : details.platform === "ios"
+          ? "Install the downloaded iPhone profile in Settings to complete MDM enrollment."
+          : `Install the downloaded ${details.platform} agent, then tap Open Agent to finish enrollment.`;
     }
   });
 }
 
 if (openAgent) {
   openAgent.addEventListener("click", () => {
-    if (!pendingEnrollmentLink) {
-      log.textContent = "Download/enroll the device first, then tap Open Agent.";
-      return;
-    }
-    location.href = pendingEnrollmentLink;
+    enrollmentAction = "open";
+    if (enrollInstructions) enrollInstructions.textContent = pendingEnrollmentLink ? `Choose ${enrollmentPlatform || "the enrolled platform"} to open its installed agent.` : "Download/enroll the device first, then choose its platform to open the agent.";
+    if (enrollModal && typeof enrollModal.showModal === "function") enrollModal.showModal();
   });
 }
 

@@ -26,6 +26,7 @@
         <section class="grid">
           <aside class="panel">
             <h2>Devices</h2>
+            <label class="device-platform-filter">Platform<select id="adminDevicePlatformFilter"><option value="all">All platforms</option><option value="android">Android</option><option value="ios">iPhone</option><option value="windows">Windows</option><option value="linux">Linux</option></select></label>
             <div id="devices" class="device-list"></div>
           </aside>
 
@@ -140,6 +141,12 @@
         <h2>Install Aegis Eye Agent</h2>
         <p>Click Download to install the authorized Aegis Eye Agent/profile on this device. Android requires user installation plus Device Owner provisioning for theft-resistant uninstall/permission protection. iPhone requires an Apple MDM enrollment profile.</p>
         <p class="modal-note" id="enrollInstructions">The agent will receive commands from the Control interface only after the OS-approved enrollment steps are completed.</p>
+        <div class="enrollment-options">
+          <button type="button" data-admin-enrollment-platform="android">Android</button>
+          <button type="button" data-admin-enrollment-platform="ios">iPhone</button>
+          <button type="button" data-admin-enrollment-platform="windows">Windows</button>
+          <button type="button" data-admin-enrollment-platform="linux">Linux</button>
+        </div>
         <div class="modal-actions">
           <button id="downloadAgent" type="button">Download</button>
           <button id="openAgent" type="button">Open Agent</button>
